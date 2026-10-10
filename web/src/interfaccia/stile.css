@@ -175,8 +175,9 @@ a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outlin
 .cella.festivo .numero { color: var(--testo-2); }
 .cella.oggi .numero { background: #CFE1DE; color: #1F4A4E; font-weight: 700; width: 26px; height: 26px; }
 @media (prefers-color-scheme: dark) { .cella.oggi .numero { background: #34504D; color: #E3F1EF; } }
-.cella.scelto .numero { background: var(--superficie); box-shadow: inset 0 0 0 2.5px var(--primario); color: var(--primario); font-weight: 800; }
-.cella.scelto { background: var(--accento-tenue); }
+.cella.scelto { background: var(--accento-tenue); box-shadow: inset 0 0 0 1.5px var(--primario); }
+.cella.scelto .numero { color: var(--primario); font-weight: 800; }
+.cella.scelto::after { content: '✓'; position: absolute; top: 3px; right: 5px; font-size: 11px; font-weight: 800; color: var(--primario); }
 .cella .sigle { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .cella .punto { width: 5px; height: 5px; border-radius: 3px; background: var(--linea-forte); }
 @media (min-width: 900px) {
@@ -271,17 +272,13 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 }
 
 /* Giornate senza turno (ferie, riposo, congresso, smonto notte) */
-.cella.g-ferie { background: #ECE9E4; }
-.cella.g-riposo { background: #E2EEF5; }
-.cella.g-congresso { background: #E6EFD9; }
-.cella.g-smontoNotte { background: #E6E6F1; }
-.etichetta-giornata { font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 5px; border: none; background: none; cursor: pointer; pointer-events: auto; position: relative; align-self: flex-start; }
+.etichetta-giornata { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; border: none; cursor: pointer; pointer-events: auto; position: relative; align-self: flex-start; line-height: 16px; }
+.etichetta-giornata.g-ferie { background: #E6E2DB; } .etichetta-giornata.g-riposo { background: #DCEBF4; } .etichetta-giornata.g-congresso { background: #E1ECD2; } .etichetta-giornata.g-smontoNotte { background: #E3E3F0; }
 .etichetta-giornata.g-ferie { color: #5E5A54; } .etichetta-giornata.g-riposo { color: #2F5A73; } .etichetta-giornata.g-congresso { color: #4A6A2A; } .etichetta-giornata.g-smontoNotte { color: #4B4B78; }
 .scelta.giornata[aria-pressed='true'] { border: 2px solid var(--primario); padding: 11px; }
 .pallino-giornata { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; border: 1px solid var(--linea-forte); }
 .pallino-giornata.g-ferie { background: #D9D4CC; } .pallino-giornata.g-riposo { background: #BFDCEC; } .pallino-giornata.g-congresso { background: #BFD99B; } .pallino-giornata.g-smontoNotte { background: #C9C9E6; }
 @media (prefers-color-scheme: dark) {
-  .cella.g-ferie { background: #34312D; } .cella.g-riposo { background: #22333D; } .cella.g-congresso { background: #2D3824; } .cella.g-smontoNotte { background: #2D2D40; }
   .etichetta-giornata.g-ferie { color: #D8D2C8; } .etichetta-giornata.g-riposo { color: #B9D8EA; } .etichetta-giornata.g-congresso { color: #CDE3B4; } .etichetta-giornata.g-smontoNotte { color: #CFCFF0; }
 }
 @media print { .cella.g-ferie, .cella.g-riposo, .cella.g-congresso, .cella.g-smontoNotte { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
@@ -302,3 +299,16 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
    altrimenti il sistema interrompe il gesto e la × non compare. */
 .cella .sigla, .cella .etichetta-giornata, .cella .aggiungi { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 .mese { -webkit-user-select: none; user-select: none; }
+
+/* Spazio tra i giorni del calendario */
+.mese .griglia { gap: 3px; }
+@media (prefers-color-scheme: dark) {
+  .etichetta-giornata.g-ferie { background: #3B3833; } .etichetta-giornata.g-riposo { background: #253A47; } .etichetta-giornata.g-congresso { background: #2F3D25; } .etichetta-giornata.g-smontoNotte { background: #303047; }
+}
+@media print { .etichetta-giornata { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+/* × rapida: su Mac compare passando con il mouse, su iPhone tenendo premuto */
+.cella .elimina.rapida { display: none; width: 16px; height: 16px; font-size: 11px; line-height: 16px; }
+.cella .elimina.rapida.visibile { display: inline-block; width: 20px; height: 20px; font-size: 13px; line-height: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .cella .riga-turno:hover .elimina.rapida, .cella .riga-turno:focus-within .elimina.rapida { display: inline-block; }
+}

@@ -9,6 +9,7 @@ import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
 import { SceltaOspedale } from './SceltaOspedale'
+import { SvuotaMese } from './SvuotaMese'
 import { assegnazioneDelMese } from '../assegnazioni'
 import { IconaAvanti, IconaImpostazioni, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
@@ -30,6 +31,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   const impostazioni = useImpostazioni()
   const [sceltaArea, setSceltaArea] = useState(false)
   const [sceltaOspedale, setSceltaOspedale] = useState(false)
+  const [svuota, setSvuota] = useState(false)
   // Giorno in cui l'utente ha tenuto premuto un turno: mostra le × per eliminare.
   const [inModifica, setInModifica] = useState<string>()
   const [giornoAperto, setGiornoAperto] = useState<string>()
@@ -120,6 +122,9 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`}>Oggi</a>
           <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
           <a className="pulsante" href={`#/turni/stampa?mese=${qui}`}>Stampa · PDF</a>
+          {delMese.length + giornateMese.reduce((n, g) => n + g.numero, 0) > 0 && (
+            <button type="button" className="pulsante pericolo" onClick={() => setSvuota(true)}>Svuota il mese</button>
+          )}
           <a className="pulsante tondo" href="#/turni/impostazioni" aria-label="Turni tipo, sedi e regole"><IconaImpostazioni dimensione={18} /></a>
           <a className="pulsante tondo primario" href={`#/turni/nuovi?mese=${qui}`} aria-label="Aggiungi turni"><IconaPiu dimensione={18} /></a>
         </div>
@@ -168,10 +173,8 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                             aria-label={`${TITOLI_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)]}. Tieni premuto per togliere`}>
                             {ETICHETTE_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)]}
                           </button>
-                          {modifica && (
-                            <button type="button" className="elimina" aria-label={`Togli ${TITOLI_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)]}`}
-                              onClick={() => void eliminaGiornata(ferieGiorno.id, TITOLI_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)])}>×</button>
-                          )}
+                          <button type="button" className={`elimina rapida${modifica ? ' visibile' : ''}`} aria-label={`Togli ${TITOLI_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)]}`}
+                            onClick={() => void eliminaGiornata(ferieGiorno.id, TITOLI_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)])}>×</button>
                         </span>
                       )}
                       {delGiorno.map((t) => {
@@ -188,9 +191,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                                 {siglaTurno(t, mappaModelli)}
                                 {t.note && !modifica && <span className="ha-nota" />}
                               </a>
-                              {modifica && (
-                                <button type="button" className="elimina" aria-label={`Elimina ${nome}`} onClick={() => void eliminaTurno(t.id, nome)}>×</button>
-                              )}
+                              <button type="button" className={`elimina rapida${modifica ? ' visibile' : ''}`} aria-label={`Elimina ${nome}`} onClick={() => void eliminaTurno(t.id, nome)}>×</button>
                             </span>
                             {!modifica && orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                           </span>
@@ -254,6 +255,9 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
         </aside>
       </div>
 
+      {svuota && (
+        <SvuotaMese anno={anno} mese={mese} turni={delMese.length} giornate={giornateMese.reduce((n, g) => n + g.numero, 0)} onChiudi={() => setSvuota(false)} />
+      )}
       {sceltaOspedale && <SceltaOspedale anno={anno} mese={mese} onChiudi={() => setSceltaOspedale(false)} />}
       {giornoAperto && <GiornoRapido giorno={giornoAperto} onCambia={setGiornoAperto} onChiudi={() => setGiornoAperto(undefined)} />}
 
