@@ -1,0 +1,13 @@
+.DS_Store
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+node_modules/
+dist/
+# Note personali e dati: repository privato separato (soritec/agenda-privato)
+privato/
+# Configurazione locale di Claude Code
+.claude/
+*.tsbuildinfo
