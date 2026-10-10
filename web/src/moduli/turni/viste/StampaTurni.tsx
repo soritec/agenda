@@ -10,7 +10,7 @@ import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
 import { ETICHETTE_GIORNATA, minuti, TIPI_GIORNATA, tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA, type TipoGiornata, type TipoTurno } from '../tipi'
-import { celleMese, chiaveGiorno, classeSigla, datiDa, larghezzaTurno, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, larghezzaTurno, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const INTESTAZIONI = ['Data', 'Turno', 'Orario', 'Ore', 'Sede', 'Note']
@@ -26,6 +26,7 @@ const COLORI_PDF: Record<TipoTurno, Colore> = {
   domiciliare: [233, 228, 220],
   ecografia: [216, 236, 233],
   salaOperatoria: [238, 226, 217],
+  altro: [238, 236, 232],
 }
 
 /** Colori delle giornate senza turno nel PDF. */
@@ -49,6 +50,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
   const ferie = useCollezione('ferie')
+  const assegnazioni = useCollezione('assegnazioni')
   const periodi = useCollezione('periodiRotazione')
   const impostazioni = useImpostazioni()
   const [stato, setStato] = useState<string>()
@@ -66,7 +68,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
     () => new Map((ferie ?? []).filter((f) => f.giorno.startsWith(qui)).map((f) => [f.giorno, tipoGiornataDa(f.tipo)] as const)),
     [ferie, qui],
   )
-  const riepilogo = useMemo(() => calcolaRiepilogo(delMese.map(datiDa), anno, mese, { sabatoFestivo }), [delMese, anno, mese, sabatoFestivo])
+  const riepilogo = useMemo(() => calcolaRiepilogo(delMese.map((t) => datiConSede(t, assegnazioni)), anno, mese, { sabatoFestivo }), [delMese, assegnazioni, anno, mese, sabatoFestivo])
 
   const nomeMese = F.mese(istante(anno, mese, 1))
   const titolo = `Turni · ${nomeMese.charAt(0).toUpperCase()}${nomeMese.slice(1)}`
@@ -89,7 +91,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
           titoloTurno(t, mappaModelli),
           t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`,
           m > 0 ? F.durata(m) : '',
-          (t.sedeId && mappaSedi.get(t.sedeId)?.nome) || '',
+          mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')?.nome ?? '',
           t.note ?? '',
         ],
       }
@@ -100,7 +102,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       elenco.push({ chiave: `giornata-${g}`, ordine: i - 1, evidenza: 'ferie', colore: COLORI_GIORNATA[tipo], giornata: tipo, celle: [F.dataBreve(i), TITOLI_GIORNATA[tipo], '', '', '', ''] })
     }
     return elenco.sort((x, y) => x.ordine - y.ordine)
-  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo])
+  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo, assegnazioni])
 
   const caselle = [
     { etichetta: 'ore lavorate', valore: F.durata(riepilogo.minutiTotali) },

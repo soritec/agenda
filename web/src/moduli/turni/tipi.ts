@@ -14,6 +14,7 @@ export const TIPI_TURNO = [
   'festivo',
   'domiciliare',
   'reparto',
+  'altro',
 ] as const
 export type TipoTurno = (typeof TIPI_TURNO)[number]
 
@@ -27,6 +28,7 @@ export const TITOLI_TIPO_TURNO: Record<TipoTurno, string> = {
   festivo: 'Festivo',
   domiciliare: 'Domiciliare',
   reparto: 'Reparto',
+  altro: 'Nessun tipo',
 }
 
 export function tipoTurnoDa(grezzo: string): TipoTurno {

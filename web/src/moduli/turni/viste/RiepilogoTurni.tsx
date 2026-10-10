@@ -8,7 +8,7 @@ import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { minuti, TITOLI_TIPO_TURNO, tipoTurnoDa, type TipoTurno } from '../tipi'
-import { datiDa, perId, titoloTurno } from '../supporto'
+import { datiConSede, datiDa, perId, sedeEffettiva, titoloTurno } from '../supporto'
 
 const TITOLI_STATO = { pianificato: 'Pianificato', svolto: 'Svolto', pagato: 'Pagato' } as const
 
@@ -16,13 +16,14 @@ export function RiepilogoTurni({ anno, mese }: { anno: number; mese: number }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
+  const assegnazioni = useCollezione('assegnazioni')
   const impostazioni = useImpostazioni()
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const sabatoFestivo = impostazioni?.sabatoFestivo
   const riepilogo = useMemo(
-    () => (impostazioni && turni ? calcolaRiepilogo(turni.map(datiDa), anno, mese, { sabatoFestivo }) : undefined),
-    [impostazioni, sabatoFestivo, turni, anno, mese],
+    () => (impostazioni && turni ? calcolaRiepilogo(turni.map((t) => datiConSede(t, assegnazioni)), anno, mese, { sabatoFestivo }) : undefined),
+    [impostazioni, sabatoFestivo, turni, assegnazioni, anno, mese],
   )
 
   if (!riepilogo || !turni) return null
@@ -42,7 +43,8 @@ export function RiepilogoTurni({ anno, mese }: { anno: number; mese: number }) {
       titolo: `Turni ${nomeMese}`,
       intestazioni: ['Data', 'Inizio', 'Fine', 'Ore', 'Turno', 'Tipo', 'Sede', 'Stato', 'Festivo', 'Compenso €', 'Note'],
       righe: delMese.map((t) => {
-        const sede = t.sedeId ? mappaSedi.get(t.sedeId) : undefined
+        const idSede = sedeEffettiva(t, assegnazioni)
+        const sede = idSede ? mappaSedi.get(idSede) : undefined
         return [
           { tipo: 'data', istante: t.inizio },
           { tipo: 'ora', istante: t.inizio },

@@ -1,5 +1,6 @@
 import { componenti, giornoDi, giornoSettimana, giorniNelMese, type GiornoCivile } from '../../nucleo/calendario'
-import type { ModelloTurno, Turno } from '../../dati/modello'
+import type { Assegnazione, ModelloTurno, Turno } from '../../dati/modello'
+import { assegnazioneDelMese } from './assegnazioni'
 import { tipoTurnoDa, TITOLI_TIPO_TURNO, type DatiTurno } from './tipi'
 
 /** Dal record salvato ai dati usati dai calcoli. */
@@ -111,4 +112,16 @@ export function orarioCompatto(t: Pick<Turno, 'inizio' | 'fine' | 'tuttoIlGiorno
     return c.minuto === 0 ? String(c.ora) : `${c.ora}:${String(c.minuto).padStart(2, '0')}`
   }
   return `${f(t.inizio)}–${f(t.fine)}`
+}
+
+/** Sede del turno: la sua, oppure quella dell'ospedale di assegnazione del mese. */
+export function sedeEffettiva(t: Pick<Turno, 'sedeId' | 'inizio'>, assegnazioni: Assegnazione[] | undefined): string | undefined {
+  if (t.sedeId) return t.sedeId
+  const c = componenti(t.inizio)
+  return assegnazioneDelMese(assegnazioni ?? [], c.anno, c.mese)?.periodo.sedeId
+}
+
+/** Dati per i calcoli con la sede effettiva (riepiloghi per sede, stampa). */
+export function datiConSede(t: Turno, assegnazioni: Assegnazione[] | undefined): DatiTurno {
+  return { ...datiDa(t), sedeId: sedeEffettiva(t, assegnazioni) }
 }

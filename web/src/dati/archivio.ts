@@ -7,7 +7,7 @@ import { IMPOSTAZIONI_PREDEFINITE, type Collezioni, type Impostazioni, type Nome
  */
 
 const NOME_DB = 'agenda'
-const VERSIONE_DB = 3
+const VERSIONE_DB = 4
 
 type Ascoltatore = () => void
 const ascoltatori = new Set<Ascoltatore>()
@@ -28,6 +28,9 @@ function apri(): Promise<IDBPDatabase> {
       }
       if (vecchiaVersione < 3) {
         database.createObjectStore('ferie', { keyPath: 'id' })
+      }
+      if (vecchiaVersione < 4) {
+        database.createObjectStore('assegnazioni', { keyPath: 'id' })
       }
     },
   })
@@ -88,7 +91,10 @@ export async function salvaTanti<N extends NomeCollezione>(nome: N, elenco: Dati
   const database = await apri()
   const tx = database.transaction(nome, 'readwrite')
   const ora = Date.now()
-  const record = elenco.map((dati) => ({ ...dati, id: dati.id ?? nuovoId(), creatoIl: ora, modificatoIl: ora }) as Collezioni[N])
+  const record = elenco.map((dati) => {
+    const creatoIl = (dati as { creatoIl?: number }).creatoIl
+    return { ...dati, id: dati.id ?? nuovoId(), creatoIl: creatoIl ?? ora, modificatoIl: ora } as Collezioni[N]
+  })
   await Promise.all([...record.map((r) => tx.store.put(r)), tx.done])
   notifica()
   return record

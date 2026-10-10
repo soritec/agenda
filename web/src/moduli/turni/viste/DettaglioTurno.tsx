@@ -11,7 +11,7 @@ import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { minuti, STATI_TURNO, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import {
   centesimiDaTesto, chiaveGiorno, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oreScritteDaMinuti, orarioDaMinuti, perId,
-  testoDaCentesimi, titoloTurno,
+  sedeEffettiva, testoDaCentesimi, titoloTurno,
 } from '../supporto'
 
 const TITOLI_STATO = { pianificato: 'Pianificato', svolto: 'Svolto', pagato: 'Pagato' } as const
@@ -45,6 +45,7 @@ export function DettaglioTurno({ id }: { id: string }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
+  const assegnazioni = useCollezione('assegnazioni')
   const turno = turni?.find((t) => t.id === id)
   const [bozza, setBozza] = useState<Bozza>()
 
@@ -147,7 +148,10 @@ export function DettaglioTurno({ id }: { id: string }) {
         <div className="campi-affiancati">
           <Campo etichetta="Sede">
             <select value={bozza.sedeId} onChange={(e) => aggiorna({ sedeId: e.target.value })}>
-              <option value="">—</option>
+              <option value="">{(() => {
+                const auto = (sedi ?? []).find((s) => s.id === sedeEffettiva({ inizio: turno.inizio }, assegnazioni))
+                return auto ? `Automatica: ${auto.nome}` : '—'
+              })()}</option>
               {(sedi ?? []).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
             </select>
           </Campo>

@@ -11,7 +11,7 @@ import { NuoviTurni } from './moduli/turni/viste/NuoviTurni'
 import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
-import { classeSigla, datiDa, oggi, perId, siglaTurno, titoloTurno } from './moduli/turni/supporto'
+import { classeSigla, datiDa, oggi, perId, sedeEffettiva, siglaTurno, titoloTurno } from './moduli/turni/supporto'
 import { minuti } from './moduli/turni/tipi'
 
 export function App() {
@@ -42,6 +42,7 @@ function Oggi() {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
+  const assegnazioni = useCollezione('assegnazioni')
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
@@ -60,7 +61,7 @@ function Oggi() {
 
       {diOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/turni">Vai ai turni</a></div>}
       {diOggi.map((t) => {
-        const sede = t.sedeId ? mappaSedi.get(t.sedeId) : undefined
+        const sede = mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')
         const partenza = sede?.minutiViaggio && !t.tuttoIlGiorno && t.inizio > Date.now() ? t.inizio - sede.minutiViaggio * 60_000 : undefined
         return (
           <div key={t.id} className="scheda scheda-turno">
@@ -96,7 +97,7 @@ function Oggi() {
               <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
               <span className="crescente">
                 <span style={{ fontWeight: 500 }}>{titoloTurno(t, mappaModelli)}</span>
-                <span className="secondario numeri">{t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`}{t.sedeId && mappaSedi.get(t.sedeId) ? ` · ${mappaSedi.get(t.sedeId)!.nome}` : ''}</span>
+                <span className="secondario numeri">{t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`}{mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '') ? ` · ${mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')!.nome}` : ''}</span>
               </span>
             </a>
           ))}

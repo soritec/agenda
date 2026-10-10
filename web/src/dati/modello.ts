@@ -68,10 +68,20 @@ export interface GiornataSpeciale extends Base {
   tipo?: string
 }
 
+/** Ospedale di assegnazione per un periodo: la sede vale per tutti i turni del periodo che non ne hanno una propria. */
+export interface Assegnazione extends Base {
+  /** "2026-10" */
+  meseInizio: string
+  mesi: number
+  sedeId: string
+}
+
 export interface Impostazioni {
   sabatoFestivo: boolean
   /** Punto di partenza per il calcolo dei tempi di viaggio. */
   indirizzoCasa?: string
+  /** Correzioni una tantum già applicate ai dati (vedi `manutenzione.ts`). */
+  correzioniApplicate?: string[]
 }
 
 export const IMPOSTAZIONI_PREDEFINITE: Impostazioni = {
@@ -84,6 +94,7 @@ export interface Collezioni {
   turni: Turno
   periodiRotazione: PeriodoRotazione
   ferie: GiornataSpeciale
+  assegnazioni: Assegnazione
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni']

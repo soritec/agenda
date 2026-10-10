@@ -37,7 +37,7 @@ export function ImpostazioniTurni() {
     const base = elencoModelli.length
     const nuovi = await salvaTanti('modelliTurno', mancanti.map((v, i) => ({
       nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i,
-      minutoInizio: v.orari?.[0] ?? 8 * 60, minutoFine: v.orari?.[1] ?? 14 * 60, tuttoIlGiorno: v.orari ? undefined : true,
+      minutoInizio: v.orari[0], minutoFine: v.orari[1],
     })))
     mostraAvviso(`${nuovi.length} turni tipo aggiunti`, () => void Promise.all(nuovi.map((n) => elimina('modelliTurno', n.id))))
   }

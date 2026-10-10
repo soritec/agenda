@@ -4,7 +4,8 @@ import { avvisi, sovrapposizioni } from '../src/moduli/turni/controlli'
 import { intervalli, intervallo } from '../src/moduli/turni/orari'
 import { calcolaRiepilogo } from '../src/moduli/turni/riepilogo'
 import { areaDelMese } from '../src/moduli/turni/rotazione'
-import { CATALOGO_SCUOLA, vociMancanti } from '../src/moduli/turni/catalogoScuola'
+import { CATALOGO_SCUOLA, correzioniCatalogoV1, vociMancanti } from '../src/moduli/turni/catalogoScuola'
+import { assegnazioneDelMese, ultimoMese } from '../src/moduli/turni/assegnazioni'
 import { minuti, minutiDaOrari, tipoTurnoDa, TIPI_TURNO, type DatiTurno, type TipoTurno } from '../src/moduli/turni/tipi'
 
 const d = (g: number, m: number, h = 0, min = 0, anno = 2026) => istante(anno, m, g, h, min)
@@ -158,6 +159,46 @@ describe('Sigle della scuola', () => {
   test('aggiunge solo le sigle mancanti', () => {
     expect(vociMancanti([{ sigla: 'N' }, { sigla: 'e pom' }]).map((v) => v.sigla)).not.toContain('E pom')
     expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(33)
+  })
+})
+
+describe('Orari predefiniti delle sigle', () => {
+  test('ambulatori 8–18, sala operatoria 7–18, Tronco senza tipo', () => {
+    const v = (s: string) => CATALOGO_SCUOLA.find((x) => x.sigla === s)!
+    expect(v('AGI').orari).toEqual([480, 1080])
+    expect(v('Sop').orari).toEqual([420, 1080])
+    expect(v('Tro').tipo).toBe('altro')
+  })
+  test('correzione dei turni tipo caricati con la prima versione, solo se non modificati', () => {
+    const vecchi = [
+      { sigla: 'AGI', nome: 'Amb. Ginecologia generale', tipo: 'ambulatorio', tuttoIlGiorno: true },
+      { sigla: 'Tro', nome: 'Tronco', tipo: 'salaOperatoria', tuttoIlGiorno: true },
+      { sigla: 'E', nome: 'Ecografie (rinominato)', tipo: 'ecografia', tuttoIlGiorno: true },
+      { sigla: 'N', nome: 'Guardia notte', tipo: 'guardiaNotturna' },
+    ]
+    const c = correzioniCatalogoV1(vecchi)
+    expect(c.map((x) => [x.sigla, x.tipo, x.minutoInizio, x.minutoFine])).toEqual([['AGI', 'ambulatorio', 480, 1080], ['Tro', 'altro', 480, 1080]])
+  })
+})
+
+describe('Ospedale di assegnazione', () => {
+  const periodi = [
+    { meseInizio: '2026-10', mesi: 18, sedeId: 'sedeA' },
+    { meseInizio: '2028-04', mesi: 12, sedeId: 'sedeB' },
+    { meseInizio: '2027-02', mesi: 1, sedeId: 'sedeC' },
+  ]
+  test('periodo e mese del periodo', () => {
+    expect(assegnazioneDelMese(periodi, 2026, 9)).toBeUndefined()
+    expect(assegnazioneDelMese(periodi, 2026, 10)).toMatchObject({ periodo: { sedeId: 'sedeA' }, meseDelPeriodo: 1 })
+    expect(assegnazioneDelMese(periodi, 2028, 3)).toMatchObject({ periodo: { sedeId: 'sedeA' }, meseDelPeriodo: 18 })
+    expect(assegnazioneDelMese(periodi, 2028, 4)?.periodo.sedeId).toBe('sedeB')
+  })
+  test('un periodo iniziato dopo prevale', () => {
+    expect(assegnazioneDelMese(periodi, 2027, 2)?.periodo.sedeId).toBe('sedeC')
+    expect(assegnazioneDelMese(periodi, 2027, 3)?.periodo.sedeId).toBe('sedeA')
+  })
+  test('ultimo mese', () => {
+    expect(ultimoMese({ meseInizio: '2026-10', mesi: 18, sedeId: 'x' })).toBe('2028-03')
   })
 })
 
