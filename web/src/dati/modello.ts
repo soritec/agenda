@@ -66,6 +66,8 @@ export interface GiornataSpeciale extends Base {
   giorno: string
   /** Assente nei record più vecchi = ferie. */
   tipo?: string
+  /** Smonto notte creato in automatico dopo questa guardia notturna. */
+  turnoId?: string
 }
 
 /** Ospedale di assegnazione per un periodo: la sede vale per tutti i turni del periodo che non ne hanno una propria. */

@@ -13,13 +13,13 @@ export function datiDa(t: Turno): DatiTurno {
 
 export function titoloTurno(t: Pick<Turno, 'tipo' | 'modelloId'>, modelli: Map<string, ModelloTurno>): string {
   const m = t.modelloId ? modelli.get(t.modelloId) : undefined
-  return m?.nome ?? TITOLI_TIPO_TURNO[tipoTurnoDa(t.tipo)]
+  return m?.nome || TITOLI_TIPO_TURNO[tipoTurnoDa(t.tipo)] || 'Turno'
 }
 
 /** Sigla da mostrare nel calendario: quella del turno tipo, altrimenti l'iniziale del tipo. */
 export function siglaTurno(t: Pick<Turno, 'tipo' | 'modelloId'>, modelli: Map<string, ModelloTurno>): string {
   const m = t.modelloId ? modelli.get(t.modelloId) : undefined
-  return m?.sigla || TITOLI_TIPO_TURNO[tipoTurnoDa(t.tipo)].charAt(0)
+  return m?.sigla || TITOLI_TIPO_TURNO[tipoTurnoDa(t.tipo)].charAt(0) || '·'
 }
 
 /** Classi CSS della sigla: un colore tenue diverso per ogni tipo di turno. */

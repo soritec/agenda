@@ -28,7 +28,8 @@ export const TITOLI_TIPO_TURNO: Record<TipoTurno, string> = {
   festivo: 'Festivo',
   domiciliare: 'Domiciliare',
   reparto: 'Reparto',
-  altro: 'Nessun tipo',
+  /** Nessuna scritta: solo il riquadro neutro. */
+  altro: '',
 }
 
 export function tipoTurnoDa(grezzo: string): TipoTurno {

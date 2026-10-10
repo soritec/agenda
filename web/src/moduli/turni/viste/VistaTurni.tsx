@@ -4,6 +4,7 @@ import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaTanti } from '../../../dati/archivio'
 import { CATALOGO_SCUOLA } from '../catalogoScuola'
+import { eliminaTurno as eliminaTurnoConSmonto } from '../smonto'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
@@ -53,9 +54,9 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
     mostraAvviso(`Tolto: ${nome}`, () => void ripristina('ferie', id))
   }
   async function eliminaTurno(id: string, nome: string) {
-    await elimina('turni', id)
+    const annulla = await eliminaTurnoConSmonto(id)
     setInModifica(undefined)
-    mostraAvviso(`Eliminato: ${nome}`, () => void ripristina('turni', id))
+    mostraAvviso(`Eliminato: ${nome}`, () => void annulla())
   }
 
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
@@ -204,7 +205,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <span className="secondario piccolo non-stampare">Tocca un giorno per aggiungere turni, ferie, riposo… Tieni premuto un turno per eliminarlo.</span>
           {tipiDelMese.length > 0 && (
             <div className="legenda">
-              {tipiDelMese.map((t) => (
+              {tipiDelMese.filter((t) => TITOLI_TIPO_TURNO[t]).map((t) => (
                 <span key={t}><span className={classeSigla(t)} style={{ minWidth: 14, height: 12 }} />{TITOLI_TIPO_TURNO[t]}</span>
               ))}
             </div>

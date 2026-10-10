@@ -7,6 +7,7 @@ import type { ModelloTurno } from '../../../dati/modello'
 import { Avviso, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { avvisi } from '../controlli'
+import { aggiungiSmonti, eliminaTurno } from '../smonto'
 import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { TIPI_GIORNATA, TIPI_TURNO, TITOLI_GIORNATA, TITOLI_TIPO_TURNO, tipoGiornataDa, tipoTurnoDa, type TipoGiornata, type TipoTurno } from '../tipi'
 import { chiaveGiorno, classeSigla, datiDa, giornoDaChiave, orarioDaMinuti, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
@@ -50,7 +51,8 @@ export function GiornoRapido({ giorno, onCambia, onChiudi }: { giorno: string | 
     const nuovo = await salva('turni', {
       ...orari, tipo: m.tipo, tuttoIlGiorno: m.tuttoIlGiorno, stato: 'pianificato', sedeId: m.sedeId, modelloId: m.id, origine: 'manuale',
     })
-    mostraAvviso(`Aggiunto: ${m.nome} · ${F.dataBreve(mezzogiorno)}`, () => void elimina('turni', nuovo.id))
+    await aggiungiSmonti([nuovo])
+    mostraAvviso(`Aggiunto: ${m.nome} · ${F.dataBreve(mezzogiorno)}`, () => void eliminaTurno(nuovo.id))
   }
 
   async function cambiaGiornata(tipo: TipoGiornata) {
@@ -96,7 +98,7 @@ export function GiornoRapido({ giorno, onCambia, onChiudi }: { giorno: string | 
                     </span>
                   </a>
                   <button type="button" className="elimina-riga" aria-label={`Elimina ${nome}`}
-                    onClick={() => void elimina('turni', t.id).then(() => mostraAvviso(`Eliminato: ${nome}`, () => void ripristina('turni', t.id)))}>×</button>
+                    onClick={() => void eliminaTurno(t.id).then((annulla) => mostraAvviso(`Eliminato: ${nome}`, () => void annulla()))}>×</button>
                 </div>
               )
             })}

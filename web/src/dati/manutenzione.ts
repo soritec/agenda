@@ -1,4 +1,5 @@
 import { correzioniCatalogoV1 } from '../moduli/turni/catalogoScuola'
+import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { elenca, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
 
 /**
@@ -15,6 +16,12 @@ export async function eseguiManutenzione(): Promise<void> {
     const correzioni = correzioniCatalogoV1(await elenca('modelliTurno'))
     if (correzioni.length) await salvaTanti('modelliTurno', correzioni)
     nuove.push('orari-sigle-scuola-v2')
+  }
+
+  if (!fatte.has('smonto-notte-v1')) {
+    // Smonto notte automatico anche per le guardie notturne inserite prima di questa funzione.
+    await aggiungiSmonti(await elenca('turni'))
+    nuove.push('smonto-notte-v1')
   }
 
   if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })

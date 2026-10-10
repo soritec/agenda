@@ -3,6 +3,7 @@ import { istante, stessoGiorno, type GiornoCivile } from '../../../nucleo/calend
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { salva, salvaTanti } from '../../../dati/archivio'
+import { aggiungiSmonti } from '../smonto'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Avviso, Campo } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
@@ -125,10 +126,11 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
     }
     if (nuovi.length === 0) return
     setSalvataggio(true)
-    await salvaTanti('turni', nuovi.map((n) => ({
+    const salvati = await salvaTanti('turni', nuovi.map((n) => ({
       inizio: n.inizio, fine: n.fine, tipo: n.tipo, stato: 'pianificato' as const, tuttoIlGiorno: n.tuttoIlGiorno,
       sedeId: n.sedeId, modelloId: modello?.id, minutiManuali: n.minutiManuali, origine: 'manuale' as const,
     })))
+    await aggiungiSmonti(salvati)
     vai(`/turni?mese=${parametroMese(annoIniziale, meseIniziale)}`)
   }
 

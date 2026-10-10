@@ -173,7 +173,8 @@ a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outlin
 .cella:hover { background: var(--superficie-2); }
 .cella .numero { width: 30px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 .cella.festivo .numero { color: var(--testo-2); }
-.cella.oggi .numero { background: var(--accento); color: var(--superficie); font-weight: 700; }
+.cella.oggi .numero { background: #CFE1DE; color: #1F4A4E; font-weight: 700; width: 26px; height: 26px; }
+@media (prefers-color-scheme: dark) { .cella.oggi .numero { background: #34504D; color: #E3F1EF; } }
 .cella.scelto .numero { background: var(--superficie); box-shadow: inset 0 0 0 2.5px var(--primario); color: var(--primario); font-weight: 800; }
 .cella.scelto { background: var(--accento-tenue); }
 .cella .sigle { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
@@ -296,3 +297,8 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .tabella-stampa .riga-giornata.g-ferie td { background: #ECE9E4; } .tabella-stampa .riga-giornata.g-riposo td { background: #E2EEF5; }
 .tabella-stampa .riga-giornata.g-congresso td { background: #E6EFD9; } .tabella-stampa .riga-giornata.g-smontoNotte td { background: #E6E6F1; }
 @media print { .tabella-stampa .riga-giornata td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* iPhone: niente menu di anteprima o selezione del testo tenendo premuto su turni e giornate,
+   altrimenti il sistema interrompe il gesto e la × non compare. */
+.cella .sigla, .cella .etichetta-giornata, .cella .aggiungi { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.mese { -webkit-user-select: none; user-select: none; }

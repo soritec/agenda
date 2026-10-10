@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { componenti, giornoDi } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
-import { elimina, ripristina, salva } from '../../../dati/archivio'
+import { salva } from '../../../dati/archivio'
+import { aggiungiSmonti, eliminaTurno as eliminaTurnoConSmonto } from '../smonto'
 import { useCollezione } from '../../../dati/hooks'
 import type { Turno } from '../../../dati/modello'
 import { Avviso, Campo, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
@@ -96,20 +97,20 @@ export function DettaglioTurno({ id }: { id: string }) {
 
   async function conferma() {
     if (!turno || !bozza || !orari || !valido) return
-    await salva('turni', {
+    const salvato = await salva('turni', {
       ...turno, ...orari, tuttoIlGiorno: bozza.tuttoIlGiorno || undefined, tipo: bozza.tipo, stato: bozza.stato,
       sedeId: bozza.sedeId || undefined,
       minutiManuali: minutiManuali ?? undefined, compensoCent: compensoCent ?? undefined, note: bozza.note.trim() || undefined,
     })
+    await aggiungiSmonti([salvato])
     vai(indietro)
   }
 
   async function eliminaTurno() {
     if (!turno) return
-    const id = turno.id
-    await elimina('turni', id)
+    const annulla = await eliminaTurnoConSmonto(turno.id)
     vai(indietro)
-    mostraAvviso('Turno eliminato', () => void ripristina('turni', id))
+    mostraAvviso('Turno eliminato', () => void annulla())
   }
 
   const minutiOrari = orari && !bozza.tuttoIlGiorno ? minuti({ ...datiDa(turno), ...orari, tuttoIlGiorno: false, minutiManuali: undefined }) : undefined

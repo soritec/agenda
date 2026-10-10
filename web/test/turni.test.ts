@@ -202,3 +202,18 @@ describe('Ospedale di assegnazione', () => {
   })
 })
 
+
+describe('Smonto notte automatico', () => {
+  test('il giorno in cui finisce la notte', async () => {
+    const { giornoSmonto, smontiDaCreare } = await import('../src/moduli/turni/smonto')
+    expect(giornoSmonto({ inizio: d(21, 10, 20), fine: d(22, 10, 8) })).toBe('2026-10-22')
+    expect(giornoSmonto({ inizio: d(31, 10, 20), fine: d(1, 11, 8) })).toBe('2026-11-01')
+    expect(giornoSmonto({ inizio: d(21, 10, 16), fine: d(22, 10) })).toBe('2026-10-22')
+    const turni = [
+      { id: 'n1', tipo: 'guardiaNotturna', inizio: d(21, 10, 20), fine: d(22, 10, 8) },
+      { id: 'n2', tipo: 'guardiaNotturna', inizio: d(23, 10, 20), fine: d(24, 10, 8) },
+      { id: 'r1', tipo: 'reparto', inizio: d(25, 10, 8), fine: d(25, 10, 18) },
+    ]
+    expect(smontiDaCreare(turni, [{ giorno: '2026-10-24' }])).toEqual([{ giorno: '2026-10-22', tipo: 'smontoNotte', turnoId: 'n1' }])
+  })
+})

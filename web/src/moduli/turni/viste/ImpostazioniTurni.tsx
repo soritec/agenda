@@ -64,7 +64,7 @@ export function ImpostazioniTurni() {
                 <span className="crescente">
                   <span style={{ fontWeight: 500 }}>{m.nome}</span>
                   <span className="secondario piccolo numeri">
-                    {m.tuttoIlGiorno ? 'Tutto il giorno' : `${orarioDaMinuti(m.minutoInizio)} – ${orarioDaMinuti(m.minutoFine)}`} · {TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)]}
+                    {m.tuttoIlGiorno ? 'Tutto il giorno' : `${orarioDaMinuti(m.minutoInizio)} – ${orarioDaMinuti(m.minutoFine)}`}{TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)] ? ` · ${TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)]}` : ''}
                     {m.sedeId && mappaSedi.get(m.sedeId) ? ` · ${mappaSedi.get(m.sedeId)!.nome}` : ''}
                   </span>
                 </span>
