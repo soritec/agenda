@@ -78,12 +78,59 @@ export interface Assegnazione extends Base {
   sedeId: string
 }
 
+/* Specializzazione */
+
+/** Voce dell'elenco (modificabile) dei tipi di procedura del logbook. */
+export interface TipoProcedura extends Base {
+  nome: string
+  ordine: number
+}
+
+/** Procedura del logbook. Solo dati anonimi: niente nomi, date di nascita, codici fiscali o indirizzi. */
+export interface Procedura extends Base {
+  /** "2026-10-21" */
+  giorno: string
+  tipoId: string
+  /** 'primo' | 'secondo' | 'osservatore' */
+  ruolo: string
+  /** 1–5: anno di specializzazione in cui è stata fatta. */
+  annoCorso: number
+  sedeId?: string
+  /** Dati anonimi facoltativi. */
+  eta?: number
+  settimane?: string
+  esito?: string
+  note?: string
+}
+
+export interface EsameOLezione extends Base {
+  giorno: string
+  /** 'esame' | 'lezione' */
+  tipo: string
+  titolo: string
+  materia?: string
+  /** Esito o voto. */
+  esito?: string
+  note?: string
+}
+
+export interface Collegamento extends Base {
+  titolo: string
+  url: string
+  categoria: string
+  ordine: number
+}
+
 export interface Impostazioni {
   sabatoFestivo: boolean
   /** Punto di partenza per il calcolo dei tempi di viaggio. */
   indirizzoCasa?: string
   /** Correzioni una tantum già applicate ai dati (vedi `manutenzione.ts`). */
   correzioniApplicate?: string[]
+  /** Inizio della specializzazione ("2024-11"): serve a calcolare l'anno di corso. */
+  inizioSpecializzazione?: string
+  /** Durata della scuola in anni. */
+  anniSpecializzazione?: number
   /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */
   modificatoIl?: number
 }
@@ -99,6 +146,10 @@ export interface Collezioni {
   periodiRotazione: PeriodoRotazione
   ferie: GiornataSpeciale
   assegnazioni: Assegnazione
+  tipiProcedura: TipoProcedura
+  procedure: Procedura
+  esami: EsameOLezione
+  collegamenti: Collegamento
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti']

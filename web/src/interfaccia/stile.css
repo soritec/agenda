@@ -318,5 +318,5 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
   .cella:hover .elimina.rapida, .cella:focus-within .elimina.rapida { display: inline-block; }
 }
 /* Con la × visibile la barra si accorcia, così la × resta sempre dentro la casella. */
-.cella .riga-turno .barra-turno { flex-shrink: 1; min-width: 20px; overflow: hidden; }
+.cella .riga-turno .barra-turno { flex-shrink: 1; min-width: max-content; padding: 0 4px; letter-spacing: -0.02em; }
 .cella .riga-turno .elimina { flex-shrink: 0; }

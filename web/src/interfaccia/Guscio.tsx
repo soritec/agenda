@@ -26,6 +26,8 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
             {titolo}
           </a>
         ))}
+        <div className="gruppo">Moduli</div>
+        <a href="#/specializzazione">Specializzazione</a>
         <span style={{ flex: 1 }} />
         <a href="#/impostazioni" aria-current={attiva === 'impostazioni' ? 'page' : undefined} title={testoStato(stato)}>
           <IconaImpostazioni dimensione={17} />

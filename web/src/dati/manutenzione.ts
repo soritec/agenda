@@ -1,6 +1,7 @@
 import { correzioniCatalogoV1 } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
-import { elenca, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
+import { TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
+import { elenca, elencaTutti, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
 
 /**
  * Correzioni una tantum dei dati salvati, eseguite all'avvio. Ognuna ha un nome e si applica una sola volta
@@ -22,6 +23,16 @@ export async function eseguiManutenzione(): Promise<void> {
     // Smonto notte automatico anche per le guardie notturne inserite prima di questa funzione.
     await aggiungiSmonti(await elenca('turni'))
     nuove.push('smonto-notte-v1')
+  }
+
+  if (!fatte.has('tipi-procedura-v1')) {
+    // Elenco iniziale dei tipi di procedura. Id fissi: due dispositivi creano gli stessi record, senza doppioni.
+    const esistenti = new Set((await elencaTutti('tipiProcedura')).map((t) => t.id))
+    const mancanti = TIPI_PROCEDURA_PREDEFINITI
+      .map((nome, ordine) => ({ id: `predefinito-${nome.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, nome, ordine }))
+      .filter((t) => !esistenti.has(t.id))
+    if (mancanti.length) await salvaTanti('tipiProcedura', mancanti)
+    nuove.push('tipi-procedura-v1')
   }
 
   if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })

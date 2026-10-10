@@ -11,6 +11,10 @@ import { NuoviTurni } from './moduli/turni/viste/NuoviTurni'
 import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { Impostazioni } from './interfaccia/Impostazioni'
+import { Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
+import { Logbook } from './moduli/specializzazione/viste/Logbook'
+import { Esami } from './moduli/specializzazione/viste/Esami'
+import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni } from './interfaccia/icone'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
 import { classeSigla, datiDa, oggi, perId, sedeEffettiva, siglaTurno, titoloTurno } from './moduli/turni/supporto'
@@ -31,12 +35,17 @@ export function App() {
     else if (sotto) pagina = <DettaglioTurno key={sotto} id={sotto} />
     else pagina = <VistaTurni anno={anno} mese={mese} />
   } else if (sezione === 'agenda') pagina = <InArrivo titolo="Agenda" />
-  else if (sezione === 'moduli') pagina = <InArrivo titolo="Moduli" />
+  else if (sezione === 'specializzazione') {
+    if (sotto === 'logbook') pagina = <Logbook key={parametri.get('nuova') ?? ''} apriNuova={parametri.get('nuova') === '1'} />
+    else if (sotto === 'esami') pagina = <Esami />
+    else if (sotto === 'impostazioni') pagina = <ImpostazioniSpecializzazione />
+    else pagina = <Specializzazione />
+  } else if (sezione === 'moduli') pagina = <Moduli />
   else if (sezione === 'cerca') pagina = <InArrivo titolo="Cerca" />
   else if (sezione === 'impostazioni') pagina = <Impostazioni />
   else pagina = <Oggi />
 
-  const attiva = (['oggi', 'agenda', 'turni', 'moduli', 'cerca', 'impostazioni'].includes(sezione) ? sezione : 'oggi') as Sezione | 'impostazioni'
+  const attiva = (sezione === 'specializzazione' ? 'moduli' : ['oggi', 'agenda', 'turni', 'moduli', 'cerca', 'impostazioni'].includes(sezione) ? sezione : 'oggi') as Sezione | 'impostazioni'
   return <Guscio attiva={attiva}>{pagina}</Guscio>
 }
 
@@ -110,6 +119,24 @@ function Oggi() {
         </div>
       </details>
       <p className="secondario piccolo">Eventi, task e promemoria compariranno qui quando arriveranno i rispettivi moduli.</p>
+    </div>
+  )
+}
+
+/** Elenco dei moduli: si aggiungono uno alla volta. */
+function Moduli() {
+  return (
+    <div className="schermata" style={{ maxWidth: 720 }}>
+      <h1 className="titolo-grande">Moduli</h1>
+      <div className="lista">
+        <a className="riga" href="#/specializzazione">
+          <span className="crescente"><span style={{ fontWeight: 600 }}>Specializzazione</span><span className="secondario piccolo">Logbook, esami e lezioni, servizi di ateneo</span></span>
+        </a>
+        <a className="riga" href="#/turni">
+          <span className="crescente"><span style={{ fontWeight: 600 }}>Turni</span><span className="secondario piccolo">Calendario, ferie, stampa e PDF</span></span>
+        </a>
+      </div>
+      <p className="secondario piccolo">Calcolatori, task, studio, budget e documenti arriveranno uno alla volta.</p>
     </div>
   )
 }
