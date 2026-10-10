@@ -2,15 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { componenti, giornoDi } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, salva } from '../../../dati/archivio'
-import { useCollezione, useImpostazioni } from '../../../dati/hooks'
+import { useCollezione } from '../../../dati/hooks'
 import type { Turno } from '../../../dati/modello'
 import { Avviso, Campo, NotaPrivacy } from '../../../interfaccia/componenti'
 import { parametroMese, vai } from '../../../interfaccia/navigazione'
 import { avvisi as calcolaAvvisi } from '../controlli'
 import { intervallo } from '../orari'
-import { minuti, STATI_TURNO, TIPI_OPZIONALI, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
+import { minuti, STATI_TURNO, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import {
-  centesimiDaTesto, chiaveGiorno, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oreScritteDaMinuti, orarioDaMinuti, perId, regole,
+  centesimiDaTesto, chiaveGiorno, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oreScritteDaMinuti, orarioDaMinuti, perId,
   testoDaCentesimi, titoloTurno,
 } from '../supporto'
 
@@ -23,7 +23,6 @@ interface Bozza {
   tipo: string
   stato: Turno['stato']
   sedeId: string
-  enteId: string
   ore: string
   compenso: string
   note: string
@@ -35,7 +34,7 @@ function bozzaDa(t: Turno): Bozza {
     giorno: chiaveGiorno(giornoDi(t.inizio)),
     inizio: orarioDaMinuti(ci.ora * 60 + ci.minuto),
     fine: orarioDaMinuti(cf.ora * 60 + cf.minuto),
-    tipo: t.tipo, stato: t.stato, sedeId: t.sedeId ?? '', enteId: t.enteId ?? '',
+    tipo: t.tipo, stato: t.stato, sedeId: t.sedeId ?? '',
     ore: oreScritteDaMinuti(t.minutiManuali), compenso: testoDaCentesimi(t.compensoCent), note: t.note ?? '',
   }
 }
@@ -44,8 +43,6 @@ export function DettaglioTurno({ id }: { id: string }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
-  const enti = useCollezione('enti')
-  const impostazioni = useImpostazioni()
   const turno = turni?.find((t) => t.id === id)
   const [bozza, setBozza] = useState<Bozza>()
 
@@ -66,18 +63,16 @@ export function DettaglioTurno({ id }: { id: string }) {
   const oi = orari?.inizio, of = orari?.fine
 
   const messaggi = useMemo(() => {
-    if (!turno || !bozza || !impostazioni) return []
-    const r = regole(impostazioni, sedi)
+    if (!turno || !bozza) return []
     if (oi === undefined || of === undefined) return []
     const attuale = { ...datiDa(turno), inizio: oi, fine: of, tipo: tipoTurnoDa(bozza.tipo) }
     const altri = (turni ?? []).filter((t) => t.id !== turno.id)
     const mappa = perId(altri)
-    return calcolaAvvisi(attuale, altri.map(datiDa), r.riposoMinimo, r.esclusiDalRiposo).map((a) => {
+    return calcolaAvvisi(attuale, altri.map(datiDa)).map((a) => {
       const altro = mappa.get(a.con)
-      const nome = altro ? `${titoloTurno(altro, mappaModelli)} di ${F.dataBreve(altro.inizio)}` : 'un altro turno'
-      return a.tipo === 'sovrapposizione' ? `Si sovrappone a ${nome}.` : `Solo ${F.durata(a.minutiRiposo)} di riposo rispetto a ${nome}.`
+      return `Si sovrappone a ${altro ? `${titoloTurno(altro, mappaModelli)} di ${F.dataBreve(altro.inizio)}` : 'un altro turno'}.`
     })
-  }, [turno, bozza, oi, of, turni, impostazioni, sedi, mappaModelli])
+  }, [turno, bozza, oi, of, turni, mappaModelli])
 
   if (turni && !turno) {
     return (
@@ -91,14 +86,14 @@ export function DettaglioTurno({ id }: { id: string }) {
 
   const mese = componenti(turno.inizio)
   const indietro = `/turni?mese=${parametroMese(mese.anno, mese.mese)}`
-  const tipiDisponibili = TIPI_TURNO.filter((t) => impostazioni?.usaReperibilita || !TIPI_OPZIONALI.has(t) || t === tipoTurnoDa(turno.tipo))
+  const tipiDisponibili = TIPI_TURNO
   const aggiorna = (modifiche: Partial<Bozza>) => setBozza({ ...bozza, ...modifiche })
 
   async function conferma() {
     if (!turno || !bozza || !orari || !valido) return
     await salva('turni', {
       ...turno, ...orari, tipo: bozza.tipo, stato: bozza.stato,
-      sedeId: bozza.sedeId || undefined, enteId: bozza.enteId || undefined,
+      sedeId: bozza.sedeId || undefined,
       minutiManuali: minutiManuali ?? undefined, compensoCent: compensoCent ?? undefined, note: bozza.note.trim() || undefined,
     })
     vai(indietro)
@@ -144,12 +139,6 @@ export function DettaglioTurno({ id }: { id: string }) {
             <select value={bozza.sedeId} onChange={(e) => aggiorna({ sedeId: e.target.value })}>
               <option value="">—</option>
               {(sedi ?? []).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
-            </select>
-          </Campo>
-          <Campo etichetta="Ente">
-            <select value={bozza.enteId} onChange={(e) => aggiorna({ enteId: e.target.value })}>
-              <option value="">—</option>
-              {(enti ?? []).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
             </select>
           </Campo>
         </div>

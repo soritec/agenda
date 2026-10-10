@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { aggiungiGiorni, inizioGiorno } from './nucleo/calendario'
 import * as F from './nucleo/formati'
-import { useCollezione, useImpostazioni } from './dati/hooks'
+import { useCollezione } from './dati/hooks'
 import { Guscio, InArrivo, type Sezione } from './interfaccia/Guscio'
 import { meseDaParametro, useRotta } from './interfaccia/navigazione'
 import { DettaglioTurno } from './moduli/turni/viste/DettaglioTurno'
@@ -9,7 +9,7 @@ import { ImpostazioniTurni } from './moduli/turni/viste/ImpostazioniTurni'
 import { NuoviTurni } from './moduli/turni/viste/NuoviTurni'
 import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
-import { datiDa, eNotte, oggi, perId, siglaTurno, titoloTurno } from './moduli/turni/supporto'
+import { classeSigla, datiDa, oggi, perId, siglaTurno, titoloTurno } from './moduli/turni/supporto'
 import { minuti } from './moduli/turni/tipi'
 
 export function App() {
@@ -34,20 +34,19 @@ export function App() {
   return <Guscio attiva={attiva}>{pagina}</Guscio>
 }
 
-/** Prima versione di "Oggi": i turni di oggi e domani. Eventi e task arriveranno con i loro moduli. */
+/** "Oggi": le attività di oggi in evidenza, quelle di domani più piccole e richiudibili. Per ora sono i turni; eventi e task arriveranno con i loro moduli. */
 function Oggi() {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
-  useImpostazioni()
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
-  const da = inizioGiorno(g0), a = inizioGiorno(aggiungiGiorni(g0, 2))
-  const vicini = (turni ?? []).filter((t) => t.fine > Date.now() && t.inizio < a && t.fine > da).sort((x, y) => x.inizio - y.inizio)
-  const prossimo = vicini[0]
-  const sede = prossimo?.sedeId ? mappaSedi.get(prossimo.sedeId) : undefined
-  const partenza = prossimo && sede?.minutiViaggio ? prossimo.inizio - sede.minutiViaggio * 60_000 : undefined
+  const inizioOggi = inizioGiorno(g0), inizioDomani = inizioGiorno(aggiungiGiorni(g0, 1)), inizioDopodomani = inizioGiorno(aggiungiGiorni(g0, 2))
+  const ordinati = [...(turni ?? [])].sort((x, y) => x.inizio - y.inizio)
+  // Oggi: turni che iniziano oggi o sono ancora in corso (es. la notte iniziata ieri sera).
+  const diOggi = ordinati.filter((t) => t.inizio < inizioDomani && t.fine > inizioOggi)
+  const diDomani = ordinati.filter((t) => t.inizio >= inizioDomani && t.inizio < inizioDopodomani)
 
   return (
     <div className="schermata" style={{ maxWidth: 720 }}>
@@ -55,35 +54,44 @@ function Oggi() {
         <div className="sopratitolo">{F.dataEstesa(Date.now())}</div>
         <h1 className="titolo-grande">Oggi</h1>
       </header>
-      {prossimo ? (
-        <a className="scheda" href={`#/turni/${prossimo.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--testo)' }}>
-          <span className="secondario piccolo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--area-lavoro)' }} />
-            Prossimo turno · {F.dataBreve(prossimo.inizio)}
-          </span>
-          <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 22, fontWeight: 600 }}>{titoloTurno(prossimo, mappaModelli)}</span>
-            <span className="secondario numeri">{F.durata(minuti(datiDa(prossimo)))}</span>
-          </span>
-          <span className="secondario numeri">{F.ora(prossimo.inizio)} – {F.ora(prossimo.fine)}{sede ? ` · ${sede.nome}` : ''}</span>
-          {partenza && <span style={{ color: 'var(--accento)', fontWeight: 500, borderTop: '1px solid var(--linea)', paddingTop: 10 }}>Parti alle {F.ora(partenza)} · {sede!.minutiViaggio} min di viaggio</span>}
-        </a>
-      ) : (
-        <div className="scheda secondario">Nessun turno oggi e domani. <a href="#/turni">Vai ai turni</a></div>
-      )}
-      {vicini.length > 1 && (
-        <div className="lista">
-          {vicini.slice(1).map((t) => (
-            <a key={t.id} className="riga" href={`#/turni/${t.id}`}>
-              <span className={`sigla${eNotte(t.tipo) ? ' notte' : ''}`}>{siglaTurno(t, mappaModelli)}</span>
+
+      {diOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/turni">Vai ai turni</a></div>}
+      {diOggi.map((t) => {
+        const sede = t.sedeId ? mappaSedi.get(t.sedeId) : undefined
+        const partenza = sede?.minutiViaggio && t.inizio > Date.now() ? t.inizio - sede.minutiViaggio * 60_000 : undefined
+        return (
+          <a key={t.id} className="scheda" href={`#/turni/${t.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--testo)' }}>
+            <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
+                <span style={{ fontSize: 22, fontWeight: 600 }}>{titoloTurno(t, mappaModelli)}</span>
+              </span>
+              <span className="secondario numeri">{F.durata(minuti(datiDa(t)))}</span>
+            </span>
+            <span className="secondario numeri">{F.ora(t.inizio)} – {F.ora(t.fine)}{sede ? ` · ${sede.nome}` : ''}</span>
+            {t.note && <span className="piccolo" style={{ whiteSpace: 'pre-wrap' }}>{t.note}</span>}
+            {partenza && <span style={{ color: 'var(--accento)', fontWeight: 500, borderTop: '1px solid var(--linea)', paddingTop: 10 }}>Parti alle {F.ora(partenza)} · {sede!.minutiViaggio} min di viaggio</span>}
+          </a>
+        )
+      })}
+
+      <details className="domani" open={diOggi.length === 0}>
+        <summary className="titolo-sezione" style={{ cursor: 'pointer' }}>
+          Domani <span className="secondario piccolo" style={{ fontWeight: 400 }}>· {diDomani.length === 0 ? 'nessuna attività' : diDomani.length === 1 ? '1 attività' : `${diDomani.length} attività`}</span>
+        </summary>
+        <div className="lista" style={{ marginTop: 8 }}>
+          {diDomani.length === 0 && <div className="vuoto piccolo">Niente in programma</div>}
+          {diDomani.map((t) => (
+            <a key={t.id} className="riga piccolo" href={`#/turni/${t.id}`}>
+              <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
               <span className="crescente">
                 <span style={{ fontWeight: 500 }}>{titoloTurno(t, mappaModelli)}</span>
-                <span className="secondario piccolo numeri">{F.dataBreve(t.inizio)} · {F.ora(t.inizio)} – {F.ora(t.fine)}</span>
+                <span className="secondario numeri">{F.ora(t.inizio)} – {F.ora(t.fine)}{t.sedeId && mappaSedi.get(t.sedeId) ? ` · ${mappaSedi.get(t.sedeId)!.nome}` : ''}</span>
               </span>
             </a>
           ))}
         </div>
-      )}
+      </details>
       <p className="secondario piccolo">Eventi, task e promemoria compariranno qui quando arriveranno i rispettivi moduli.</p>
     </div>
   )

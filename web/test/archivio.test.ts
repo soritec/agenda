@@ -12,13 +12,13 @@ beforeEach(async () => {
 
 describe('Archivio locale', () => {
   test('crea e aggiorna mantenendo id e data di creazione', async () => {
-    const ente = await salva('enti', { nome: 'Ente A', tipoRapporto: 'dipendente' })
-    expect(ente.id).toMatch(/^[0-9a-f-]{36}$/)
-    const aggiornato = await salva('enti', { ...ente, nome: 'Ente A (sede centrale)' })
-    expect(aggiornato.id).toBe(ente.id)
-    expect(aggiornato.creatoIl).toBe(ente.creatoIl)
-    expect(aggiornato.modificatoIl).toBeGreaterThanOrEqual(ente.modificatoIl)
-    expect(await elenca('enti')).toHaveLength(1)
+    const sede = await salva('sedi', { nome: 'Sede A' })
+    expect(sede.id).toMatch(/^[0-9a-f-]{36}$/)
+    const aggiornato = await salva('sedi', { ...sede, nome: 'Sede A (padiglione 2)' })
+    expect(aggiornato.id).toBe(sede.id)
+    expect(aggiornato.creatoIl).toBe(sede.creatoIl)
+    expect(aggiornato.modificatoIl).toBeGreaterThanOrEqual(sede.modificatoIl)
+    expect(await elenca('sedi')).toHaveLength(1)
   })
 
   test('eliminazione morbida', async () => {
@@ -33,7 +33,7 @@ describe('Archivio locale', () => {
   })
 
   test('impostazioni con valori predefiniti', async () => {
-    expect(await leggiImpostazioni()).toMatchObject({ sabatoFestivo: true, riposoMinimoMinuti: 660, usaReperibilita: false })
+    expect(await leggiImpostazioni()).toMatchObject({ sabatoFestivo: true })
     await salvaImpostazioni({ sabatoFestivo: false })
     expect((await leggiImpostazioni()).sabatoFestivo).toBe(false)
   })
@@ -45,5 +45,10 @@ describe('Archivio locale', () => {
     smetti()
     await salva('sedi', { nome: 'Altra' })
     expect(volte).toBe(1)
+  })
+
+  test('archivio dei periodi di rotazione (versione 2)', async () => {
+    await salva('periodiRotazione', { meseInizio: '2026-10', area: 'ostetricia' })
+    expect(await elenca('periodiRotazione')).toHaveLength(1)
   })
 })

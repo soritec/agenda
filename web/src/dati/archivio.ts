@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import { IMPOSTAZIONI_PREDEFINITE, NOMI_COLLEZIONI, type Collezioni, type Impostazioni, type NomeCollezione } from './modello'
+import { IMPOSTAZIONI_PREDEFINITE, type Collezioni, type Impostazioni, type NomeCollezione } from './modello'
 
 /**
  * Archivio locale (IndexedDB) del dispositivo. È la fonte dei dati dell'app: funziona senza rete,
@@ -7,7 +7,7 @@ import { IMPOSTAZIONI_PREDEFINITE, NOMI_COLLEZIONI, type Collezioni, type Impost
  */
 
 const NOME_DB = 'agenda'
-const VERSIONE_DB = 1
+const VERSIONE_DB = 2
 
 type Ascoltatore = () => void
 const ascoltatori = new Set<Ascoltatore>()
@@ -19,8 +19,12 @@ function apri(): Promise<IDBPDatabase> {
     upgrade(database, vecchiaVersione) {
       // Ogni nuova versione aggiunge qui i suoi passi, senza mai toccare quelli precedenti.
       if (vecchiaVersione < 1) {
-        for (const nome of NOMI_COLLEZIONI) database.createObjectStore(nome, { keyPath: 'id' })
+        for (const nome of ['enti', 'sedi', 'modelliTurno', 'turni']) database.createObjectStore(nome, { keyPath: 'id' })
         database.createObjectStore('impostazioni')
+      }
+      if (vecchiaVersione < 2) {
+        // Gli enti non si usano più: l'archivio resta (vuoto o con i vecchi dati) per non perdere nulla.
+        database.createObjectStore('periodiRotazione', { keyPath: 'id' })
       }
     },
   })

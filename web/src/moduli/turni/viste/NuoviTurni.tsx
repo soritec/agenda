@@ -9,9 +9,9 @@ import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese, vai } from '../../../interfaccia/navigazione'
 import { avvisi as calcolaAvvisi } from '../controlli'
 import { intervallo } from '../orari'
-import { minuti, TIPI_OPZIONALI, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa, type DatiTurno, type TipoTurno } from '../tipi'
+import { minuti, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa, type DatiTurno, type TipoTurno } from '../tipi'
 import {
-  celleMese, chiaveGiorno, datiDa, eNotte, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oggi, orarioDaMinuti, perId, regole, siglaTurno, titoloTurno, turniPerGiorno,
+  celleMese, chiaveGiorno, classeSigla, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oggi, orarioDaMinuti, perId, siglaTurno, titoloTurno, turniPerGiorno,
 } from '../supporto'
 
 const GIORNI = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
@@ -21,20 +21,19 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
-  const enti = useCollezione('enti')
   const impostazioni = useImpostazioni()
 
   const [vista, setVista] = useState({ anno: annoIniziale, mese: meseIniziale })
   const [giorni, setGiorni] = useState<string[]>(giorniIniziali.filter((k) => giornoDaChiave(k)))
   const [scelta, setScelta] = useState<string>()
-  const [personale, setPersonale] = useState({ tipo: 'reparto' as TipoTurno, inizio: '08:00', fine: '16:00', sedeId: '', enteId: '' })
+  const [personale, setPersonale] = useState({ tipo: 'reparto' as TipoTurno, inizio: '08:00', fine: '16:00', sedeId: '' })
   const [oreScritte, setOreScritte] = useState('')
   const [salvataggio, setSalvataggio] = useState(false)
 
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const perGiorno = useMemo(() => turniPerGiorno(turni ?? []), [turni])
   const elencoModelli = useMemo(() => [...(modelli ?? [])].sort((a, b) => a.ordine - b.ordine || a.nome.localeCompare(b.nome)), [modelli])
-  const tipiDisponibili = TIPI_TURNO.filter((t) => impostazioni?.usaReperibilita || !TIPI_OPZIONALI.has(t))
+  const tipiDisponibili = TIPI_TURNO
 
   // Orari e dati del turno scelto (turno tipo o personalizzato).
   const modello = scelta && scelta !== PERSONALIZZATO ? mappaModelli.get(scelta) : undefined
@@ -59,14 +58,12 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
         ...intervallo(g, minutoInizio, minutoFine),
         tipo,
         sedeId: modello?.sedeId ?? (personale.sedeId || undefined),
-        enteId: modello?.enteId ?? (personale.enteId || undefined),
         minutiManuali: minutiManuali ?? undefined,
       }))
   }, [giorni, minutoInizio, minutoFine, modello, personale, minutiManuali])
 
   const messaggi = useMemo(() => {
-    if (!impostazioni || nuovi.length === 0) return []
-    const r = regole(impostazioni, sedi)
+    if (nuovi.length === 0) return []
     const esistenti = (turni ?? []).map(datiDa)
     const perIdEsistenti = perId(turni)
     const descrivi = (id: string) => {
@@ -79,17 +76,15 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
     const testi: string[] = []
     for (const n of nuovi) {
       const altri = [...esistenti, ...nuovi.filter((x) => x.id !== n.id)]
-      for (const a of calcolaAvvisi(n, altri, r.riposoMinimo, r.esclusiDalRiposo)) {
+      for (const a of calcolaAvvisi(n, altri)) {
         const coppia = [n.id, a.con].sort().join('|') + a.tipo
         if (visti.has(coppia)) continue
         visti.add(coppia)
-        testi.push(a.tipo === 'sovrapposizione'
-          ? `Il turno di ${F.dataBreve(n.inizio)} si sovrappone a ${descrivi(a.con)}.`
-          : `Tra il turno di ${F.dataBreve(n.inizio)} e ${descrivi(a.con)} ci sono solo ${F.durata(a.minutiRiposo)} di riposo.`)
+        testi.push(`Il turno di ${F.dataBreve(n.inizio)} si sovrappone a ${descrivi(a.con)}.`)
       }
     }
     return testi
-  }, [nuovi, turni, impostazioni, sedi, mappaModelli])
+  }, [nuovi, turni, mappaModelli])
 
   function cambiaGiorno(g: GiornoCivile) {
     const k = chiaveGiorno(g)
@@ -108,7 +103,7 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
     setSalvataggio(true)
     await salvaTanti('turni', nuovi.map((n) => ({
       inizio: n.inizio, fine: n.fine, tipo: n.tipo, stato: 'pianificato' as const,
-      sedeId: n.sedeId, enteId: n.enteId, modelloId: modello?.id, minutiManuali: n.minutiManuali, origine: 'manuale' as const,
+      sedeId: n.sedeId, modelloId: modello?.id, minutiManuali: n.minutiManuali, origine: 'manuale' as const,
     })))
     vai(`/turni?mese=${parametroMese(annoIniziale, meseIniziale)}`)
   }
@@ -149,7 +144,7 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
                   aria-label={`${F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}${esistenti.length ? ', ha già un turno' : ''}`}>
                   <span className="numero">{g.giorno}</span>
                   <span className="sigle">
-                    {esistenti.map((t) => <span key={t.id} className={`sigla${eNotte(t.tipo) ? ' notte' : ''}`} style={{ opacity: 0.55 }}>{siglaTurno(t, mappaModelli)}</span>)}
+                    {esistenti.map((t) => <span key={t.id} className={classeSigla(t.tipo)} style={{ opacity: 0.55 }}>{siglaTurno(t, mappaModelli)}</span>)}
                   </span>
                 </button>
               )
@@ -166,7 +161,7 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
             <button key={m.id} type="button" className="scelta" aria-pressed={scelta === m.id} onClick={() => setScelta(m.id)}>
               <span style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
                 <span style={{ fontWeight: 600 }}>{m.nome}</span>
-                <span className={`sigla${eNotte(m.tipo) ? ' notte' : ''}`}>{m.sigla}</span>
+                <span className={classeSigla(m.tipo)}>{m.sigla}</span>
               </span>
               <span className="secondario piccolo numeri">{orarioDaMinuti(m.minutoInizio)} – {orarioDaMinuti(m.minutoFine)}</span>
             </button>
@@ -193,12 +188,6 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
                 <select value={personale.sedeId} onChange={(e) => setPersonale({ ...personale, sedeId: e.target.value })}>
                   <option value="">—</option>
                   {(sedi ?? []).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                </select>
-              </Campo>
-              <Campo etichetta="Ente">
-                <select value={personale.enteId} onChange={(e) => setPersonale({ ...personale, enteId: e.target.value })}>
-                  <option value="">—</option>
-                  {(enti ?? []).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
                 </select>
               </Campo>
             </div>

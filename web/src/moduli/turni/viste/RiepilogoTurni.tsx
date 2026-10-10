@@ -8,7 +8,7 @@ import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { minuti, TITOLI_TIPO_TURNO, tipoTurnoDa, type TipoTurno } from '../tipi'
-import { datiDa, perId, regole, titoloTurno } from '../supporto'
+import { datiDa, perId, titoloTurno } from '../supporto'
 
 const TITOLI_STATO = { pianificato: 'Pianificato', svolto: 'Svolto', pagato: 'Pagato' } as const
 
@@ -16,15 +16,16 @@ export function RiepilogoTurni({ anno, mese }: { anno: number; mese: number }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
-  const enti = useCollezione('enti')
   const impostazioni = useImpostazioni()
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
-  const mappaEnti = useMemo(() => perId(enti), [enti])
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
-  const r = useMemo(() => (impostazioni ? regole(impostazioni, sedi) : undefined), [impostazioni, sedi])
-  const riepilogo = useMemo(() => (r && turni ? calcolaRiepilogo(turni.map(datiDa), anno, mese, r.riepilogo) : undefined), [r, turni, anno, mese])
+  const sabatoFestivo = impostazioni?.sabatoFestivo
+  const riepilogo = useMemo(
+    () => (impostazioni && turni ? calcolaRiepilogo(turni.map(datiDa), anno, mese, { sabatoFestivo }) : undefined),
+    [impostazioni, sabatoFestivo, turni, anno, mese],
+  )
 
-  if (!riepilogo || !r || !turni) return null
+  if (!riepilogo || !turni) return null
 
   const nomeMese = F.mese(istante(anno, mese, 1))
   const precedente = mese === 1 ? parametroMese(anno - 1, 12) : parametroMese(anno, mese - 1)
@@ -39,7 +40,7 @@ export function RiepilogoTurni({ anno, mese }: { anno: number; mese: number }) {
     const delMese = turni.filter((t) => t.inizio >= inizio && t.inizio < fine).sort((a, b) => a.inizio - b.inizio)
     const tabella: TabellaExport = {
       titolo: `Turni ${nomeMese}`,
-      intestazioni: ['Data', 'Inizio', 'Fine', 'Ore', 'Turno', 'Tipo', 'Sede', 'Ente', 'Stato', 'Festivo', 'Compenso €', 'Note'],
+      intestazioni: ['Data', 'Inizio', 'Fine', 'Ore', 'Turno', 'Tipo', 'Sede', 'Stato', 'Festivo', 'Compenso €', 'Note'],
       righe: delMese.map((t) => {
         const sede = t.sedeId ? mappaSedi.get(t.sedeId) : undefined
         return [
@@ -50,9 +51,8 @@ export function RiepilogoTurni({ anno, mese }: { anno: number; mese: number }) {
           { tipo: 'testo', valore: titoloTurno(t, mappaModelli) },
           { tipo: 'testo', valore: TITOLI_TIPO_TURNO[tipoTurnoDa(t.tipo)] },
           { tipo: 'testo', valore: sede?.nome ?? '' },
-          { tipo: 'testo', valore: (t.enteId && mappaEnti.get(t.enteId)?.nome) || '' },
           { tipo: 'testo', valore: TITOLI_STATO[t.stato] },
-          { tipo: 'testo', valore: eFestivo(t.inizio, { patrono: sede?.patrono, sabatoFestivo: impostazioni?.sabatoFestivo }) ? 'sì' : 'no' },
+          { tipo: 'testo', valore: eFestivo(t.inizio, { sabatoFestivo }) ? 'sì' : 'no' },
           t.compensoCent !== undefined ? { tipo: 'importo', centesimi: t.compensoCent } : { tipo: 'vuota' },
           { tipo: 'testo', valore: t.note ?? '' },
         ]

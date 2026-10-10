@@ -1,5 +1,5 @@
-import type { GiornoMese } from '../nucleo/festivita'
-import type { StatoTurno, TipoRapporto } from '../moduli/turni/tipi'
+import type { AreaRotazione } from '../moduli/turni/rotazione'
+import type { StatoTurno } from '../moduli/turni/tipi'
 
 /**
  * Campi comuni a tutti i record. Pensati per la sincronizzazione futura con GitHub:
@@ -14,19 +14,11 @@ export interface Base {
   eliminatoIl?: number
 }
 
-export interface Ente extends Base {
-  nome: string
-  tipoRapporto: TipoRapporto
-  note?: string
-}
-
 export interface Sede extends Base {
   nome: string
   indirizzo?: string
+  /** Tempo di viaggio, calcolato dall'indirizzo di casa o inserito a mano. */
   minutiViaggio?: number
-  enteId?: string
-  /** Santo patrono della città della sede: giorno festivo per i turni lì. */
-  patrono?: GiornoMese
 }
 
 export interface ModelloTurno extends Base {
@@ -38,7 +30,6 @@ export interface ModelloTurno extends Base {
   minutoInizio: number
   minutoFine: number
   sedeId?: string
-  enteId?: string
   ordine: number
 }
 
@@ -48,7 +39,6 @@ export interface Turno extends Base {
   tipo: string
   stato: StatoTurno
   sedeId?: string
-  enteId?: string
   modelloId?: string
   /** Ore inserite a mano, in minuti. */
   minutiManuali?: number
@@ -59,27 +49,28 @@ export interface Turno extends Base {
   importazioneId?: string
 }
 
+/** Area della rotazione scelta dall'utente a partire da un mese (vedi `rotazione.ts`). */
+export interface PeriodoRotazione extends Base {
+  /** "2026-10" */
+  meseInizio: string
+  area: AreaRotazione
+}
+
 export interface Impostazioni {
   sabatoFestivo: boolean
-  riposoMinimoMinuti: number
-  /** Mostra il tipo "Reperibilità" (disattivato di default). */
-  usaReperibilita: boolean
-  /** Se usata, la reperibilità conta nelle ore del mese e nel riposo minimo. */
-  reperibilitaContaComeLavoro: boolean
+  /** Punto di partenza per il calcolo dei tempi di viaggio. */
+  indirizzoCasa?: string
 }
 
 export const IMPOSTAZIONI_PREDEFINITE: Impostazioni = {
   sabatoFestivo: true,
-  riposoMinimoMinuti: 11 * 60,
-  usaReperibilita: false,
-  reperibilitaContaComeLavoro: false,
 }
 
 export interface Collezioni {
-  enti: Ente
   sedi: Sede
   modelliTurno: ModelloTurno
   turni: Turno
+  periodiRotazione: PeriodoRotazione
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['enti', 'sedi', 'modelliTurno', 'turni']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione']

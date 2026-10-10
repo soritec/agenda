@@ -107,15 +107,51 @@ h1, h2, h3 { margin: 0; }
 .avviso { display: flex; gap: 8px; align-items: flex-start; background: var(--avviso); color: var(--avviso-testo); border-radius: 12px; padding: 10px 12px; font-size: 14px; line-height: 1.4; }
 .nota-privacy { font-size: 12px; color: var(--testo-2); }
 
-/* Sigle dei turni */
-.sigla { min-width: 22px; height: 18px; padding: 0 5px; border-radius: 5px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; background: var(--sigla); color: var(--sigla-testo); }
-.sigla.notte { background: var(--testo); color: var(--sfondo); }
+/* Sigle dei turni: un colore tenue per tipo, la notte in blu scuro. */
+.sigla { min-width: 22px; height: 18px; padding: 0 5px; border-radius: 5px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; background: var(--sigla); color: var(--sigla-testo); position: relative; }
+.sigla.t-guardiaNotturna { background: #2E4160; color: #F2F4F8; }
+.sigla.t-guardiaDiurna { background: #EBDDBF; color: #5C4518; }
+.sigla.t-reparto { background: #D9E4D6; color: #34502F; }
+.sigla.t-ambulatorio { background: #D8E2EE; color: #2F4560; }
+.sigla.t-sostituzioneMMG { background: #E6D9E4; color: #5A3E57; }
+.sigla.t-festivo { background: #F0D8CC; color: #6E3826; }
+.sigla.t-domiciliare { background: #E4DED4; color: #4A443B; }
+@media (prefers-color-scheme: dark) {
+  .sigla.t-guardiaNotturna { background: #4A6390; color: #F2F4F8; }
+  .sigla.t-guardiaDiurna { background: #4B3F28; color: #F0DDB2; }
+  .sigla.t-reparto { background: #33432F; color: #CFE3C8; }
+  .sigla.t-ambulatorio { background: #2E3D52; color: #CADAF0; }
+  .sigla.t-sostituzioneMMG { background: #46344A; color: #EBD3E7; }
+  .sigla.t-festivo { background: #503229; color: #F3CDBD; }
+  .sigla.t-domiciliare { background: #3C3832; color: #E6E0D6; }
+}
+a.sigla { text-decoration: none; }
+a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
+/* Nota del turno al passaggio del cursore */
+.sigla[data-nota]:hover::after, .sigla[data-nota]:focus-visible::after {
+  content: attr(data-nota); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: 240px; white-space: pre-wrap; text-align: left; font-size: 12px; font-weight: 400; line-height: 1.35;
+  padding: 7px 9px; border-radius: 8px; background: var(--testo); color: var(--sfondo); box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); z-index: 5; pointer-events: none;
+}
+.sigla .ha-nota { position: absolute; top: -2px; right: -2px; width: 5px; height: 5px; border-radius: 3px; background: var(--accento); border: 1px solid var(--superficie); }
+.legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--testo-2); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.pillola { height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--testo); font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.pillola.ginecologia { background: #EADFE6; border-color: transparent; color: #5A3E57; }
+.pillola.ostetricia { background: #DCE6EE; border-color: transparent; color: #2F4560; }
+@media (prefers-color-scheme: dark) {
+  .pillola.ginecologia { background: #46344A; color: #EBD3E7; }
+  .pillola.ostetricia { background: #2E3D52; color: #CADAF0; }
+}
 
 /* Calendario del mese */
 .mese { background: var(--superficie); border: 1px solid var(--linea); border-radius: 18px; padding: 12px 8px 8px; }
 .mese .giorni-settimana, .mese .griglia { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .mese .giorni-settimana { text-align: center; font-size: 11px; font-weight: 600; color: var(--testo-2); padding-bottom: 6px; }
-.cella { min-height: 54px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 3px 0; background: none; border: none; cursor: pointer; border-radius: 10px; color: var(--testo); }
+.cella { min-height: 54px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 3px 0; background: none; border: none; cursor: pointer; border-radius: 10px; color: var(--testo); position: relative; }
+.cella .aggiungi { position: absolute; inset: 0; border-radius: 10px; background: none; border: none; cursor: pointer; }
+.cella .numero, .cella .sigle { position: relative; pointer-events: none; }
+.cella .sigle a { pointer-events: auto; }
 .cella:hover { background: var(--superficie-2); }
 .cella .numero { width: 30px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 .cella.festivo .numero { color: var(--testo-2); }

@@ -10,7 +10,6 @@ export const TIPI_TURNO = [
   'guardiaNotturna',
   'sostituzioneMMG',
   'festivo',
-  'reperibilita',
   'domiciliare',
   'reparto',
 ] as const
@@ -22,13 +21,9 @@ export const TITOLI_TIPO_TURNO: Record<TipoTurno, string> = {
   guardiaNotturna: 'Guardia notturna',
   sostituzioneMMG: 'Sostituzione MMG',
   festivo: 'Festivo',
-  reperibilita: 'Reperibilità',
   domiciliare: 'Domiciliare',
   reparto: 'Reparto',
 }
-
-/** Tipi disattivati di default: compaiono solo se l'utente li attiva nelle Impostazioni. */
-export const TIPI_OPZIONALI: ReadonlySet<TipoTurno> = new Set(['reperibilita'])
 
 export function tipoTurnoDa(grezzo: string): TipoTurno {
   return (TIPI_TURNO as readonly string[]).includes(grezzo) ? (grezzo as TipoTurno) : 'ambulatorio'
@@ -37,9 +32,6 @@ export function tipoTurnoDa(grezzo: string): TipoTurno {
 export const STATI_TURNO = ['pianificato', 'svolto', 'pagato'] as const
 export type StatoTurno = (typeof STATI_TURNO)[number]
 
-export const TIPI_RAPPORTO = ['dipendente', 'convenzionato', 'liberaProfessione'] as const
-export type TipoRapporto = (typeof TIPI_RAPPORTO)[number]
-
 /** Fotografia di un turno usata da tutti i calcoli. Istanti in millisecondi da epoch. */
 export interface DatiTurno {
   id: string
@@ -47,7 +39,6 @@ export interface DatiTurno {
   fine: number
   tipo: TipoTurno
   sedeId?: string
-  enteId?: string
   /** Ore inserite a mano (in minuti): se presenti sostituiscono la durata calcolata dagli orari. */
   minutiManuali?: number
   /** Compenso inserito a mano, se l'utente vuole. L'app non calcola mai compensi. */

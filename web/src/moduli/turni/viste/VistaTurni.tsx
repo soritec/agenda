@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
-import { intervalloMese, istante, stessoGiorno, type GiornoCivile } from '../../../nucleo/calendario'
+import { intervalloMese, istante, stessoGiorno } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
+import { elimina, salva } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaImpostazioni, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
-import { riposiInsufficienti, sovrapposizioni } from '../controlli'
+import { sovrapposizioni } from '../controlli'
 import { calcolaRiepilogo } from '../riepilogo'
-import { minuti } from '../tipi'
-import { celleMese, chiaveGiorno, datiDa, eNotte, oggi, perId, regole, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { AREE_ROTAZIONE, areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA, type AreaRotazione } from '../rotazione'
+import { minuti, tipoTurnoDa, TITOLI_TIPO_TURNO, type TipoTurno } from '../tipi'
+import { celleMese, chiaveGiorno, classeSigla, datiDa, oggi, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
@@ -17,40 +19,53 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
+  const periodi = useCollezione('periodiRotazione')
   const impostazioni = useImpostazioni()
-  const [giornoAperto, setGiornoAperto] = useState<GiornoCivile>()
+  const [sceltaArea, setSceltaArea] = useState(false)
 
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const perGiorno = useMemo(() => turniPerGiorno(turni ?? []), [turni])
-  const r = useMemo(() => (impostazioni ? regole(impostazioni, sedi) : undefined), [impostazioni, sedi])
+  const sabatoFestivo = impostazioni?.sabatoFestivo
   const riepilogo = useMemo(
-    () => (r ? calcolaRiepilogo((turni ?? []).map(datiDa), anno, mese, r.riepilogo) : undefined),
-    [turni, r, anno, mese],
+    () => (turni && impostazioni ? calcolaRiepilogo(turni.map(datiDa), anno, mese, { sabatoFestivo }) : undefined),
+    [turni, impostazioni, sabatoFestivo, anno, mese],
   )
-  const numeroAvvisi = useMemo(() => {
-    if (!r || !turni) return 0
+  const delMese = useMemo(() => {
     const { inizio, fine } = intervalloMese(anno, mese)
-    const delMese = turni.filter((t) => t.inizio >= inizio - 86_400_000 && t.inizio < fine).map(datiDa)
-    return sovrapposizioni(delMese).length + riposiInsufficienti(delMese, r.riposoMinimo, r.esclusiDalRiposo).length
-  }, [turni, r, anno, mese])
-
+    return (turni ?? []).filter((t) => t.inizio >= inizio && t.inizio < fine)
+  }, [turni, anno, mese])
+  const numeroSovrapposizioni = useMemo(() => sovrapposizioni(delMese.map(datiDa)).length, [delMese])
+  const tipiDelMese = useMemo(() => [...new Set(delMese.map((t) => tipoTurnoDa(t.tipo)))] as TipoTurno[], [delMese])
   const prossimi = useMemo(() => {
     const ora = Date.now()
     return (turni ?? []).filter((t) => t.fine > ora).sort((a, b) => a.inizio - b.inizio).slice(0, 5)
   }, [turni])
 
+  const qui = parametroMese(anno, mese)
+  const area = periodi ? areaDelMese(periodi, anno, mese) : undefined
+  const ancoraDelMese = periodi?.find((p) => p.meseInizio === qui)
   const precedente = mese === 1 ? parametroMese(anno - 1, 12) : parametroMese(anno, mese - 1)
   const successivo = mese === 12 ? parametroMese(anno + 1, 1) : parametroMese(anno, mese + 1)
-  const qui = parametroMese(anno, mese)
   const g0 = oggi()
-  const turniGiornoAperto = giornoAperto ? perGiorno.get(chiaveGiorno(giornoAperto)) ?? [] : []
+
+  async function scegliArea(a: AreaRotazione) {
+    await salva('periodiRotazione', ancoraDelMese ? { ...ancoraDelMese, area: a } : { meseInizio: qui, area: a })
+    setSceltaArea(false)
+  }
 
   return (
     <div className="schermata">
       <header className="intestazione">
         <div>
-          <div className="sopratitolo">{F.mese(istante(anno, mese, 1))}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span className="sopratitolo">{F.mese(istante(anno, mese, 1))}</span>
+            {periodi && (
+              <button type="button" className={`pillola${area ? ` ${area.area}` : ''}`} onClick={() => setSceltaArea(true)}>
+                {area ? `${TITOLI_AREA[area.area]} · mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE}` : 'Scegli l’area di rotazione'}
+              </button>
+            )}
+          </div>
           <h1 className="titolo-grande">Turni</h1>
         </div>
         <div className="riga-azioni">
@@ -72,28 +87,41 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
 
       <div className="colonne">
         <div className="principale">
-          <section className="mese grande" aria-label="Calendario del mese">
+          <section className="mese grande" aria-label="Calendario del mese: tocca un giorno per aggiungere un turno">
             <div className="giorni-settimana">{GIORNI.map((g) => <span key={g}>{g}</span>)}</div>
             <div className="griglia">
               {celleMese(anno, mese).map((g, i) => {
                 if (!g) return <span key={`v${i}`} />
-                const delGiorno = perGiorno.get(chiaveGiorno(g)) ?? []
-                const festivo = eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo: impostazioni?.sabatoFestivo })
+                const k = chiaveGiorno(g)
+                const delGiorno = perGiorno.get(k) ?? []
+                const festivo = eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo })
                 const classi = ['cella', festivo && 'festivo', stessoGiorno(g, g0) && 'oggi'].filter(Boolean).join(' ')
                 return (
-                  <button key={chiaveGiorno(g)} type="button" className={classi} onClick={() => setGiornoAperto(g)}
-                    aria-label={`${F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}${delGiorno.length ? `, ${delGiorno.length} turni` : ''}`}>
+                  <div key={k} className={classi}>
+                    <a className="aggiungi" href={`#/turni/nuovi?mese=${qui}&giorni=${k}`}
+                      aria-label={`Aggiungi un turno ${F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}`} />
                     <span className="numero">{g.giorno}</span>
                     <span className="sigle">
                       {delGiorno.map((t) => (
-                        <span key={t.id} className={`sigla${eNotte(t.tipo) ? ' notte' : ''}`}>{siglaTurno(t, mappaModelli)}</span>
+                        <a key={t.id} className={classeSigla(t.tipo)} href={`#/turni/${t.id}`} data-nota={t.note || undefined}
+                          aria-label={`${titoloTurno(t, mappaModelli)}, ${F.ora(t.inizio)}–${F.ora(t.fine)}${t.note ? `. Nota: ${t.note}` : ''}`}>
+                          {siglaTurno(t, mappaModelli)}
+                          {t.note && <span className="ha-nota" />}
+                        </a>
                       ))}
                     </span>
-                  </button>
+                  </div>
                 )
               })}
             </div>
           </section>
+          {tipiDelMese.length > 0 && (
+            <div className="legenda">
+              {tipiDelMese.map((t) => (
+                <span key={t}><span className={classeSigla(t)} style={{ minWidth: 14, height: 12 }} />{TITOLI_TIPO_TURNO[t]}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         <aside className="laterale-destra">
@@ -108,9 +136,9 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
               <IconaAvanti dimensione={16} />
             </a>
           )}
-          {numeroAvvisi > 0 && (
+          {numeroSovrapposizioni > 0 && (
             <div className="avviso">
-              {numeroAvvisi === 1 ? '1 avviso' : `${numeroAvvisi} avvisi`} di sovrapposizione o riposo breve in questo mese. Apri il giorno per vedere i dettagli.
+              {numeroSovrapposizioni === 1 ? 'Due turni si sovrappongono' : `${numeroSovrapposizioni} sovrapposizioni tra turni`} in questo mese.
             </div>
           )}
           <section>
@@ -137,28 +165,22 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
         </aside>
       </div>
 
-      <Foglio
-        aperto={giornoAperto !== undefined}
-        titolo={giornoAperto ? F.dataEstesa(istante(giornoAperto.anno, giornoAperto.mese, giornoAperto.giorno, 12)) : ''}
-        onChiudi={() => setGiornoAperto(undefined)}
-      >
-        <div className="lista">
-          {turniGiornoAperto.length === 0 && <div className="vuoto">Nessun turno</div>}
-          {turniGiornoAperto.map((t) => (
-            <a key={t.id} className="riga" href={`#/turni/${t.id}`} onClick={() => setGiornoAperto(undefined)}>
-              <span className={`sigla${eNotte(t.tipo) ? ' notte' : ''}`}>{siglaTurno(t, mappaModelli)}</span>
-              <span className="crescente">
-                <span style={{ fontWeight: 500 }}>{titoloTurno(t, mappaModelli)}</span>
-                <span className="secondario piccolo numeri">{F.ora(t.inizio)} – {F.ora(t.fine)} · {F.durata(minuti(datiDa(t)))}</span>
-              </span>
-              <IconaAvanti dimensione={14} />
-            </a>
+      <Foglio aperto={sceltaArea} titolo="Area di rotazione" onChiudi={() => setSceltaArea(false)}>
+        <p className="secondario" style={{ margin: 0 }}>
+          Scegli l'area di {F.mese(istante(anno, mese, 1))}. Da questo mese contano {MESI_PER_ROTAZIONE} mesi di quell'area, poi l'app alterna da sola Ginecologia e Ostetricia ogni {MESI_PER_ROTAZIONE} mesi.
+        </p>
+        <div className="scelte">
+          {AREE_ROTAZIONE.map((a) => (
+            <button key={a} type="button" className="scelta" aria-pressed={area?.area === a && area.scelto} onClick={() => void scegliArea(a)}>
+              <span style={{ fontWeight: 600 }}>{TITOLI_AREA[a]}</span>
+              <span className="secondario piccolo">da {F.mese(istante(anno, mese, 1))}</span>
+            </button>
           ))}
         </div>
-        {giornoAperto && (
-          <a className="pulsante primario largo" href={`#/turni/nuovi?mese=${qui}&giorni=${chiaveGiorno(giornoAperto)}`} onClick={() => setGiornoAperto(undefined)}>
-            Aggiungi un turno in questo giorno
-          </a>
+        {ancoraDelMese && (
+          <button type="button" className="pulsante pericolo" onClick={() => void elimina('periodiRotazione', ancoraDelMese.id).then(() => setSceltaArea(false))}>
+            Togli la scelta fatta per questo mese
+          </button>
         )}
       </Foglio>
     </div>

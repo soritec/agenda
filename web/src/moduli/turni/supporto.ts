@@ -1,14 +1,12 @@
 import { giornoDi, giornoSettimana, giorniNelMese, type GiornoCivile } from '../../nucleo/calendario'
-import type { GiornoMese } from '../../nucleo/festivita'
-import type { Impostazioni, ModelloTurno, Sede, Turno } from '../../dati/modello'
-import type { OpzioniRiepilogo } from './riepilogo'
-import { tipoTurnoDa, TITOLI_TIPO_TURNO, type DatiTurno, type TipoTurno } from './tipi'
+import type { ModelloTurno, Turno } from '../../dati/modello'
+import { tipoTurnoDa, TITOLI_TIPO_TURNO, type DatiTurno } from './tipi'
 
 /** Dal record salvato ai dati usati dai calcoli. */
 export function datiDa(t: Turno): DatiTurno {
   return {
     id: t.id, inizio: t.inizio, fine: t.fine, tipo: tipoTurnoDa(t.tipo),
-    sedeId: t.sedeId, enteId: t.enteId, minutiManuali: t.minutiManuali, compensoCent: t.compensoCent,
+    sedeId: t.sedeId, minutiManuali: t.minutiManuali, compensoCent: t.compensoCent,
   }
 }
 
@@ -23,7 +21,8 @@ export function siglaTurno(t: Pick<Turno, 'tipo' | 'modelloId'>, modelli: Map<st
   return m?.sigla || TITOLI_TIPO_TURNO[tipoTurnoDa(t.tipo)].charAt(0)
 }
 
-export const eNotte = (tipo: string) => tipoTurnoDa(tipo) === 'guardiaNotturna'
+/** Classi CSS della sigla: un colore tenue diverso per ogni tipo di turno. */
+export const classeSigla = (tipo: string) => `sigla t-${tipoTurnoDa(tipo)}`
 
 export function chiaveGiorno(g: GiornoCivile): string {
   return `${g.anno}-${String(g.mese).padStart(2, '0')}-${String(g.giorno).padStart(2, '0')}`
@@ -95,13 +94,4 @@ export function centesimiDaTesto(testo: string): number | undefined | null {
 }
 export function testoDaCentesimi(c: number | undefined): string {
   return c === undefined ? '' : (c / 100).toFixed(2).replace('.', ',')
-}
-
-/** Regole dell'utente → opzioni per riepilogo e controlli. */
-export function regole(impostazioni: Impostazioni, sedi: Sede[] | undefined) {
-  const esclusi: ReadonlySet<TipoTurno> = impostazioni.reperibilitaContaComeLavoro ? new Set() : new Set(['reperibilita'])
-  const patronoPerSede = new Map<string, GiornoMese>()
-  for (const s of sedi ?? []) if (s.patrono) patronoPerSede.set(s.id, s.patrono)
-  const riepilogo: OpzioniRiepilogo = { sabatoFestivo: impostazioni.sabatoFestivo, esclusiDalleOre: esclusi, patronoPerSede }
-  return { riepilogo, riposoMinimo: impostazioni.riposoMinimoMinuti, esclusiDalRiposo: esclusi }
 }
