@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
 import { IconaAvviso } from './icone'
 
 /** Finestra modale: dal basso su iPhone, al centro su Mac. Esc o "Annulla" la chiudono. */
@@ -17,7 +17,9 @@ export function Foglio({ aperto, titolo, onChiudi, azione, children }: {
     if (!aperto && d.open) d.close()
   }, [aperto])
   return (
-    <dialog ref={ref} className="foglio" onClose={onChiudi} aria-label={titolo}>
+    <dialog ref={ref} className="foglio" onClose={onChiudi} aria-label={titolo}
+      // Un clic fuori dal foglio (sullo sfondo scuro) lo chiude.
+      onClick={(e) => { if (e.target === e.currentTarget) onChiudi() }}>
       {aperto && (
         <>
           <div className="testata">
@@ -51,6 +53,42 @@ export function Avviso({ children }: { children: ReactNode }) {
     <div className="avviso" role="status">
       <span style={{ flexShrink: 0, marginTop: 1 }}><IconaAvviso dimensione={16} /></span>
       <span>{children}</span>
+    </div>
+  )
+}
+
+/* Avviso temporaneo con "Annulla" (es. dopo aver eliminato un turno). */
+type Messaggio = { testo: string; annulla?: () => void; id: number }
+let messaggio: Messaggio | undefined
+const ascoltatoriToast = new Set<() => void>()
+let timer: ReturnType<typeof setTimeout> | undefined
+
+export function mostraAvviso(testo: string, annulla?: () => void) {
+  messaggio = { testo, annulla, id: Date.now() }
+  ascoltatoriToast.forEach((a) => a())
+  clearTimeout(timer)
+  timer = setTimeout(() => {
+    messaggio = undefined
+    ascoltatoriToast.forEach((a) => a())
+  }, 6000)
+}
+
+function chiudiAvviso() {
+  clearTimeout(timer)
+  messaggio = undefined
+  ascoltatoriToast.forEach((a) => a())
+}
+
+export function Toast() {
+  const m = useSyncExternalStore(
+    (a) => { ascoltatoriToast.add(a); return () => ascoltatoriToast.delete(a) },
+    () => messaggio,
+  )
+  if (!m) return null
+  return (
+    <div className="toast" role="status">
+      <span>{m.testo}</span>
+      {m.annulla && <button type="button" onClick={() => { m.annulla!(); chiudiAvviso() }}>Annulla</button>}
     </div>
   )
 }

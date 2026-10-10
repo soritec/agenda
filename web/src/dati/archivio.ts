@@ -7,7 +7,7 @@ import { IMPOSTAZIONI_PREDEFINITE, type Collezioni, type Impostazioni, type Nome
  */
 
 const NOME_DB = 'agenda'
-const VERSIONE_DB = 2
+const VERSIONE_DB = 3
 
 type Ascoltatore = () => void
 const ascoltatori = new Set<Ascoltatore>()
@@ -25,6 +25,9 @@ function apri(): Promise<IDBPDatabase> {
       if (vecchiaVersione < 2) {
         // Gli enti non si usano più: l'archivio resta (vuoto o con i vecchi dati) per non perdere nulla.
         database.createObjectStore('periodiRotazione', { keyPath: 'id' })
+      }
+      if (vecchiaVersione < 3) {
+        database.createObjectStore('ferie', { keyPath: 'id' })
       }
     },
   })
@@ -98,6 +101,16 @@ export async function elimina(nome: NomeCollezione, id: string): Promise<void> {
   if (!record) return
   const ora = Date.now()
   await database.put(nome, { ...record, eliminatoIl: ora, modificatoIl: ora })
+  notifica()
+}
+
+/** Annulla un'eliminazione (es. tasto "Annulla" dopo aver tolto un turno). */
+export async function ripristina(nome: NomeCollezione, id: string): Promise<void> {
+  const database = await apri()
+  const record = await database.get(nome, id)
+  if (!record) return
+  const { eliminatoIl: _, ...resto } = record as { eliminatoIl?: number }
+  await database.put(nome, { ...resto, modificatoIl: Date.now() })
   notifica()
 }
 

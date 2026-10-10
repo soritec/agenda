@@ -134,3 +134,17 @@ describe('Rotazione Ginecologia / Ostetricia', () => {
     expect(areaDelMese(ancore, 2027, 8)?.area).toBe('ostetricia')
   })
 })
+
+describe('Turni tutto il giorno', () => {
+  test('ore solo se inserite a mano, nessuna sovrapposizione', () => {
+    const giorno = turno(d(12, 10), d(13, 10), 'ambulatorio', { tuttoIlGiorno: true })
+    expect(minuti(giorno)).toBe(0)
+    expect(minuti({ ...giorno, minutiManuali: 300 })).toBe(300)
+    const notte = turno(d(12, 10, 20), d(13, 10, 8), 'guardiaNotturna')
+    expect(avvisi(notte, [giorno])).toEqual([])
+    const r = calcolaRiepilogo([giorno, notte], 2026, 10)
+    expect(r.numeroTurni).toBe(2)
+    expect(r.minutiTotali).toBe(12 * 60)
+  })
+})
+

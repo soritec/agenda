@@ -39,6 +39,8 @@ export interface DatiTurno {
   fine: number
   tipo: TipoTurno
   sedeId?: string
+  /** Turno senza orari specifici: le ore contano solo se inserite a mano. */
+  tuttoIlGiorno?: boolean
   /** Ore inserite a mano (in minuti): se presenti sostituiscono la durata calcolata dagli orari. */
   minutiManuali?: number
   /** Compenso inserito a mano, se l'utente vuole. L'app non calcola mai compensi. */
@@ -52,5 +54,6 @@ export function minutiDaOrari(t: DatiTurno): number {
 
 /** Ore che contano nei totali: quelle inserite a mano se ci sono, altrimenti quelle calcolate. */
 export function minuti(t: DatiTurno): number {
-  return t.minutiManuali !== undefined ? Math.max(0, t.minutiManuali) : minutiDaOrari(t)
+  if (t.minutiManuali !== undefined) return Math.max(0, t.minutiManuali)
+  return t.tuttoIlGiorno ? 0 : minutiDaOrari(t)
 }

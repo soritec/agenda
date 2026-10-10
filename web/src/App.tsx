@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { aggiungiGiorni, inizioGiorno } from './nucleo/calendario'
 import * as F from './nucleo/formati'
+import { linkGoogleMaps } from './nucleo/viaggio'
 import { useCollezione } from './dati/hooks'
 import { Guscio, InArrivo, type Sezione } from './interfaccia/Guscio'
 import { meseDaParametro, useRotta } from './interfaccia/navigazione'
@@ -8,6 +9,7 @@ import { DettaglioTurno } from './moduli/turni/viste/DettaglioTurno'
 import { ImpostazioniTurni } from './moduli/turni/viste/ImpostazioniTurni'
 import { NuoviTurni } from './moduli/turni/viste/NuoviTurni'
 import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
+import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
 import { classeSigla, datiDa, oggi, perId, siglaTurno, titoloTurno } from './moduli/turni/supporto'
 import { minuti } from './moduli/turni/tipi'
@@ -23,6 +25,7 @@ export function App() {
     if (sotto === 'nuovi') pagina = <NuoviTurni anno={anno} mese={mese} giorniIniziali={parametri.get('giorni')?.split(',') ?? []} />
     else if (sotto === 'riepilogo') pagina = <RiepilogoTurni anno={anno} mese={mese} />
     else if (sotto === 'impostazioni') pagina = <ImpostazioniTurni />
+    else if (sotto === 'stampa') pagina = <StampaTurni anno={anno} mese={mese} />
     else if (sotto) pagina = <DettaglioTurno key={sotto} id={sotto} />
     else pagina = <VistaTurni anno={anno} mese={mese} />
   } else if (sezione === 'agenda') pagina = <InArrivo titolo="Agenda" />
@@ -58,20 +61,27 @@ function Oggi() {
       {diOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/turni">Vai ai turni</a></div>}
       {diOggi.map((t) => {
         const sede = t.sedeId ? mappaSedi.get(t.sedeId) : undefined
-        const partenza = sede?.minutiViaggio && t.inizio > Date.now() ? t.inizio - sede.minutiViaggio * 60_000 : undefined
+        const partenza = sede?.minutiViaggio && !t.tuttoIlGiorno && t.inizio > Date.now() ? t.inizio - sede.minutiViaggio * 60_000 : undefined
         return (
-          <a key={t.id} className="scheda" href={`#/turni/${t.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--testo)' }}>
-            <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
-                <span style={{ fontSize: 22, fontWeight: 600 }}>{titoloTurno(t, mappaModelli)}</span>
+          <div key={t.id} className="scheda scheda-turno">
+            <a href={`#/turni/${t.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--testo)' }}>
+              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
+                  <span className="titolo">{titoloTurno(t, mappaModelli)}</span>
+                </span>
+                {minuti(datiDa(t)) > 0 && <span className="secondario piccolo numeri">{F.durata(minuti(datiDa(t)))}</span>}
               </span>
-              <span className="secondario numeri">{F.durata(minuti(datiDa(t)))}</span>
-            </span>
-            <span className="secondario numeri">{F.ora(t.inizio)} – {F.ora(t.fine)}{sede ? ` · ${sede.nome}` : ''}</span>
-            {t.note && <span className="piccolo" style={{ whiteSpace: 'pre-wrap' }}>{t.note}</span>}
-            {partenza && <span style={{ color: 'var(--accento)', fontWeight: 500, borderTop: '1px solid var(--linea)', paddingTop: 10 }}>Parti alle {F.ora(partenza)} · {sede!.minutiViaggio} min di viaggio</span>}
-          </a>
+              <span className="secondario piccolo numeri">{t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`}{sede ? ` · ${sede.nome}` : ''}</span>
+              {t.note && <span className="piccolo" style={{ whiteSpace: 'pre-wrap' }}>{t.note}</span>}
+            </a>
+            {(partenza || sede?.indirizzo) && (
+              <span className="piccolo" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTop: '1px solid var(--linea)', paddingTop: 8 }}>
+                {partenza ? <span style={{ color: 'var(--accento)', fontWeight: 500 }}>Parti alle {F.ora(partenza)} · {sede!.minutiViaggio} min</span> : <span />}
+                {sede?.indirizzo && <a href={linkGoogleMaps(sede.indirizzo)} target="_blank" rel="noreferrer">Percorso con traffico ›</a>}
+              </span>
+            )}
+          </div>
         )
       })}
 
@@ -86,7 +96,7 @@ function Oggi() {
               <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
               <span className="crescente">
                 <span style={{ fontWeight: 500 }}>{titoloTurno(t, mappaModelli)}</span>
-                <span className="secondario numeri">{F.ora(t.inizio)} – {F.ora(t.fine)}{t.sedeId && mappaSedi.get(t.sedeId) ? ` · ${mappaSedi.get(t.sedeId)!.nome}` : ''}</span>
+                <span className="secondario numeri">{t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`}{t.sedeId && mappaSedi.get(t.sedeId) ? ` · ${mappaSedi.get(t.sedeId)!.nome}` : ''}</span>
               </span>
             </a>
           ))}

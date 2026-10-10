@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { componenti, giornoDi } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
-import { elimina, salva } from '../../../dati/archivio'
+import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
 import type { Turno } from '../../../dati/modello'
-import { Avviso, Campo, NotaPrivacy } from '../../../interfaccia/componenti'
+import { Avviso, Campo, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { parametroMese, vai } from '../../../interfaccia/navigazione'
 import { avvisi as calcolaAvvisi } from '../controlli'
-import { intervallo } from '../orari'
+import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { minuti, STATI_TURNO, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import {
   centesimiDaTesto, chiaveGiorno, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oreScritteDaMinuti, orarioDaMinuti, perId,
@@ -20,6 +20,7 @@ interface Bozza {
   giorno: string
   inizio: string
   fine: string
+  tuttoIlGiorno: boolean
   tipo: string
   stato: Turno['stato']
   sedeId: string
@@ -34,6 +35,7 @@ function bozzaDa(t: Turno): Bozza {
     giorno: chiaveGiorno(giornoDi(t.inizio)),
     inizio: orarioDaMinuti(ci.ora * 60 + ci.minuto),
     fine: orarioDaMinuti(cf.ora * 60 + cf.minuto),
+    tuttoIlGiorno: Boolean(t.tuttoIlGiorno),
     tipo: t.tipo, stato: t.stato, sedeId: t.sedeId ?? '',
     ore: oreScritteDaMinuti(t.minutiManuali), compenso: testoDaCentesimi(t.compensoCent), note: t.note ?? '',
   }
@@ -58,14 +60,16 @@ export function DettaglioTurno({ id }: { id: string }) {
   const mf = bozza ? minutiDaOrario(bozza.fine) : undefined
   const minutiManuali = bozza ? minutiDaOreScritte(bozza.ore) : undefined
   const compensoCent = bozza ? centesimiDaTesto(bozza.compenso) : undefined
-  const orari = giorno && mi !== undefined && mf !== undefined ? intervallo(giorno, mi, mf) : undefined
+  const orari = giorno && bozza?.tuttoIlGiorno
+    ? intervalloTuttoIlGiorno(giorno)
+    : giorno && mi !== undefined && mf !== undefined ? intervallo(giorno, mi, mf) : undefined
   const valido = orari !== undefined && minutiManuali !== null && compensoCent !== null
   const oi = orari?.inizio, of = orari?.fine
 
   const messaggi = useMemo(() => {
     if (!turno || !bozza) return []
     if (oi === undefined || of === undefined) return []
-    const attuale = { ...datiDa(turno), inizio: oi, fine: of, tipo: tipoTurnoDa(bozza.tipo) }
+    const attuale = { ...datiDa(turno), inizio: oi, fine: of, tipo: tipoTurnoDa(bozza.tipo), tuttoIlGiorno: bozza.tuttoIlGiorno }
     const altri = (turni ?? []).filter((t) => t.id !== turno.id)
     const mappa = perId(altri)
     return calcolaAvvisi(attuale, altri.map(datiDa)).map((a) => {
@@ -92,7 +96,7 @@ export function DettaglioTurno({ id }: { id: string }) {
   async function conferma() {
     if (!turno || !bozza || !orari || !valido) return
     await salva('turni', {
-      ...turno, ...orari, tipo: bozza.tipo, stato: bozza.stato,
+      ...turno, ...orari, tuttoIlGiorno: bozza.tuttoIlGiorno || undefined, tipo: bozza.tipo, stato: bozza.stato,
       sedeId: bozza.sedeId || undefined,
       minutiManuali: minutiManuali ?? undefined, compensoCent: compensoCent ?? undefined, note: bozza.note.trim() || undefined,
     })
@@ -100,12 +104,14 @@ export function DettaglioTurno({ id }: { id: string }) {
   }
 
   async function eliminaTurno() {
-    if (!turno || !window.confirm('Eliminare questo turno?')) return
-    await elimina('turni', turno.id)
+    if (!turno) return
+    const id = turno.id
+    await elimina('turni', id)
     vai(indietro)
+    mostraAvviso('Turno eliminato', () => void ripristina('turni', id))
   }
 
-  const minutiOrari = orari ? minuti({ ...datiDa(turno), ...orari, minutiManuali: undefined }) : undefined
+  const minutiOrari = orari && !bozza.tuttoIlGiorno ? minuti({ ...datiDa(turno), ...orari, tuttoIlGiorno: false, minutiManuali: undefined }) : undefined
 
   return (
     <div className="schermata" style={{ maxWidth: 640 }}>
@@ -118,10 +124,14 @@ export function DettaglioTurno({ id }: { id: string }) {
       <div className="scheda modulo">
         <div className="campi-affiancati">
           <Campo etichetta="Giorno"><input type="date" value={bozza.giorno} onChange={(e) => aggiorna({ giorno: e.target.value })} /></Campo>
-          <Campo etichetta="Inizio"><input type="time" value={bozza.inizio} onChange={(e) => aggiorna({ inizio: e.target.value })} /></Campo>
-          <Campo etichetta="Fine"><input type="time" value={bozza.fine} onChange={(e) => aggiorna({ fine: e.target.value })} /></Campo>
+          {!bozza.tuttoIlGiorno && <Campo etichetta="Inizio"><input type="time" value={bozza.inizio} onChange={(e) => aggiorna({ inizio: e.target.value })} /></Campo>}
+          {!bozza.tuttoIlGiorno && <Campo etichetta="Fine"><input type="time" value={bozza.fine} onChange={(e) => aggiorna({ fine: e.target.value })} /></Campo>}
         </div>
-        {orari && mf !== undefined && mi !== undefined && mf <= mi && <span className="secondario piccolo">Finisce il giorno dopo, {F.dataBreve(orari.fine)}.</span>}
+        <label className="interruttore" style={{ borderBottom: 'none', padding: '2px 0' }}>
+          <span>Tutto il giorno (senza orari)</span>
+          <input type="checkbox" checked={bozza.tuttoIlGiorno} onChange={(e) => aggiorna({ tuttoIlGiorno: e.target.checked })} />
+        </label>
+        {!bozza.tuttoIlGiorno && orari && mf !== undefined && mi !== undefined && mf <= mi && <span className="secondario piccolo">Finisce il giorno dopo, {F.dataBreve(orari.fine)}.</span>}
         <div className="campi-affiancati">
           <Campo etichetta="Tipo">
             <select value={tipoTurnoDa(bozza.tipo)} onChange={(e) => aggiorna({ tipo: e.target.value })}>

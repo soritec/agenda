@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Toast } from './componenti'
 import { IconaAgenda, IconaCerca, IconaModuli, IconaOggi, IconaTurni } from './icone'
 
 export type Sezione = 'oggi' | 'agenda' | 'turni' | 'moduli' | 'cerca'
@@ -24,6 +25,7 @@ export function Guscio({ attiva, children }: { attiva: Sezione; children: ReactN
         ))}
       </nav>
       <main className="contenuto">{children}</main>
+      <Toast />
       <nav className="barra-schede" aria-label="Sezioni">
         {SEZIONI.map(({ id, titolo, Icona }) => (
           <a key={id} href={`#/${id}`} aria-current={id === attiva ? 'page' : undefined}>

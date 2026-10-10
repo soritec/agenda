@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, test } from 'vitest'
-import { ascolta, chiudiPerTest, elenca, elencaTutti, elimina, leggiImpostazioni, salva, salvaImpostazioni, salvaTanti } from '../src/dati/archivio'
+import { ascolta, chiudiPerTest, elenca, elencaTutti, elimina, leggiImpostazioni, ripristina, salva, salvaImpostazioni, salvaTanti } from '../src/dati/archivio'
 
 beforeEach(async () => {
   await chiudiPerTest()
@@ -50,5 +50,15 @@ describe('Archivio locale', () => {
   test('archivio dei periodi di rotazione (versione 2)', async () => {
     await salva('periodiRotazione', { meseInizio: '2026-10', area: 'ostetricia' })
     expect(await elenca('periodiRotazione')).toHaveLength(1)
+  })
+
+  test('ferie ed eliminazione annullabile', async () => {
+    const f = await salva('ferie', { giorno: '2026-10-21' })
+    await elimina('ferie', f.id)
+    expect(await elenca('ferie')).toHaveLength(0)
+    await ripristina('ferie', f.id)
+    const ripristinate = await elenca('ferie')
+    expect(ripristinate.map((x) => x.giorno)).toEqual(['2026-10-21'])
+    expect(ripristinate[0]!.eliminatoIl).toBeUndefined()
   })
 })

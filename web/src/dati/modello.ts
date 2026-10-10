@@ -29,6 +29,8 @@ export interface ModelloTurno extends Base {
   tipo: string
   minutoInizio: number
   minutoFine: number
+  /** Turno senza orari: occupa la giornata, le ore contano solo se inserite a mano. */
+  tuttoIlGiorno?: boolean
   sedeId?: string
   ordine: number
 }
@@ -38,6 +40,8 @@ export interface Turno extends Base {
   fine: number
   tipo: string
   stato: StatoTurno
+  /** Senza orari: `inizio` = mezzanotte del giorno, `fine` = mezzanotte del giorno dopo. */
+  tuttoIlGiorno?: boolean
   sedeId?: string
   modelloId?: string
   /** Ore inserite a mano, in minuti. */
@@ -56,6 +60,12 @@ export interface PeriodoRotazione extends Base {
   area: AreaRotazione
 }
 
+/** Un giorno di ferie. */
+export interface GiornoFerie extends Base {
+  /** "2026-10-21" */
+  giorno: string
+}
+
 export interface Impostazioni {
   sabatoFestivo: boolean
   /** Punto di partenza per il calcolo dei tempi di viaggio. */
@@ -71,6 +81,7 @@ export interface Collezioni {
   modelliTurno: ModelloTurno
   turni: Turno
   periodiRotazione: PeriodoRotazione
+  ferie: GiornoFerie
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie']

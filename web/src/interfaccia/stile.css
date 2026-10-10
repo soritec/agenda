@@ -10,6 +10,12 @@
   --testo-2: #6B665F;
   --accento: #2F5D62;
   --accento-tenue: #EAF0EF;
+  /* Pulsanti principali e selezioni: tono dell'accento, mai nero. */
+  --primario: #3F6E73;
+  --primario-testo: #FFFFFF;
+  --nota-sfondo: #3D5558;
+  --ferie: #F3E7CF;
+  --ferie-testo: #7A5A1E;
   --sigla: #ECE6DD;
   --sigla-testo: #3A3733;
   --avviso: #F6EEDF;
@@ -37,6 +43,11 @@
     --testo-2: #A8A29A;
     --accento: #8FBDB6;
     --accento-tenue: #23302F;
+    --primario: #6FA39C;
+    --primario-testo: #10201E;
+    --nota-sfondo: #4E6A6D;
+    --ferie: #463A22;
+    --ferie-testo: #F0D9A8;
     --sigla: #34312D;
     --sigla-testo: #E6E1D9;
     --avviso: #3A2F1C;
@@ -84,7 +95,7 @@ h1, h2, h3 { margin: 0; }
 
 /* Pulsanti */
 .pulsante { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--testo); font-size: 15px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-.pulsante.primario { background: var(--testo); color: var(--sfondo); border-color: transparent; font-weight: 600; }
+.pulsante.primario { background: var(--primario); color: var(--primario-testo); border-color: transparent; font-weight: 600; }
 .pulsante.pericolo { color: var(--pericolo); }
 .pulsante.tondo { width: 44px; height: 44px; padding: 0; border-radius: 22px; }
 .pulsante.largo { width: 100%; height: 50px; font-size: 17px; border-radius: 14px; }
@@ -131,7 +142,7 @@ a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outlin
 .sigla[data-nota]:hover::after, .sigla[data-nota]:focus-visible::after {
   content: attr(data-nota); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
   width: max-content; max-width: 240px; white-space: pre-wrap; text-align: left; font-size: 12px; font-weight: 400; line-height: 1.35;
-  padding: 7px 9px; border-radius: 8px; background: var(--testo); color: var(--sfondo); box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); z-index: 5; pointer-events: none;
+  padding: 7px 9px; border-radius: 8px; background: var(--nota-sfondo); color: #FFFFFF; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); z-index: 5; pointer-events: none;
 }
 .sigla .ha-nota { position: absolute; top: -2px; right: -2px; width: 5px; height: 5px; border-radius: 3px; background: var(--accento); border: 1px solid var(--superficie); }
 .legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--testo-2); }
@@ -156,7 +167,7 @@ a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outlin
 .cella .numero { width: 30px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 .cella.festivo .numero { color: var(--testo-2); }
 .cella.oggi .numero { background: var(--accento); color: var(--superficie); font-weight: 600; }
-.cella.scelto .numero { background: var(--testo); color: var(--sfondo); font-weight: 600; }
+.cella.scelto .numero { background: var(--primario); color: var(--primario-testo); font-weight: 600; }
 .cella .sigle { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .cella .punto { width: 5px; height: 5px; border-radius: 3px; background: var(--linea-forte); }
 @media (min-width: 900px) {
@@ -189,3 +200,44 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 }
 
 .solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Orario accanto alla sigla nel calendario */
+.cella .sigle { flex-direction: column; align-items: center; gap: 2px; }
+.cella .turno-mini { display: inline-flex; align-items: center; gap: 3px; position: relative; }
+.cella .orario-mini { font-size: 9px; color: var(--testo-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 420px) { .cella .orario-mini { font-size: 8px; letter-spacing: -0.02em; } .cella .turno-mini { flex-direction: column; gap: 0; } }
+@media (min-width: 900px) { .mese.grande .cella .sigle { align-items: flex-start; } .cella .orario-mini { font-size: 11px; } }
+/* Eliminazione con pressione prolungata */
+.cella .elimina { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 9px; border: none; background: var(--pericolo); color: #fff; font-size: 12px; line-height: 18px; padding: 0; cursor: pointer; z-index: 2; pointer-events: auto; }
+.riga .elimina-riga { width: 32px; height: 32px; border-radius: 16px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--pericolo); font-size: 16px; cursor: pointer; flex-shrink: 0; }
+/* Ferie */
+.cella.ferie { background: var(--ferie); }
+.etichetta-ferie { font-size: 10px; font-weight: 600; color: var(--ferie-testo); padding: 1px 6px; border-radius: 5px; border: none; background: none; cursor: pointer; pointer-events: auto; position: relative; }
+.scelta.ferie[aria-pressed='true'] { border-color: var(--ferie-testo); }
+/* Avviso temporaneo con "Annulla" */
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 30; display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 12px; background: var(--nota-sfondo); color: #fff; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); font-size: 14px; }
+.toast button { background: none; border: none; color: #fff; font-weight: 700; cursor: pointer; font-size: 14px; }
+@media (min-width: 900px) { .toast { bottom: 24px; } }
+/* Pagina Oggi: schede compatte */
+.scheda-turno { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; color: var(--testo); }
+.scheda-turno .titolo { font-size: 17px; font-weight: 600; }
+
+/* Stampa A4 */
+.solo-stampa { display: none; }
+@page { size: A4; margin: 12mm; }
+@media print {
+  html, body { background: #fff; color: #000; font-size: 11pt; }
+  .laterale, .barra-schede, .non-stampare, .toast { display: none !important; }
+  .contenuto { padding: 0 !important; }
+  .schermata { max-width: none; padding: 0; gap: 10px; }
+  .solo-stampa { display: block; }
+  .foglio-stampa { break-inside: avoid; }
+  .tabella-stampa { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .tabella-stampa th, .tabella-stampa td { border-bottom: 0.5pt solid #bbb; padding: 3pt 4pt; text-align: left; }
+  .tabella-stampa tr { break-inside: avoid; }
+  .mese, .scheda, .lista { border-color: #bbb !important; box-shadow: none; }
+  .sigla { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.tabella-stampa { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabella-stampa th, .tabella-stampa td { border-bottom: 1px solid var(--linea); padding: 8px 6px; text-align: left; vertical-align: top; }
+.tabella-stampa th { color: var(--testo-2); font-weight: 500; font-size: 12px; }

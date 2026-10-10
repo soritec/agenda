@@ -8,7 +8,7 @@ import { Avviso, Campo } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese, vai } from '../../../interfaccia/navigazione'
 import { avvisi as calcolaAvvisi } from '../controlli'
-import { intervallo } from '../orari'
+import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { minuti, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa, type DatiTurno, type TipoTurno } from '../tipi'
 import {
   celleMese, chiaveGiorno, classeSigla, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oggi, orarioDaMinuti, perId, siglaTurno, titoloTurno, turniPerGiorno,
@@ -16,17 +16,20 @@ import {
 
 const GIORNI = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
 const PERSONALIZZATO = 'personalizzato'
+const FERIE = 'ferie'
 
 export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniIniziali }: { anno: number; mese: number; giorniIniziali: string[] }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
+  const ferie = useCollezione('ferie')
   const impostazioni = useImpostazioni()
 
   const [vista, setVista] = useState({ anno: annoIniziale, mese: meseIniziale })
   const [giorni, setGiorni] = useState<string[]>(giorniIniziali.filter((k) => giornoDaChiave(k)))
   const [scelta, setScelta] = useState<string>()
   const [personale, setPersonale] = useState({ tipo: 'reparto' as TipoTurno, inizio: '08:00', fine: '16:00', sedeId: '' })
+  const [tuttoIlGiorno, setTuttoIlGiorno] = useState(false)
   const [oreScritte, setOreScritte] = useState('')
   const [salvataggio, setSalvataggio] = useState(false)
 
@@ -40,7 +43,7 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
   const orari = modello
     ? { inizio: modello.minutoInizio, fine: modello.minutoFine }
     : scelta === PERSONALIZZATO
-      ? { inizio: minutiDaOrario(personale.inizio), fine: minutiDaOrario(personale.fine) }
+      ? (tuttoIlGiorno ? { inizio: 0, fine: 0 } : { inizio: minutiDaOrario(personale.inizio), fine: minutiDaOrario(personale.fine) })
       : undefined
   const minutiManuali = minutiDaOreScritte(oreScritte)
   const minutoInizio = orari?.inizio
@@ -55,12 +58,13 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
       .sort((a, b) => istante(a.anno, a.mese, a.giorno) - istante(b.anno, b.mese, b.giorno))
       .map((g) => ({
         id: `nuovo-${chiaveGiorno(g)}`,
-        ...intervallo(g, minutoInizio, minutoFine),
+        ...(tuttoIlGiorno ? intervalloTuttoIlGiorno(g) : intervallo(g, minutoInizio, minutoFine)),
         tipo,
+        tuttoIlGiorno: tuttoIlGiorno || undefined,
         sedeId: modello?.sedeId ?? (personale.sedeId || undefined),
         minutiManuali: minutiManuali ?? undefined,
       }))
-  }, [giorni, minutoInizio, minutoFine, modello, personale, minutiManuali])
+  }, [giorni, minutoInizio, minutoFine, tuttoIlGiorno, modello, personale, minutiManuali])
 
   const messaggi = useMemo(() => {
     if (nuovi.length === 0) return []
@@ -98,11 +102,26 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
     })
   }
 
+  function scegli(id: string) {
+    setScelta(id)
+    setTuttoIlGiorno(id === PERSONALIZZATO ? false : Boolean(mappaModelli.get(id)?.tuttoIlGiorno))
+  }
+
+  const giorniFerieNuovi = scelta === FERIE ? giorni.filter((k) => !(ferie ?? []).some((f) => f.giorno === k)) : []
+
   async function salvaTurni() {
-    if (nuovi.length === 0 || salvataggio) return
+    if (salvataggio) return
+    if (scelta === FERIE) {
+      if (giorniFerieNuovi.length === 0) return
+      setSalvataggio(true)
+      await salvaTanti('ferie', giorniFerieNuovi.map((giorno) => ({ giorno })))
+      vai(`/turni?mese=${parametroMese(annoIniziale, meseIniziale)}`)
+      return
+    }
+    if (nuovi.length === 0) return
     setSalvataggio(true)
     await salvaTanti('turni', nuovi.map((n) => ({
-      inizio: n.inizio, fine: n.fine, tipo: n.tipo, stato: 'pianificato' as const,
+      inizio: n.inizio, fine: n.fine, tipo: n.tipo, stato: 'pianificato' as const, tuttoIlGiorno: n.tuttoIlGiorno,
       sedeId: n.sedeId, modelloId: modello?.id, minutiManuali: n.minutiManuali, origine: 'manuale' as const,
     })))
     vai(`/turni?mese=${parametroMese(annoIniziale, meseIniziale)}`)
@@ -144,6 +163,7 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
                   aria-label={`${F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}${esistenti.length ? ', ha già un turno' : ''}`}>
                   <span className="numero">{g.giorno}</span>
                   <span className="sigle">
+                    {(ferie ?? []).some((f) => f.giorno === k) && <span className="etichetta-ferie">Ferie</span>}
                     {esistenti.map((t) => <span key={t.id} className={classeSigla(t.tipo)} style={{ opacity: 0.55 }}>{siglaTurno(t, mappaModelli)}</span>)}
                   </span>
                 </button>
@@ -155,22 +175,32 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
       </section>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <h2 className="sopratitolo">2 · Turno</h2>
+        <h2 className="sopratitolo">2 · Turno o ferie</h2>
         <div className="scelte">
           {elencoModelli.map((m) => (
-            <button key={m.id} type="button" className="scelta" aria-pressed={scelta === m.id} onClick={() => setScelta(m.id)}>
+            <button key={m.id} type="button" className="scelta" aria-pressed={scelta === m.id} onClick={() => scegli(m.id)}>
               <span style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
                 <span style={{ fontWeight: 600 }}>{m.nome}</span>
                 <span className={classeSigla(m.tipo)}>{m.sigla}</span>
               </span>
-              <span className="secondario piccolo numeri">{orarioDaMinuti(m.minutoInizio)} – {orarioDaMinuti(m.minutoFine)}</span>
+              <span className="secondario piccolo numeri">{m.tuttoIlGiorno ? 'Tutto il giorno' : `${orarioDaMinuti(m.minutoInizio)} – ${orarioDaMinuti(m.minutoFine)}`}</span>
             </button>
           ))}
-          <button type="button" className="scelta" aria-pressed={scelta === PERSONALIZZATO} onClick={() => setScelta(PERSONALIZZATO)}>
-            <span style={{ fontWeight: 600 }}>Orario personalizzato</span>
+          <button type="button" className="scelta" aria-pressed={scelta === PERSONALIZZATO} onClick={() => scegli(PERSONALIZZATO)}>
+            <span style={{ fontWeight: 600 }}>Personalizzato</span>
             <span className="secondario piccolo">Scegli tu tipo e orari</span>
           </button>
+          <button type="button" className="scelta ferie" aria-pressed={scelta === FERIE} onClick={() => setScelta(FERIE)}>
+            <span style={{ fontWeight: 600 }}>Ferie</span>
+            <span className="secondario piccolo">Segna i giorni scelti come ferie</span>
+          </button>
         </div>
+        {scelta && scelta !== FERIE && (
+          <label className="interruttore" style={{ borderBottom: 'none', padding: '4px 0' }}>
+            <span>Tutto il giorno (senza orari)</span>
+            <input type="checkbox" checked={tuttoIlGiorno} onChange={(e) => setTuttoIlGiorno(e.target.checked)} />
+          </label>
+        )}
         {elencoModelli.length === 0 && <span className="secondario piccolo">Puoi creare turni tipo da <a href="#/turni/impostazioni">Turni tipo e sedi</a>.</span>}
         {scelta === PERSONALIZZATO && (
           <div className="scheda modulo">
@@ -180,8 +210,8 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
                   {tipiDisponibili.map((t) => <option key={t} value={t}>{TITOLI_TIPO_TURNO[t]}</option>)}
                 </select>
               </Campo>
-              <Campo etichetta="Inizio"><input type="time" value={personale.inizio} onChange={(e) => setPersonale({ ...personale, inizio: e.target.value })} /></Campo>
-              <Campo etichetta="Fine"><input type="time" value={personale.fine} onChange={(e) => setPersonale({ ...personale, fine: e.target.value })} /></Campo>
+              {!tuttoIlGiorno && <Campo etichetta="Inizio"><input type="time" value={personale.inizio} onChange={(e) => setPersonale({ ...personale, inizio: e.target.value })} /></Campo>}
+              {!tuttoIlGiorno && <Campo etichetta="Fine"><input type="time" value={personale.fine} onChange={(e) => setPersonale({ ...personale, fine: e.target.value })} /></Campo>}
             </div>
             <div className="campi-affiancati">
               <Campo etichetta="Sede">
@@ -195,17 +225,25 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
         )}
       </section>
 
-      <Campo etichetta="Ore per turno (facoltativo: lascia vuoto per calcolarle dagli orari)">
-        <input inputMode="decimal" placeholder={nuovi[0] ? `${F.durata(minuti({ ...nuovi[0], minutiManuali: undefined }))} dagli orari` : 'es. 7,5'}
-          value={oreScritte} onChange={(e) => setOreScritte(e.target.value)} />
-      </Campo>
+      {scelta !== FERIE && (
+        <Campo etichetta={tuttoIlGiorno ? 'Ore per turno (facoltativo: senza orari le ore non vengono contate)' : 'Ore per turno (facoltativo: lascia vuoto per calcolarle dagli orari)'}>
+          <input inputMode="decimal" placeholder={nuovi[0] && !tuttoIlGiorno ? `${F.durata(minuti({ ...nuovi[0], minutiManuali: undefined }))} dagli orari` : 'es. 7,5'}
+            value={oreScritte} onChange={(e) => setOreScritte(e.target.value)} />
+        </Campo>
+      )}
       {minutiManuali === null && <Avviso>Scrivi le ore come 7,5 oppure 7:30.</Avviso>}
 
-      {messaggi.map((m) => <Avviso key={m}>{m}</Avviso>)}
+      {scelta !== FERIE && messaggi.map((m) => <Avviso key={m}>{m}</Avviso>)}
 
-      <button type="button" className="pulsante primario largo" disabled={nuovi.length === 0 || minutiManuali === null || salvataggio} onClick={salvaTurni}>
-        {nuovi.length === 0 ? 'Scegli i giorni e il turno' : `Aggiungi ${nuovi.length === 1 ? '1 turno' : `${nuovi.length} turni`} · ${F.durata(totaleMinuti)}`}
-      </button>
+      {scelta === FERIE ? (
+        <button type="button" className="pulsante primario largo" disabled={giorniFerieNuovi.length === 0 || salvataggio} onClick={salvaTurni}>
+          {giorni.length === 0 ? 'Scegli i giorni di ferie' : giorniFerieNuovi.length === 0 ? 'Già segnati come ferie' : `Segna ${giorniFerieNuovi.length === 1 ? '1 giorno' : `${giorniFerieNuovi.length} giorni`} di ferie`}
+        </button>
+      ) : (
+        <button type="button" className="pulsante primario largo" disabled={nuovi.length === 0 || minutiManuali === null || salvataggio} onClick={salvaTurni}>
+          {nuovi.length === 0 ? 'Scegli i giorni e il turno' : `Aggiungi ${nuovi.length === 1 ? '1 turno' : `${nuovi.length} turni`}${totaleMinuti > 0 ? ` · ${F.durata(totaleMinuti)}` : ''}`}
+        </button>
+      )}
     </div>
   )
 }

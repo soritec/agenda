@@ -1,4 +1,4 @@
-import { aggiungiGiorni, istante, type GiornoCivile } from '../../nucleo/calendario'
+import { aggiungiGiorni, inizioGiorno, istante, type GiornoCivile } from '../../nucleo/calendario'
 
 export const MINUTI_IN_UN_GIORNO = 24 * 60
 
@@ -16,6 +16,11 @@ export function intervallo(giorno: GiornoCivile, minutoInizio: number, minutoFin
     inizio: istante(giorno.anno, giorno.mese, giorno.giorno, Math.floor(minutoInizio / 60), minutoInizio % 60),
     fine: istante(giornoFine.anno, giornoFine.mese, giornoFine.giorno, Math.floor(minutoFine / 60), minutoFine % 60),
   }
+}
+
+/** Turno "tutto il giorno": da mezzanotte a mezzanotte (in ora italiana). */
+export function intervalloTuttoIlGiorno(giorno: GiornoCivile): { inizio: number; fine: number } {
+  return { inizio: inizioGiorno(giorno), fine: inizioGiorno(aggiungiGiorni(giorno, 1)) }
 }
 
 /** Un intervallo per ogni giorno selezionato (inserimento multiplo), senza doppioni e in ordine. */

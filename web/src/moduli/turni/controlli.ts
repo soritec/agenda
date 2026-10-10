@@ -11,9 +11,9 @@ export interface AvvisoTurno {
   con: string
 }
 
-/** Coppie di turni che si accavallano (toccarsi agli estremi non è sovrapposizione). */
+/** Coppie di turni che si accavallano (toccarsi agli estremi non è sovrapposizione). I turni "tutto il giorno" non si controllano. */
 export function sovrapposizioni(turni: DatiTurno[]): Sovrapposizione[] {
-  const ordinati = [...turni].sort((a, b) => a.inizio - b.inizio)
+  const ordinati = turni.filter((t) => !t.tuttoIlGiorno).sort((a, b) => a.inizio - b.inizio)
   const risultato: Sovrapposizione[] = []
   ordinati.forEach((a, i) => {
     for (const b of ordinati.slice(i + 1)) {

@@ -1,4 +1,4 @@
-import { giornoDi, giornoSettimana, giorniNelMese, type GiornoCivile } from '../../nucleo/calendario'
+import { componenti, giornoDi, giornoSettimana, giorniNelMese, type GiornoCivile } from '../../nucleo/calendario'
 import type { ModelloTurno, Turno } from '../../dati/modello'
 import { tipoTurnoDa, TITOLI_TIPO_TURNO, type DatiTurno } from './tipi'
 
@@ -6,7 +6,7 @@ import { tipoTurnoDa, TITOLI_TIPO_TURNO, type DatiTurno } from './tipi'
 export function datiDa(t: Turno): DatiTurno {
   return {
     id: t.id, inizio: t.inizio, fine: t.fine, tipo: tipoTurnoDa(t.tipo),
-    sedeId: t.sedeId, minutiManuali: t.minutiManuali, compensoCent: t.compensoCent,
+    sedeId: t.sedeId, tuttoIlGiorno: t.tuttoIlGiorno, minutiManuali: t.minutiManuali, compensoCent: t.compensoCent,
   }
 }
 
@@ -94,4 +94,14 @@ export function centesimiDaTesto(testo: string): number | undefined | null {
 }
 export function testoDaCentesimi(c: number | undefined): string {
   return c === undefined ? '' : (c / 100).toFixed(2).replace('.', ',')
+}
+
+/** Orario breve per il calendario: "20–8", "8:30–14", oppure "tutto il giorno". */
+export function orarioCompatto(t: Pick<Turno, 'inizio' | 'fine' | 'tuttoIlGiorno'>): string {
+  if (t.tuttoIlGiorno) return 'giorno'
+  const f = (ms: number) => {
+    const c = componenti(ms)
+    return c.minuto === 0 ? String(c.ora) : `${c.ora}:${String(c.minuto).padStart(2, '0')}`
+  }
+  return `${f(t.inizio)}–${f(t.fine)}`
 }

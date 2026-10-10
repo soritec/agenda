@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { elimina, salva, salvaImpostazioni } from '../../../dati/archivio'
+import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { ModelloTurno, Sede } from '../../../dati/modello'
-import { geocodifica, linkGoogleMaps, percorsoInAuto, posizioneAttuale, type Coordinate } from '../../../nucleo/viaggio'
-import { Avviso, Campo, Foglio } from '../../../interfaccia/componenti'
+import { linkGoogleMaps } from '../../../nucleo/viaggio'
+import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { IconaAvanti } from '../../../interfaccia/icone'
 import { TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import { classeSigla, minutiDaOrario, orarioDaMinuti, perId } from '../supporto'
@@ -42,23 +42,29 @@ export function ImpostazioniTurni() {
         <h1 className="titolo-grande">Turni tipo e sedi</h1>
       </header>
 
-      <Sezione titolo="Turni tipo" onAggiungi={() => setModifica({ tipo: 'modello' })}>
+      <Sezione titolo="Turni tipo">
         <div className="lista">
           {elencoModelli.length === 0 && <div className="vuoto">Nessun turno tipo. Aggiungine uno, per esempio "Notte 20–08".</div>}
           {elencoModelli.map((m) => (
-            <button key={m.id} type="button" className="riga" onClick={() => setModifica({ tipo: 'modello', record: m })}>
-              <span className={classeSigla(m.tipo)}>{m.sigla}</span>
-              <span className="crescente">
-                <span style={{ fontWeight: 500 }}>{m.nome}</span>
-                <span className="secondario piccolo numeri">
-                  {orarioDaMinuti(m.minutoInizio)} – {orarioDaMinuti(m.minutoFine)} · {TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)]}
-                  {m.sedeId && mappaSedi.get(m.sedeId) ? ` · ${mappaSedi.get(m.sedeId)!.nome}` : ''}
+            <div key={m.id} className="riga" style={{ cursor: 'default' }}>
+              <button type="button" onClick={() => setModifica({ tipo: 'modello', record: m })}
+                style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', color: 'inherit' }}>
+                <span className={classeSigla(m.tipo)}>{m.sigla}</span>
+                <span className="crescente">
+                  <span style={{ fontWeight: 500 }}>{m.nome}</span>
+                  <span className="secondario piccolo numeri">
+                    {m.tuttoIlGiorno ? 'Tutto il giorno' : `${orarioDaMinuti(m.minutoInizio)} – ${orarioDaMinuti(m.minutoFine)}`} · {TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)]}
+                    {m.sedeId && mappaSedi.get(m.sedeId) ? ` · ${mappaSedi.get(m.sedeId)!.nome}` : ''}
+                  </span>
                 </span>
-              </span>
-              <IconaAvanti dimensione={14} />
-            </button>
+                <IconaAvanti dimensione={14} />
+              </button>
+              <button type="button" className="elimina-riga" aria-label={`Elimina ${m.nome}`}
+                onClick={() => void elimina('modelliTurno', m.id).then(() => mostraAvviso(`${m.nome} eliminato`, () => void ripristina('modelliTurno', m.id)))}>×</button>
+            </div>
           ))}
         </div>
+        <button type="button" className="pulsante primario" style={{ alignSelf: 'flex-start' }} onClick={() => setModifica({ tipo: 'modello' })}>+ Nuovo turno tipo</button>
       </Sezione>
 
       <Sezione titolo="Casa">
@@ -79,7 +85,7 @@ export function ImpostazioniTurni() {
               <span className="crescente">
                 <span style={{ fontWeight: 500 }}>{s.nome}</span>
                 <span className="secondario piccolo">
-                  {[s.indirizzo, s.minutiViaggio ? `${s.minutiViaggio} min da casa` : ''].filter(Boolean).join(' · ') || '—'}
+                  {[s.indirizzo, s.minutiViaggio ? `${s.minutiViaggio} min di viaggio` : ''].filter(Boolean).join(' · ') || '—'}
                 </span>
               </span>
               <IconaAvanti dimensione={14} />
@@ -110,14 +116,14 @@ export function ImpostazioniTurni() {
 }
 
 function PulsanteElimina({ onElimina }: { onElimina: () => void }) {
-  return <button type="button" className="pulsante pericolo" onClick={() => window.confirm('Eliminare?') && onElimina()}>Elimina</button>
+  return <button type="button" className="pulsante pericolo" onClick={onElimina}>Elimina</button>
 }
 
 function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno; sedi: Sede[]; ordine: number; onChiudi: () => void }) {
   const [b, setB] = useState({
     nome: record?.nome ?? '', sigla: record?.sigla ?? '', tipo: tipoTurnoDa(record?.tipo ?? 'reparto'),
     inizio: orarioDaMinuti(record?.minutoInizio ?? 8 * 60), fine: orarioDaMinuti(record?.minutoFine ?? 16 * 60),
-    sedeId: record?.sedeId ?? '',
+    sedeId: record?.sedeId ?? '', tuttoIlGiorno: Boolean(record?.tuttoIlGiorno),
   })
   const mi = minutiDaOrario(b.inizio), mf = minutiDaOrario(b.fine)
   const valido = b.nome.trim() !== '' && mi !== undefined && mf !== undefined
@@ -126,7 +132,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
     if (!valido || mi === undefined || mf === undefined) return
     await salva('modelliTurno', {
       ...record, nome: b.nome.trim(), sigla: (b.sigla.trim() || b.nome.trim().charAt(0)).toUpperCase().slice(0, 2),
-      tipo: b.tipo, minutoInizio: mi, minutoFine: mf, sedeId: b.sedeId || undefined, ordine: record?.ordine ?? ordine,
+      tipo: b.tipo, minutoInizio: mi, minutoFine: mf, tuttoIlGiorno: b.tuttoIlGiorno || undefined, sedeId: b.sedeId || undefined, ordine: record?.ordine ?? ordine,
     })
     onChiudi()
   }
@@ -144,18 +150,24 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
             {TIPI_TURNO.map((t) => <option key={t} value={t}>{TITOLI_TIPO_TURNO[t]}</option>)}
           </select>
         </Campo>
-        <div className="campi-affiancati">
-          <Campo etichetta="Inizio"><input type="time" value={b.inizio} onChange={(e) => setB({ ...b, inizio: e.target.value })} /></Campo>
-          <Campo etichetta="Fine"><input type="time" value={b.fine} onChange={(e) => setB({ ...b, fine: e.target.value })} /></Campo>
-        </div>
-        {mi !== undefined && mf !== undefined && mf <= mi && <span className="secondario piccolo">Finisce il giorno dopo.</span>}
+        <label className="interruttore" style={{ borderBottom: 'none', padding: '2px 0' }}>
+          <span>Tutto il giorno (senza orari)</span>
+          <input type="checkbox" checked={b.tuttoIlGiorno} onChange={(e) => setB({ ...b, tuttoIlGiorno: e.target.checked })} />
+        </label>
+        {!b.tuttoIlGiorno && (
+          <div className="campi-affiancati">
+            <Campo etichetta="Inizio"><input type="time" value={b.inizio} onChange={(e) => setB({ ...b, inizio: e.target.value })} /></Campo>
+            <Campo etichetta="Fine"><input type="time" value={b.fine} onChange={(e) => setB({ ...b, fine: e.target.value })} /></Campo>
+          </div>
+        )}
+        {!b.tuttoIlGiorno && mi !== undefined && mf !== undefined && mf <= mi && <span className="secondario piccolo">Finisce il giorno dopo.</span>}
         <Campo etichetta="Sede">
           <select value={b.sedeId} onChange={(e) => setB({ ...b, sedeId: e.target.value })}>
             <option value="">—</option>
             {sedi.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
           </select>
         </Campo>
-        {record && <PulsanteElimina onElimina={() => void elimina('modelliTurno', record.id).then(onChiudi)} />}
+        {record && <PulsanteElimina onElimina={() => void elimina('modelliTurno', record.id).then(() => { onChiudi(); mostraAvviso(`${record.nome} eliminato`, () => void ripristina('modelliTurno', record.id)) })} />}
       </div>
     </Foglio>
   )
@@ -163,27 +175,8 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
 
 function FormSede({ record, indirizzoCasa, onChiudi }: { record?: Sede; indirizzoCasa?: string; onChiudi: () => void }) {
   const [b, setB] = useState({ nome: record?.nome ?? '', indirizzo: record?.indirizzo ?? '', viaggio: record?.minutiViaggio?.toString() ?? '' })
-  const [calcolo, setCalcolo] = useState<{ stato: 'fermo' | 'in corso' | 'fatto' | 'errore'; testo?: string }>({ stato: 'fermo' })
   const viaggio = b.viaggio.trim() === '' ? undefined : Number(b.viaggio)
   const valido = b.nome.trim() !== '' && (viaggio === undefined || (Number.isInteger(viaggio) && viaggio >= 0))
-
-  async function calcola(partenza: 'casa' | 'qui') {
-    setCalcolo({ stato: 'in corso' })
-    try {
-      let da: Coordinate | undefined
-      if (partenza === 'qui') da = await posizioneAttuale()
-      else if (indirizzoCasa) da = await geocodifica(indirizzoCasa)
-      if (!da) throw new Error(partenza === 'casa' ? 'Indirizzo di casa non trovato' : 'Posizione non disponibile')
-      const a = await geocodifica(b.indirizzo)
-      if (!a) throw new Error('Indirizzo della sede non trovato: prova ad aggiungere la città')
-      const percorso = await percorsoInAuto(da, a)
-      if (!percorso) throw new Error('Percorso non trovato')
-      setB((attuale) => ({ ...attuale, viaggio: String(percorso.minuti) }))
-      setCalcolo({ stato: 'fatto', testo: `${percorso.minuti} min in auto, ${percorso.km.toString().replace('.', ',')} km ${partenza === 'casa' ? 'da casa' : 'da dove sei ora'} (senza traffico).` })
-    } catch (e) {
-      setCalcolo({ stato: 'errore', testo: e instanceof Error ? e.message : 'Calcolo non riuscito' })
-    }
-  }
 
   async function conferma() {
     if (!valido) return
@@ -198,26 +191,18 @@ function FormSede({ record, indirizzoCasa, onChiudi }: { record?: Sede; indirizz
       <div className="modulo">
         <Campo etichetta="Nome"><input value={b.nome} placeholder="es. Ospedale" onChange={(e) => setB({ ...b, nome: e.target.value })} /></Campo>
         <Campo etichetta="Indirizzo"><input value={b.indirizzo} placeholder="Via, numero, città" onChange={(e) => setB({ ...b, indirizzo: e.target.value })} /></Campo>
-        <div className="riga-azioni">
-          <button type="button" className="pulsante" disabled={!haIndirizzo || !indirizzoCasa || calcolo.stato === 'in corso'} onClick={() => void calcola('casa')}>
-            Calcola da casa
-          </button>
-          <button type="button" className="pulsante" disabled={!haIndirizzo || calcolo.stato === 'in corso'} onClick={() => void calcola('qui')}>
-            Calcola da dove sono
-          </button>
-          {haIndirizzo && (
-            <a className="pulsante" href={linkGoogleMaps(b.indirizzo, indirizzoCasa)} target="_blank" rel="noreferrer">Apri in Google Maps</a>
-          )}
-        </div>
-        {!indirizzoCasa && <span className="secondario piccolo">Per calcolare da casa, inserisci prima l'indirizzo di casa nella pagina precedente.</span>}
-        {calcolo.stato === 'in corso' && <span className="secondario piccolo">Calcolo in corso…</span>}
-        {calcolo.stato === 'fatto' && <span className="secondario piccolo">{calcolo.testo}</span>}
-        {calcolo.stato === 'errore' && <Avviso>{calcolo.testo}</Avviso>}
-        <Campo etichetta="Minuti di viaggio (calcolati o scritti a mano)">
+        {haIndirizzo && (
+          <div className="riga-azioni">
+            <a className="pulsante" href={linkGoogleMaps(b.indirizzo, indirizzoCasa)} target="_blank" rel="noreferrer">
+              Percorso da {indirizzoCasa ? 'casa' : 'dove sei'} con traffico
+            </a>
+          </div>
+        )}
+        <span className="secondario piccolo">Google Maps mostra il tempo con il traffico del momento: scrivi qui i minuti che ti servono di solito.</span>
+        <Campo etichetta="Minuti di viaggio">
           <input inputMode="numeric" value={b.viaggio} placeholder="es. 35" onChange={(e) => setB({ ...b, viaggio: e.target.value })} />
         </Campo>
-        <span className="nota-privacy">Il calcolo usa OpenStreetMap: gli indirizzi vengono inviati a quel servizio solo quando premi "Calcola".</span>
-        {record && <PulsanteElimina onElimina={() => void elimina('sedi', record.id).then(onChiudi)} />}
+        {record && <PulsanteElimina onElimina={() => void elimina('sedi', record.id).then(() => { onChiudi(); mostraAvviso(`${record.nome} eliminata`, () => void ripristina('sedi', record.id)) })} />}
       </div>
     </Foglio>
   )
