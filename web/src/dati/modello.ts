@@ -84,6 +84,8 @@ export interface Impostazioni {
   indirizzoCasa?: string
   /** Correzioni una tantum già applicate ai dati (vedi `manutenzione.ts`). */
   correzioniApplicate?: string[]
+  /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */
+  modificatoIl?: number
 }
 
 export const IMPOSTAZIONI_PREDEFINITE: Impostazioni = {

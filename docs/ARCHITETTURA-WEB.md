@@ -13,7 +13,7 @@ L'app nativa potrà arrivare dopo, importando il backup JSON della versione web.
 | Pezzo | Scelta |
 |---|---|
 | Hosting dell'app | GitHub Pages, repository pubblico `agenda` (solo codice, nessun dato) |
-| Dati | repository **privato** (`agenda-privato`, cartella `dati/`), un file cifrato per collezione |
+| Dati | repository **privato separato** `agenda-dati`: `chiave.json` (sale + verifica, non segreti) e `agenda.cifrato.json` (tutti i dati cifrati) |
 | Accesso ai dati | API REST di GitHub (Contents API) con un *fine-grained token* limitato al solo repo dati, inserito dall'utente su ogni dispositivo |
 | Cifratura | WebCrypto: AES-GCM 256, chiave derivata dalla password con PBKDF2-SHA256 (600.000 iterazioni), sale e IV casuali per file |
 | Archivio locale | IndexedDB |
@@ -25,8 +25,8 @@ L'app nativa potrà arrivare dopo, importando il backup JSON della versione web.
 
 ## Sincronizzazione
 - Ogni record ha `id` (UUID), `modificatoIl` e, se cancellato, `eliminatoIl` (record "lapide", mai cancellazione fisica immediata).
-- Sincronizzazione: scarica i file remoti → decifra → **fonde per id, vince `modificatoIl` più recente** → cifra → carica con lo `sha` letto (se nel frattempo è cambiato, si riparte dal download). Nessuna perdita silenziosa: ogni conflitto è risolto per record, non per file.
-- Il token e la password restano solo sul dispositivo (IndexedDB), mai nel codice né su GitHub.
+- Sincronizzazione (`src/dati/sincronizzazione.ts`): scarica il file → decifra → **fonde per id, vince `modificatoIl` più recente** → scrive in locale ciò che è cambiato → se serve cifra e carica con lo `sha` letto (409 = un altro dispositivo ha scritto: si rilegge e si rifonde, max 3 volte). Avvio, modifiche (dopo 2,5 s), ritorno della rete o dell'app in primo piano, ogni 5 minuti.
+- La password non viene mai salvata: sul dispositivo resta la chiave AES non esportabile (IndexedDB) e il token GitHub, mai sincronizzati.
 - Backup: export JSON completo (non cifrato o cifrato, a scelta) + ripristino.
 
 ## Limiti accettati rispetto alla spec nativa

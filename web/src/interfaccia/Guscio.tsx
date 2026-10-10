@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Toast } from './componenti'
-import { IconaAgenda, IconaCerca, IconaModuli, IconaOggi, IconaTurni } from './icone'
+import { useStatoSincronizzazione } from '../dati/sincronizzazione'
+import { coloreStato, testoStato } from './Impostazioni'
+import { IconaAgenda, IconaCerca, IconaImpostazioni, IconaModuli, IconaOggi, IconaTurni } from './icone'
 
 export type Sezione = 'oggi' | 'agenda' | 'turni' | 'moduli' | 'cerca'
 
@@ -13,7 +15,8 @@ const SEZIONI: { id: Sezione; titolo: string; Icona: (p: { dimensione?: number }
 ]
 
 /** Barra laterale sul Mac (schermi larghi), barra in basso su iPhone. */
-export function Guscio({ attiva, children }: { attiva: Sezione; children: ReactNode }) {
+export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni'; children: ReactNode }) {
+  const stato = useStatoSincronizzazione()
   return (
     <div className="guscio">
       <nav className="laterale" aria-label="Sezioni">
@@ -23,6 +26,12 @@ export function Guscio({ attiva, children }: { attiva: Sezione; children: ReactN
             {titolo}
           </a>
         ))}
+        <span style={{ flex: 1 }} />
+        <a href="#/impostazioni" aria-current={attiva === 'impostazioni' ? 'page' : undefined} title={testoStato(stato)}>
+          <IconaImpostazioni dimensione={17} />
+          <span style={{ flex: 1 }}>Impostazioni</span>
+          <span style={{ width: 8, height: 8, borderRadius: 4, background: coloreStato(stato) }} aria-label={testoStato(stato)} />
+        </a>
       </nav>
       <main className="contenuto">{children}</main>
       <Toast />

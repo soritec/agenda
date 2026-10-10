@@ -1,5 +1,6 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import { IMPOSTAZIONI_PREDEFINITE, type Collezioni, type Impostazioni, type NomeCollezione } from './modello'
+import { IMPOSTAZIONI_PREDEFINITE, NOMI_COLLEZIONI, type Base, type Collezioni, type Impostazioni, type NomeCollezione } from './modello'
+import type { Istantanea } from './fusione'
 
 /**
  * Archivio locale (IndexedDB) del dispositivo. È la fonte dei dati dell'app: funziona senza rete,
@@ -9,7 +10,9 @@ import { IMPOSTAZIONI_PREDEFINITE, type Collezioni, type Impostazioni, type Nome
 const NOME_DB = 'agenda'
 const VERSIONE_DB = 4
 
-type Ascoltatore = () => void
+/** `sincronizzazione` = la modifica arriva da GitHub (non va rimandata indietro). */
+export type OrigineModifica = 'utente' | 'sincronizzazione'
+type Ascoltatore = (origine: OrigineModifica) => void
 const ascoltatori = new Set<Ascoltatore>()
 
 let db: Promise<IDBPDatabase> | undefined
@@ -43,8 +46,8 @@ export async function chiudiPerTest() {
   db = undefined
 }
 
-function notifica() {
-  for (const a of ascoltatori) a()
+function notifica(origine: OrigineModifica = 'utente') {
+  for (const a of ascoltatori) a(origine)
 }
 
 /** Avvisa quando i dati cambiano; restituisce la funzione per smettere di ascoltare. */
@@ -126,8 +129,54 @@ export async function leggiImpostazioni(): Promise<Impostazioni> {
 }
 
 export async function salvaImpostazioni(modifiche: Partial<Impostazioni>): Promise<Impostazioni> {
-  const nuove = { ...(await leggiImpostazioni()), ...modifiche }
+  const nuove = { ...(await leggiImpostazioni()), ...modifiche, modificatoIl: Date.now() }
   await (await apri()).put('impostazioni', nuove, 'generali')
   notifica()
   return nuove
+}
+
+/** Tutti i dati del dispositivo, compresi i record eliminati (per sincronizzazione e backup). */
+export async function istantaneaLocale(): Promise<Istantanea> {
+  const database = await apri()
+  const collezioni: Istantanea['collezioni'] = {}
+  for (const nome of NOMI_COLLEZIONI) collezioni[nome] = (await database.getAll(nome)) as Base[]
+  const impostazioni = (await database.get('impostazioni', 'generali')) as Istantanea['impostazioni']
+  return { formato: 1, creataIl: Date.now(), collezioni, impostazioni }
+}
+
+/** Scrive record così come sono (senza toccare le date): usato per i dati arrivati da GitHub o da un backup. */
+export async function scriviGrezzi(
+  record: Partial<Record<NomeCollezione, Base[]>>,
+  impostazioni?: Istantanea['impostazioni'],
+  origine: OrigineModifica = 'sincronizzazione',
+): Promise<void> {
+  const database = await apri()
+  for (const [nome, elenco] of Object.entries(record) as [NomeCollezione, Base[]][]) {
+    if (!NOMI_COLLEZIONI.includes(nome) || !elenco.length) continue
+    const tx = database.transaction(nome, 'readwrite')
+    await Promise.all([...elenco.map((r) => tx.store.put(r)), tx.done])
+  }
+  if (impostazioni) await database.put('impostazioni', impostazioni, 'generali')
+  notifica(origine)
+}
+
+/** Dati del collegamento con GitHub: solo su questo dispositivo, mai sincronizzati. */
+export interface ConfigurazioneSincronizzazione {
+  token: string
+  proprietario: string
+  repository: string
+  /** Chiave AES non esportabile, ricavata dalla password: evita di riscriverla a ogni apertura. */
+  chiave: CryptoKey
+  sha?: string
+  ultimaSincronizzazione?: number
+}
+
+export async function leggiConfigurazioneSincronizzazione(): Promise<ConfigurazioneSincronizzazione | undefined> {
+  return (await (await apri()).get('impostazioni', 'sincronizzazione')) as ConfigurazioneSincronizzazione | undefined
+}
+
+export async function salvaConfigurazioneSincronizzazione(c: ConfigurazioneSincronizzazione | undefined): Promise<void> {
+  const database = await apri()
+  if (c) await database.put('impostazioni', c, 'sincronizzazione')
+  else await database.delete('impostazioni', 'sincronizzazione')
 }

@@ -10,6 +10,8 @@ import { ImpostazioniTurni } from './moduli/turni/viste/ImpostazioniTurni'
 import { NuoviTurni } from './moduli/turni/viste/NuoviTurni'
 import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { StampaTurni } from './moduli/turni/viste/StampaTurni'
+import { Impostazioni } from './interfaccia/Impostazioni'
+import { IconaImpostazioni } from './interfaccia/icone'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
 import { classeSigla, datiDa, oggi, perId, sedeEffettiva, siglaTurno, titoloTurno } from './moduli/turni/supporto'
 import { minuti } from './moduli/turni/tipi'
@@ -31,9 +33,10 @@ export function App() {
   } else if (sezione === 'agenda') pagina = <InArrivo titolo="Agenda" />
   else if (sezione === 'moduli') pagina = <InArrivo titolo="Moduli" />
   else if (sezione === 'cerca') pagina = <InArrivo titolo="Cerca" />
+  else if (sezione === 'impostazioni') pagina = <Impostazioni />
   else pagina = <Oggi />
 
-  const attiva = (['oggi', 'agenda', 'turni', 'moduli', 'cerca'].includes(sezione) ? sezione : 'oggi') as Sezione
+  const attiva = (['oggi', 'agenda', 'turni', 'moduli', 'cerca', 'impostazioni'].includes(sezione) ? sezione : 'oggi') as Sezione | 'impostazioni'
   return <Guscio attiva={attiva}>{pagina}</Guscio>
 }
 
@@ -54,9 +57,12 @@ function Oggi() {
 
   return (
     <div className="schermata" style={{ maxWidth: 720 }}>
-      <header>
-        <div className="sopratitolo">{F.dataEstesa(Date.now())}</div>
-        <h1 className="titolo-grande">Oggi</h1>
+      <header className="intestazione">
+        <div>
+          <div className="sopratitolo">{F.dataEstesa(Date.now())}</div>
+          <h1 className="titolo-grande">Oggi</h1>
+        </div>
+        <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a>
       </header>
 
       {diOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/turni">Vai ai turni</a></div>}
