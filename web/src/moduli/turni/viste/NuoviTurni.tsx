@@ -11,7 +11,7 @@ import { avvisi as calcolaAvvisi } from '../controlli'
 import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { minuti, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa, type DatiTurno, type TipoTurno } from '../tipi'
 import {
-  celleMese, chiaveGiorno, classeSigla, datiDa, giornoDaChiave, minutiDaOrario, minutiDaOreScritte, oggi, orarioDaMinuti, perId, siglaTurno, titoloTurno, turniPerGiorno,
+  celleMese, chiaveGiorno, classeSigla, datiDa, giornoDaChiave, larghezzaTurno, minutiDaOrario, minutiDaOreScritte, oggi, orarioDaMinuti, perId, siglaTurno, titoloTurno, turniPerGiorno,
 } from '../supporto'
 
 const GIORNI = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
@@ -164,7 +164,7 @@ export function NuoviTurni({ anno: annoIniziale, mese: meseIniziale, giorniInizi
                   <span className="numero">{g.giorno}</span>
                   <span className="sigle">
                     {(ferie ?? []).some((f) => f.giorno === k) && <span className="etichetta-ferie">Ferie</span>}
-                    {esistenti.map((t) => <span key={t.id} className={classeSigla(t.tipo)} style={{ opacity: 0.55 }}>{siglaTurno(t, mappaModelli)}</span>)}
+                    {esistenti.map((t) => <span key={t.id} className="turno-mini"><span className={`${classeSigla(t.tipo)} barra-turno`} style={{ opacity: 0.55, width: larghezzaTurno(t) }}>{siglaTurno(t, mappaModelli)}</span></span>)}
                   </span>
                 </button>
               )

@@ -96,9 +96,16 @@ export function testoDaCentesimi(c: number | undefined): string {
   return c === undefined ? '' : (c / 100).toFixed(2).replace('.', ',')
 }
 
-/** Orario breve per il calendario: "20–8", "8:30–14", oppure "tutto il giorno". */
+/** Larghezza della barra del turno nel calendario, proporzionale alla durata (24 ore = tutta la casella). */
+export function larghezzaTurno(t: Pick<Turno, 'inizio' | 'fine' | 'tuttoIlGiorno'>): string {
+  if (t.tuttoIlGiorno) return '100%'
+  const ore = Math.max(0, (t.fine - t.inizio) / 3_600_000)
+  return `${Math.min(100, Math.round((ore / 24) * 100))}%`
+}
+
+/** Orario breve per il calendario: "20–8", "8:30–14"; vuoto per i turni senza orari. */
 export function orarioCompatto(t: Pick<Turno, 'inizio' | 'fine' | 'tuttoIlGiorno'>): string {
-  if (t.tuttoIlGiorno) return 'giorno'
+  if (t.tuttoIlGiorno) return ''
   const f = (ms: number) => {
     const c = componenti(ms)
     return c.minuto === 0 ? String(c.ora) : `${c.ora}:${String(c.minuto).padStart(2, '0')}`

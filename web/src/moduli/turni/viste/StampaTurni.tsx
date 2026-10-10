@@ -3,16 +3,34 @@ import { intervalloMese, istante } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
-import { condividiOScarica, creaPdf, scarica } from '../../../export/pdf'
+import { condividiOScarica, creaPdf, scarica, type Colore, type RigaPdf } from '../../../export/pdf'
 import { Avviso } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
-import { minuti } from '../tipi'
-import { celleMese, chiaveGiorno, classeSigla, datiDa, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { minuti, tipoTurnoDa, type TipoTurno } from '../tipi'
+import { celleMese, chiaveGiorno, classeSigla, datiDa, larghezzaTurno, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+const INTESTAZIONI = ['Data', 'Turno', 'Orario', 'Ore', 'Sede', 'Note']
+
+/** Toni chiari dei tipi di turno per il PDF (stessa famiglia di colori dell'app). */
+const COLORI_PDF: Record<TipoTurno, Colore> = {
+  guardiaNotturna: [214, 223, 238],
+  guardiaDiurna: [242, 232, 210],
+  reparto: [224, 235, 221],
+  ambulatorio: [221, 231, 242],
+  sostituzioneMMG: [236, 224, 234],
+  festivo: [244, 224, 214],
+  domiciliare: [233, 228, 220],
+}
+
+interface Riga extends RigaPdf {
+  chiave: string
+  ordine: number
+  tipo?: TipoTurno
+}
 
 /** Turni del mese impaginati per il foglio A4, con stampa, PDF e condivisione. */
 export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
@@ -39,41 +57,55 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const nomeMese = F.mese(istante(anno, mese, 1))
   const titolo = `Turni · ${nomeMese.charAt(0).toUpperCase()}${nomeMese.slice(1)}`
   const area = periodi ? areaDelMese(periodi, anno, mese) : undefined
-  const sottotitolo = area ? `Rotazione: ${TITOLI_AREA[area.area]} (mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE})` : undefined
+  const sottotitolo = area ? `Rotazione in ${TITOLI_AREA[area.area]} · mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE}` : undefined
 
-  // Righe della tabella: turni e giorni di ferie in ordine di data.
+  // Righe: turni e giorni di ferie in ordine di data.
   const righe = useMemo(() => {
-    const elenco: { chiave: string; ordine: number; celle: string[] }[] = delMese.map((t) => ({
-      chiave: t.id,
-      ordine: t.inizio,
-      celle: [
-        F.dataBreve(t.inizio),
-        titoloTurno(t, mappaModelli),
-        t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)}–${F.ora(t.fine)}`,
-        minuti(datiDa(t)) > 0 ? F.durata(minuti(datiDa(t))) : '',
-        (t.sedeId && mappaSedi.get(t.sedeId)?.nome) || '',
-        t.note ?? '',
-      ],
-    }))
+    const elenco: Riga[] = delMese.map((t) => {
+      const tipo = tipoTurnoDa(t.tipo)
+      const m = minuti(datiDa(t))
+      return {
+        chiave: t.id,
+        ordine: t.inizio,
+        tipo,
+        colore: COLORI_PDF[tipo],
+        evidenza: eFestivo(t.inizio, { sabatoFestivo }) ? 'festivo' : undefined,
+        celle: [
+          F.dataBreve(t.inizio),
+          titoloTurno(t, mappaModelli),
+          t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`,
+          m > 0 ? F.durata(m) : '',
+          (t.sedeId && mappaSedi.get(t.sedeId)?.nome) || '',
+          t.note ?? '',
+        ],
+      }
+    })
     for (const g of ferieMese) {
       const [a, m, gg] = g.split('-').map(Number)
       const i = istante(a!, m!, gg!, 12)
-      elenco.push({ chiave: `ferie-${g}`, ordine: i - 1, celle: [F.dataBreve(i), 'Ferie', '', '', '', ''] })
+      elenco.push({ chiave: `ferie-${g}`, ordine: i - 1, evidenza: 'ferie', celle: [F.dataBreve(i), 'Ferie', '', '', '', ''] })
     }
     return elenco.sort((x, y) => x.ordine - y.ordine)
-  }, [delMese, ferieMese, mappaModelli, mappaSedi])
+  }, [delMese, ferieMese, mappaModelli, mappaSedi, sabatoFestivo])
 
-  const totali = [
-    `Ore lavorate: ${F.durata(riepilogo.minutiTotali)}`,
-    `Turni: ${riepilogo.numeroTurni} · Notti: ${riepilogo.notti} · Festivi: ${riepilogo.turniFestivi}${ferieMese.length ? ` · Ferie: ${ferieMese.length} giorni` : ''}`,
+  const caselle = [
+    { etichetta: 'ore lavorate', valore: F.durata(riepilogo.minutiTotali) },
+    { etichetta: 'turni', valore: String(riepilogo.numeroTurni) },
+    { etichetta: 'notti', valore: String(riepilogo.notti) },
+    { etichetta: 'festivi', valore: String(riepilogo.turniFestivi) },
+    ...(ferieMese.length ? [{ etichetta: 'giorni di ferie', valore: String(ferieMese.length) }] : []),
   ]
-  const intestazioni = ['Data', 'Turno', 'Orario', 'Ore', 'Sede', 'Note']
   const nomeFile = `Turni ${nomeMese}.pdf`
 
   async function pdf(azione: 'condividi' | 'scarica') {
     setStato('Preparo il PDF…')
     try {
-      const blob = await creaPdf({ titolo, sottotitolo, intestazioni, righe: righe.map((r) => r.celle), totali })
+      const blob = await creaPdf({
+        titolo, sottotitolo, riepilogo: caselle, intestazioni: INTESTAZIONI, righe,
+        colonneGrassetto: [0, 1], colonnaColore: 1, colonneDestra: [3], colonnaNote: 5,
+        totaleTabella: ['Totale ore', '', '', F.durata(riepilogo.minutiTotali), '', ''],
+        piede: `Agenda · creato ${F.dataEstesa(Date.now())}`,
+      })
       if (azione === 'scarica') scarica(blob, nomeFile)
       else await condividiOScarica(blob, nomeFile, titolo)
       setStato(undefined)
@@ -86,7 +118,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const successivo = mese === 12 ? parametroMese(anno + 1, 1) : parametroMese(anno, mese + 1)
 
   return (
-    <div className="schermata" style={{ maxWidth: 900 }}>
+    <div className="schermata stampa" style={{ maxWidth: 900 }}>
       <div className="intestazione non-stampare">
         <a href={`#/turni?mese=${qui}`} className="piccolo">‹ Turni</a>
         <div className="riga-azioni">
@@ -99,10 +131,19 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       </div>
       {stato && <div className="non-stampare"><Avviso>{stato}</Avviso></div>}
 
-      <header>
-        <h1 className="titolo-grande" style={{ fontSize: 26 }}>{titolo}</h1>
-        {sottotitolo && <div className="secondario">{sottotitolo}</div>}
+      <header className="testata-stampa">
+        <h1 className="titolo-grande" style={{ fontSize: 28 }}>{titolo}</h1>
+        {sottotitolo && <div className="secondario" style={{ fontWeight: 500 }}>{sottotitolo}</div>}
       </header>
+
+      <div className="tessere foglio-stampa">
+        {caselle.map((c) => (
+          <div key={c.etichetta} className="tessera">
+            <span className="valore">{c.valore}</span>
+            <span className="secondario piccolo">{c.etichetta}</span>
+          </div>
+        ))}
+      </div>
 
       <section className="mese foglio-stampa" aria-label="Calendario del mese">
         <div className="giorni-settimana">{GIORNI.map((g) => <span key={g}>{g}</span>)}</div>
@@ -113,13 +154,13 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
             const festivo = eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo })
             return (
               <div key={k} className={`cella${festivo ? ' festivo' : ''}${ferieMese.includes(k) ? ' ferie' : ''}`} style={{ cursor: 'default', minHeight: 58 }}>
-                <span className="numero" style={{ width: 'auto', height: 22 }}>{g.giorno}</span>
+                <span className="numero" style={{ width: 'auto', height: 22, fontWeight: 600 }}>{g.giorno}</span>
                 <span className="sigle">
                   {ferieMese.includes(k) && <span className="etichetta-ferie">Ferie</span>}
                   {(perGiorno.get(k) ?? []).map((t) => (
                     <span key={t.id} className="turno-mini">
-                      <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
-                      <span className="orario-mini">{orarioCompatto(t)}</span>
+                      <span className={`${classeSigla(t.tipo)} barra-turno`} style={{ width: larghezzaTurno(t) }}>{siglaTurno(t, mappaModelli)}</span>
+                      {orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                     </span>
                   ))}
                 </span>
@@ -130,20 +171,38 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       </section>
 
       <table className="tabella-stampa">
-        <thead><tr>{intestazioni.map((h) => <th key={h}>{h}</th>)}</tr></thead>
+        <thead><tr>{INTESTAZIONI.map((h, i) => <th key={h} style={i === 3 ? { textAlign: 'right' } : undefined}>{h}</th>)}</tr></thead>
         <tbody>
           {righe.length === 0 && <tr><td colSpan={6} className="secondario">Nessun turno in questo mese.</td></tr>}
-          {righe.map((r) => <tr key={r.chiave}>{r.celle.map((c, i) => <td key={i} className={i === 3 ? 'numeri' : undefined}>{c}</td>)}</tr>)}
+          {righe.map((r) => (
+            <tr key={r.chiave} className={r.evidenza === 'ferie' ? 'riga-ferie' : undefined}>
+              <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }} className={r.evidenza === 'festivo' ? 'data-festiva' : undefined}>{r.celle[0]}</td>
+              <td style={{ fontWeight: 700 }}>
+                {r.tipo && <span className={classeSigla(r.tipo)} style={{ minWidth: 10, width: 10, height: 10, padding: 0, marginRight: 6, verticalAlign: 'middle' }} />}
+                {r.celle[1]}
+              </td>
+              <td className="numeri" style={{ whiteSpace: 'nowrap' }}>{r.celle[2]}</td>
+              <td className="numeri" style={{ textAlign: 'right', fontWeight: 600 }}>{r.celle[3]}</td>
+              <td>{r.celle[4]}</td>
+              <td className="secondario" style={{ fontStyle: 'italic' }}>{r.celle[5]}</td>
+            </tr>
+          ))}
         </tbody>
+        {righe.length > 0 && (
+          <tfoot>
+            <tr>
+              <td colSpan={3} style={{ fontWeight: 700 }}>Totale ore</td>
+              <td className="numeri" style={{ textAlign: 'right', fontWeight: 700 }}>{F.durata(riepilogo.minutiTotali)}</td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        )}
       </table>
 
-      <div className="foglio-stampa" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {totali.map((t) => <div key={t} className="numeri" style={{ fontWeight: 500 }}>{t}</div>)}
-      </div>
       <p className="secondario piccolo non-stampare">
         Su iPhone, "Condividi" apre il foglio di condivisione (Mail, WhatsApp, File…). "Stampa" permette anche di salvare come PDF.
       </p>
-      <span className="solo-stampa secondario piccolo">Stampato {F.dataEstesa(Date.now())}</span>
+      <span className="solo-stampa secondario piccolo">Agenda · stampato {F.dataEstesa(Date.now())}</span>
     </div>
   )
 }

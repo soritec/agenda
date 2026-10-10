@@ -166,7 +166,7 @@ a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outlin
 .cella:hover { background: var(--superficie-2); }
 .cella .numero { width: 30px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 .cella.festivo .numero { color: var(--testo-2); }
-.cella.oggi .numero { background: var(--accento); color: var(--superficie); font-weight: 600; }
+.cella.oggi .numero { box-shadow: inset 0 0 0 2px var(--accento); color: var(--accento); font-weight: 700; }
 .cella.scelto .numero { background: var(--primario); color: var(--primario-testo); font-weight: 600; }
 .cella .sigle { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .cella .punto { width: 5px; height: 5px; border-radius: 3px; background: var(--linea-forte); }
@@ -201,14 +201,16 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 
 .solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Orario accanto alla sigla nel calendario */
-.cella .sigle { flex-direction: column; align-items: center; gap: 2px; }
-.cella .turno-mini { display: inline-flex; align-items: center; gap: 3px; position: relative; }
-.cella .orario-mini { font-size: 9px; color: var(--testo-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
-@media (max-width: 420px) { .cella .orario-mini { font-size: 8px; letter-spacing: -0.02em; } .cella .turno-mini { flex-direction: column; gap: 0; } }
-@media (min-width: 900px) { .mese.grande .cella .sigle { align-items: flex-start; } .cella .orario-mini { font-size: 11px; } }
-/* Eliminazione con pressione prolungata */
-.cella .elimina { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 9px; border: none; background: var(--pericolo); color: #fff; font-size: 12px; line-height: 18px; padding: 0; cursor: pointer; z-index: 2; pointer-events: auto; }
+/* Turni nel calendario: barra lunga quanto la durata, orario sotto */
+.cella .sigle { flex-direction: column; align-items: stretch; gap: 3px; width: 100%; padding: 0 3px; box-sizing: border-box; }
+.cella .turno-mini { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; }
+.cella .riga-turno { display: flex; align-items: center; gap: 4px; width: 100%; }
+.cella .barra-turno { justify-content: flex-start; box-sizing: border-box; min-width: 20px; padding: 0 5px; }
+.cella .orario-mini { font-size: 9px; color: var(--testo-2); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.1; }
+@media (max-width: 420px) { .cella .orario-mini { font-size: 8px; letter-spacing: -0.02em; } .cella .sigle { padding: 0 1px; } }
+@media (min-width: 900px) { .cella .orario-mini { font-size: 11px; } }
+/* Eliminazione con pressione prolungata: × accanto alla barra */
+.cella .elimina { flex-shrink: 0; width: 20px; height: 20px; border-radius: 10px; border: none; background: var(--pericolo); color: #fff; font-size: 13px; line-height: 20px; padding: 0; cursor: pointer; pointer-events: auto; position: relative; }
 .riga .elimina-riga { width: 32px; height: 32px; border-radius: 16px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--pericolo); font-size: 16px; cursor: pointer; flex-shrink: 0; }
 /* Ferie */
 .cella.ferie { background: var(--ferie); }
@@ -241,3 +243,20 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .tabella-stampa { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tabella-stampa th, .tabella-stampa td { border-bottom: 1px solid var(--linea); padding: 8px 6px; text-align: left; vertical-align: top; }
 .tabella-stampa th { color: var(--testo-2); font-weight: 500; font-size: 12px; }
+/* Riepilogo stampabile */
+.tabella-stampa tfoot td { border-top: 2px solid var(--testo); border-bottom: none; padding-top: 10px; }
+.tabella-stampa .riga-ferie td { background: var(--ferie); color: var(--ferie-testo); }
+.tabella-stampa .data-festiva { color: #8A4C34; }
+.tabella-stampa thead th { border-bottom: 2px solid var(--primario); color: var(--testo); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+@media print {
+  .stampa .titolo-grande { font-size: 20pt !important; }
+  .stampa .testata-stampa { border-top: 4pt solid #3F6E73; padding-top: 6pt; }
+  .stampa .tessere { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .stampa .tessera { padding: 6pt 8pt; background: #F2EEE8 !important; border: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .stampa .tessera .valore { font-size: 15pt; font-weight: 700; }
+  .stampa .mese { padding: 4pt; }
+  .stampa .cella { min-height: 44pt !important; }
+  .tabella-stampa thead th { border-bottom: 1.5pt solid #3F6E73; font-size: 8pt; }
+  .tabella-stampa tfoot td { border-top: 1.5pt solid #000; }
+  .tabella-stampa .riga-ferie td, .cella.ferie { background: #F3E7CF !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

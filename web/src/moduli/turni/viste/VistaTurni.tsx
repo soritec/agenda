@@ -11,7 +11,7 @@ import { sovrapposizioni } from '../controlli'
 import { calcolaRiepilogo } from '../riepilogo'
 import { AREE_ROTAZIONE, areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA, type AreaRotazione } from '../rotazione'
 import { minuti, tipoTurnoDa, TITOLI_TIPO_TURNO, type TipoTurno } from '../tipi'
-import { celleMese, chiaveGiorno, classeSigla, datiDa, oggi, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { celleMese, chiaveGiorno, classeSigla, datiDa, larghezzaTurno, oggi, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
@@ -141,18 +141,21 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                         const nome = titoloTurno(t, mappaModelli)
                         return (
                           <span key={t.id} className="turno-mini">
-                            <a className={classeSigla(t.tipo)} href={`#/turni/${t.id}`} data-nota={modifica ? undefined : t.note || undefined}
-                              onPointerDown={() => iniziaPressione(k)} onPointerUp={fermaPressione} onPointerLeave={fermaPressione}
-                              onContextMenu={(e) => { e.preventDefault(); setInModifica(k) }}
-                              onClick={(e) => { if (pressione.current.scattata || modifica) { e.preventDefault(); pressione.current.scattata = false } }}
-                              aria-label={`${nome}, ${t.tuttoIlGiorno ? 'tutto il giorno' : `${F.ora(t.inizio)}–${F.ora(t.fine)}`}${t.note ? `. Nota: ${t.note}` : ''}. Tieni premuto per eliminare`}>
-                              {siglaTurno(t, mappaModelli)}
-                              {t.note && !modifica && <span className="ha-nota" />}
-                            </a>
-                            {modifica && (
-                              <button type="button" className="elimina" aria-label={`Elimina ${nome}`} onClick={() => void eliminaTurno(t.id, nome)}>×</button>
-                            )}
-                            <span className="orario-mini">{orarioCompatto(t)}</span>
+                            <span className="riga-turno">
+                              <a className={`${classeSigla(t.tipo)} barra-turno`} style={{ width: larghezzaTurno(t) }} href={`#/turni/${t.id}`}
+                                data-nota={modifica ? undefined : t.note || undefined}
+                                onPointerDown={() => iniziaPressione(k)} onPointerUp={fermaPressione} onPointerLeave={fermaPressione}
+                                onContextMenu={(e) => { e.preventDefault(); setInModifica(k) }}
+                                onClick={(e) => { if (pressione.current.scattata || modifica) { e.preventDefault(); pressione.current.scattata = false } }}
+                                aria-label={`${nome}, ${t.tuttoIlGiorno ? 'tutto il giorno' : `${F.ora(t.inizio)}–${F.ora(t.fine)}`}${t.note ? `. Nota: ${t.note}` : ''}. Tieni premuto per eliminare`}>
+                                {siglaTurno(t, mappaModelli)}
+                                {t.note && !modifica && <span className="ha-nota" />}
+                              </a>
+                              {modifica && (
+                                <button type="button" className="elimina" aria-label={`Elimina ${nome}`} onClick={() => void eliminaTurno(t.id, nome)}>×</button>
+                              )}
+                            </span>
+                            {!modifica && orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                           </span>
                         )
                       })}
