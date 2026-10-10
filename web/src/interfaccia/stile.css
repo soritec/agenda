@@ -311,8 +311,9 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 }
 @media print { .etichetta-giornata { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 /* × rapida: su Mac compare passando con il mouse, su iPhone tenendo premuto */
-.cella .elimina.rapida { display: none; width: 16px; height: 16px; font-size: 11px; line-height: 16px; }
+.cella .elimina.rapida { display: none; width: 20px; height: 20px; font-size: 13px; line-height: 20px; }
 .cella .elimina.rapida.visibile { display: inline-block; width: 20px; height: 20px; font-size: 13px; line-height: 20px; }
 @media (hover: hover) and (pointer: fine) {
-  .cella .riga-turno:hover .elimina.rapida, .cella .riga-turno:focus-within .elimina.rapida { display: inline-block; }
+  /* Visibile finché il mouse è nella casella: così non sparisce passando dall'etichetta alla ×. */
+  .cella:hover .elimina.rapida, .cella:focus-within .elimina.rapida { display: inline-block; }
 }
