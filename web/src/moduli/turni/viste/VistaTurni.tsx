@@ -11,7 +11,7 @@ import { GiornoRapido } from './GiornoRapido'
 import { SceltaOspedale } from './SceltaOspedale'
 import { SvuotaMese } from './SvuotaMese'
 import { assegnazioneDelMese } from '../assegnazioni'
-import { IconaAvanti, IconaImpostazioni, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
+import { IconaAvanti, IconaCestino, IconaImpostazioni, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { sovrapposizioni } from '../controlli'
 import { calcolaRiepilogo } from '../riepilogo'
@@ -123,7 +123,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
           <a className="pulsante" href={`#/turni/stampa?mese=${qui}`}>Stampa · PDF</a>
           {delMese.length + giornateMese.reduce((n, g) => n + g.numero, 0) > 0 && (
-            <button type="button" className="pulsante pericolo" onClick={() => setSvuota(true)}>Svuota il mese</button>
+            <button type="button" className="pulsante tondo pericolo" onClick={() => setSvuota(true)} aria-label="Svuota il mese" title="Svuota il mese"><IconaCestino dimensione={18} /></button>
           )}
           <a className="pulsante tondo" href="#/turni/impostazioni" aria-label="Turni tipo, sedi e regole"><IconaImpostazioni dimensione={18} /></a>
           <a className="pulsante tondo primario" href={`#/turni/nuovi?mese=${qui}`} aria-label="Aggiungi turni"><IconaPiu dimensione={18} /></a>

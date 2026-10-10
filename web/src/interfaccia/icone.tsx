@@ -26,6 +26,9 @@ export const IconaModuli = (p: P) => (
 export const IconaCerca = (p: P) => (
   <Icona {...p}><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></Icona>
 )
+export const IconaCestino = (p: P) => (
+  <Icona {...p}><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 11v5.5M14 11v5.5" /></Icona>
+)
 export const IconaPiu = (p: P) => <Icona {...p}><path d="M12 5v14M5 12h14" /></Icona>
 export const IconaIndietro = (p: P) => <Icona {...p}><path d="M15 6l-6 6 6 6" /></Icona>
 export const IconaAvanti = (p: P) => <Icona {...p}><path d="M9 6l6 6-6 6" /></Icona>

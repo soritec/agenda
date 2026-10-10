@@ -273,7 +273,9 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 
 /* Giornate senza turno (ferie, riposo, congresso, smonto notte) */
 .etichetta-giornata { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; border: none; cursor: pointer; pointer-events: auto; position: relative; align-self: flex-start; line-height: 16px; }
-.etichetta-giornata.g-ferie { background: #E6E2DB; } .etichetta-giornata.g-riposo { background: #DCEBF4; } .etichetta-giornata.g-congresso { background: #E1ECD2; } .etichetta-giornata.g-smontoNotte { background: #E3E3F0; }
+/* Giornate: tutta la casella colorata; lo spazio tra le caselle le separa quando sono vicine. */
+.cella.g-ferie { background: #ECE9E4; } .cella.g-riposo { background: #E2EEF5; } .cella.g-congresso { background: #E6EFD9; } .cella.g-smontoNotte { background: #E6E6F1; }
+.etichetta-giornata { background: none; }
 .etichetta-giornata.g-ferie { color: #5E5A54; } .etichetta-giornata.g-riposo { color: #2F5A73; } .etichetta-giornata.g-congresso { color: #4A6A2A; } .etichetta-giornata.g-smontoNotte { color: #4B4B78; }
 .scelta.giornata[aria-pressed='true'] { border: 2px solid var(--primario); padding: 11px; }
 .pallino-giornata { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; border: 1px solid var(--linea-forte); }
@@ -301,9 +303,11 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .mese { -webkit-user-select: none; user-select: none; }
 
 /* Spazio tra i giorni del calendario */
-.mese .griglia { gap: 3px; }
+.mese .griglia { gap: 4px; }
+/* Azioni dell'intestazione sempre a destra, anche quando vanno a capo */
+.intestazione > .riga-azioni { margin-left: auto; justify-content: flex-end; }
 @media (prefers-color-scheme: dark) {
-  .etichetta-giornata.g-ferie { background: #3B3833; } .etichetta-giornata.g-riposo { background: #253A47; } .etichetta-giornata.g-congresso { background: #2F3D25; } .etichetta-giornata.g-smontoNotte { background: #303047; }
+  .cella.g-ferie { background: #34312D; } .cella.g-riposo { background: #22333D; } .cella.g-congresso { background: #2D3824; } .cella.g-smontoNotte { background: #2D2D40; }
 }
 @media print { .etichetta-giornata { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 /* × rapida: su Mac compare passando con il mouse, su iPhone tenendo premuto */
