@@ -8,6 +8,8 @@ export const TIPI_TURNO = [
   'ambulatorio',
   'guardiaDiurna',
   'guardiaNotturna',
+  'ecografia',
+  'salaOperatoria',
   'sostituzioneMMG',
   'festivo',
   'domiciliare',
@@ -19,6 +21,8 @@ export const TITOLI_TIPO_TURNO: Record<TipoTurno, string> = {
   ambulatorio: 'Ambulatorio',
   guardiaDiurna: 'Guardia diurna',
   guardiaNotturna: 'Guardia notturna',
+  ecografia: 'Ecografia',
+  salaOperatoria: 'Sala operatoria',
   sostituzioneMMG: 'Sostituzione MMG',
   festivo: 'Festivo',
   domiciliare: 'Domiciliare',
@@ -56,4 +60,15 @@ export function minutiDaOrari(t: DatiTurno): number {
 export function minuti(t: DatiTurno): number {
   if (t.minutiManuali !== undefined) return Math.max(0, t.minutiManuali)
   return t.tuttoIlGiorno ? 0 : minutiDaOrari(t)
+}
+
+/** Giornate senza turno, segnate sul calendario. */
+export const TIPI_GIORNATA = ['ferie', 'riposo', 'congresso', 'smontoNotte'] as const
+export type TipoGiornata = (typeof TIPI_GIORNATA)[number]
+export const TITOLI_GIORNATA: Record<TipoGiornata, string> = { ferie: 'Ferie', riposo: 'Riposo', congresso: 'Congresso', smontoNotte: 'Smonto notte' }
+/** Etichetta corta nel calendario. */
+export const ETICHETTE_GIORNATA: Record<TipoGiornata, string> = { ferie: 'Ferie', riposo: 'Riposo', congresso: 'Congr.', smontoNotte: 'Smonto' }
+
+export function tipoGiornataDa(grezzo: string | undefined): TipoGiornata {
+  return (TIPI_GIORNATA as readonly string[]).includes(grezzo ?? '') ? (grezzo as TipoGiornata) : 'ferie'
 }

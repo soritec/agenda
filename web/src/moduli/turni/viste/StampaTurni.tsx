@@ -9,7 +9,7 @@ import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
-import { minuti, tipoTurnoDa, type TipoTurno } from '../tipi'
+import { ETICHETTE_GIORNATA, minuti, TIPI_GIORNATA, tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA, type TipoGiornata, type TipoTurno } from '../tipi'
 import { celleMese, chiaveGiorno, classeSigla, datiDa, larghezzaTurno, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
@@ -24,12 +24,23 @@ const COLORI_PDF: Record<TipoTurno, Colore> = {
   sostituzioneMMG: [236, 224, 234],
   festivo: [244, 224, 214],
   domiciliare: [233, 228, 220],
+  ecografia: [216, 236, 233],
+  salaOperatoria: [238, 226, 217],
+}
+
+/** Colori delle giornate senza turno nel PDF. */
+const COLORI_GIORNATA: Record<TipoGiornata, Colore> = {
+  ferie: [236, 233, 228],
+  riposo: [226, 238, 245],
+  congresso: [230, 239, 217],
+  smontoNotte: [230, 230, 241],
 }
 
 interface Riga extends RigaPdf {
   chiave: string
   ordine: number
   tipo?: TipoTurno
+  giornata?: TipoGiornata
 }
 
 /** Turni del mese impaginati per il foglio A4, con stampa, PDF e condivisione. */
@@ -51,7 +62,10 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
     const { inizio, fine } = intervalloMese(anno, mese)
     return (turni ?? []).filter((t) => t.inizio >= inizio && t.inizio < fine).sort((a, b) => a.inizio - b.inizio)
   }, [turni, anno, mese])
-  const ferieMese = useMemo(() => (ferie ?? []).filter((f) => f.giorno.startsWith(qui)).map((f) => f.giorno).sort(), [ferie, qui])
+  const giornateMese = useMemo(
+    () => new Map((ferie ?? []).filter((f) => f.giorno.startsWith(qui)).map((f) => [f.giorno, tipoGiornataDa(f.tipo)] as const)),
+    [ferie, qui],
+  )
   const riepilogo = useMemo(() => calcolaRiepilogo(delMese.map(datiDa), anno, mese, { sabatoFestivo }), [delMese, anno, mese, sabatoFestivo])
 
   const nomeMese = F.mese(istante(anno, mese, 1))
@@ -80,20 +94,22 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         ],
       }
     })
-    for (const g of ferieMese) {
+    for (const [g, tipo] of giornateMese) {
       const [a, m, gg] = g.split('-').map(Number)
       const i = istante(a!, m!, gg!, 12)
-      elenco.push({ chiave: `ferie-${g}`, ordine: i - 1, evidenza: 'ferie', celle: [F.dataBreve(i), 'Ferie', '', '', '', ''] })
+      elenco.push({ chiave: `giornata-${g}`, ordine: i - 1, evidenza: 'ferie', colore: COLORI_GIORNATA[tipo], giornata: tipo, celle: [F.dataBreve(i), TITOLI_GIORNATA[tipo], '', '', '', ''] })
     }
     return elenco.sort((x, y) => x.ordine - y.ordine)
-  }, [delMese, ferieMese, mappaModelli, mappaSedi, sabatoFestivo])
+  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo])
 
   const caselle = [
     { etichetta: 'ore lavorate', valore: F.durata(riepilogo.minutiTotali) },
     { etichetta: 'turni', valore: String(riepilogo.numeroTurni) },
     { etichetta: 'notti', valore: String(riepilogo.notti) },
     { etichetta: 'festivi', valore: String(riepilogo.turniFestivi) },
-    ...(ferieMese.length ? [{ etichetta: 'giorni di ferie', valore: String(ferieMese.length) }] : []),
+    ...TIPI_GIORNATA.map((tipo) => ({ tipo, n: [...giornateMese.values()].filter((x) => x === tipo).length }))
+      .filter((x) => x.n > 0)
+      .map((x) => ({ etichetta: TITOLI_GIORNATA[x.tipo].toLowerCase(), valore: String(x.n) })),
   ]
   const nomeFile = `Turni ${nomeMese}.pdf`
 
@@ -153,10 +169,10 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
             const k = chiaveGiorno(g)
             const festivo = eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo })
             return (
-              <div key={k} className={`cella${festivo ? ' festivo' : ''}${ferieMese.includes(k) ? ' ferie' : ''}`} style={{ cursor: 'default', minHeight: 58 }}>
+              <div key={k} className={`cella${festivo ? ' festivo' : ''}${giornateMese.has(k) ? ` g-${giornateMese.get(k)}` : ''}`} style={{ cursor: 'default', minHeight: 58 }}>
                 <span className="numero" style={{ width: 'auto', height: 22, fontWeight: 600 }}>{g.giorno}</span>
                 <span className="sigle">
-                  {ferieMese.includes(k) && <span className="etichetta-ferie">Ferie</span>}
+                  {giornateMese.has(k) && <span className={`etichetta-giornata g-${giornateMese.get(k)}`}>{ETICHETTE_GIORNATA[giornateMese.get(k)!]}</span>}
                   {(perGiorno.get(k) ?? []).map((t) => (
                     <span key={t.id} className="turno-mini">
                       <span className={`${classeSigla(t.tipo)} barra-turno`} style={{ width: larghezzaTurno(t) }}>{siglaTurno(t, mappaModelli)}</span>
@@ -175,7 +191,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         <tbody>
           {righe.length === 0 && <tr><td colSpan={6} className="secondario">Nessun turno in questo mese.</td></tr>}
           {righe.map((r) => (
-            <tr key={r.chiave} className={r.evidenza === 'ferie' ? 'riga-ferie' : undefined}>
+            <tr key={r.chiave} className={r.giornata ? `riga-giornata g-${r.giornata}` : undefined}>
               <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }} className={r.evidenza === 'festivo' ? 'data-festiva' : undefined}>{r.celle[0]}</td>
               <td style={{ fontWeight: 700 }}>
                 {r.tipo && <span className={classeSigla(r.tipo)} style={{ minWidth: 10, width: 10, height: 10, padding: 0, marginRight: 6, verticalAlign: 'middle' }} />}

@@ -4,6 +4,7 @@ import { avvisi, sovrapposizioni } from '../src/moduli/turni/controlli'
 import { intervalli, intervallo } from '../src/moduli/turni/orari'
 import { calcolaRiepilogo } from '../src/moduli/turni/riepilogo'
 import { areaDelMese } from '../src/moduli/turni/rotazione'
+import { CATALOGO_SCUOLA, vociMancanti } from '../src/moduli/turni/catalogoScuola'
 import { minuti, minutiDaOrari, tipoTurnoDa, TIPI_TURNO, type DatiTurno, type TipoTurno } from '../src/moduli/turni/tipi'
 
 const d = (g: number, m: number, h = 0, min = 0, anno = 2026) => istante(anno, m, g, h, min)
@@ -145,6 +146,18 @@ describe('Turni tutto il giorno', () => {
     const r = calcolaRiepilogo([giorno, notte], 2026, 10)
     expect(r.numeroTurni).toBe(2)
     expect(r.minutiTotali).toBe(12 * 60)
+  })
+})
+
+describe('Sigle della scuola', () => {
+  test('catalogo completo e senza doppioni', () => {
+    expect(CATALOGO_SCUOLA).toHaveLength(34)
+    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(34)
+    expect(CATALOGO_SCUOLA.every((v) => TIPI_TURNO.includes(v.tipo))).toBe(true)
+  })
+  test('aggiunge solo le sigle mancanti', () => {
+    expect(vociMancanti([{ sigla: 'N' }, { sigla: 'e pom' }]).map((v) => v.sigla)).not.toContain('E pom')
+    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(33)
   })
 })
 

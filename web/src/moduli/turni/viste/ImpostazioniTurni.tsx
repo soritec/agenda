@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
+import { elimina, ripristina, salva, salvaImpostazioni, salvaTanti } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { ModelloTurno, Sede } from '../../../dati/modello'
 import { linkGoogleMaps } from '../../../nucleo/viaggio'
@@ -7,6 +7,7 @@ import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { IconaAvanti } from '../../../interfaccia/icone'
 import { TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import { classeSigla, minutiDaOrario, orarioDaMinuti, perId } from '../supporto'
+import { vociMancanti } from '../catalogoScuola'
 
 type Modifica = { tipo: 'modello'; record?: ModelloTurno } | { tipo: 'sede'; record?: Sede }
 
@@ -30,6 +31,16 @@ export function ImpostazioniTurni() {
   const [casa, setCasa] = useState<string>()
   const mappaSedi = perId(sedi)
   const elencoModelli = [...(modelli ?? [])].sort((a, b) => a.ordine - b.ordine || a.nome.localeCompare(b.nome))
+  const mancanti = modelli ? vociMancanti(modelli) : []
+
+  async function caricaSigleScuola() {
+    const base = elencoModelli.length
+    const nuovi = await salvaTanti('modelliTurno', mancanti.map((v, i) => ({
+      nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i,
+      minutoInizio: v.orari?.[0] ?? 8 * 60, minutoFine: v.orari?.[1] ?? 14 * 60, tuttoIlGiorno: v.orari ? undefined : true,
+    })))
+    mostraAvviso(`${nuovi.length} turni tipo aggiunti`, () => void Promise.all(nuovi.map((n) => elimina('modelliTurno', n.id))))
+  }
 
   useEffect(() => {
     if (impostazioni && casa === undefined) setCasa(impostazioni.indirizzoCasa ?? '')
@@ -60,11 +71,18 @@ export function ImpostazioniTurni() {
                 <IconaAvanti dimensione={14} />
               </button>
               <button type="button" className="elimina-riga" aria-label={`Elimina ${m.nome}`}
-                onClick={() => void elimina('modelliTurno', m.id).then(() => mostraAvviso(`${m.nome} eliminato`, () => void ripristina('modelliTurno', m.id)))}>×</button>
+                onClick={() => void elimina('modelliTurno', m.id).then(() => mostraAvviso(`Eliminato: ${m.nome}`, () => void ripristina('modelliTurno', m.id)))}>×</button>
             </div>
           ))}
         </div>
-        <button type="button" className="pulsante primario" style={{ alignSelf: 'flex-start' }} onClick={() => setModifica({ tipo: 'modello' })}>+ Nuovo turno tipo</button>
+        <div className="riga-azioni">
+          <button type="button" className="pulsante primario" onClick={() => setModifica({ tipo: 'modello' })}>+ Nuovo turno tipo</button>
+          {mancanti.length > 0 && (
+            <button type="button" className="pulsante" onClick={() => void caricaSigleScuola()}>
+              Aggiungi le sigle della scuola ({mancanti.length})
+            </button>
+          )}
+        </div>
       </Sezione>
 
       <Sezione titolo="Casa">
@@ -131,7 +149,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
   async function conferma() {
     if (!valido || mi === undefined || mf === undefined) return
     await salva('modelliTurno', {
-      ...record, nome: b.nome.trim(), sigla: (b.sigla.trim() || b.nome.trim().charAt(0)).toUpperCase().slice(0, 2),
+      ...record, nome: b.nome.trim(), sigla: (b.sigla.trim() || b.nome.trim().charAt(0).toUpperCase()).slice(0, 6),
       tipo: b.tipo, minutoInizio: mi, minutoFine: mf, tuttoIlGiorno: b.tuttoIlGiorno || undefined, sedeId: b.sedeId || undefined, ordine: record?.ordine ?? ordine,
     })
     onChiudi()
@@ -143,7 +161,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
       <div className="modulo">
         <div className="campi-affiancati">
           <Campo etichetta="Nome"><input value={b.nome} placeholder="es. Notte" onChange={(e) => setB({ ...b, nome: e.target.value })} /></Campo>
-          <Campo etichetta="Sigla (1–2 lettere)"><input value={b.sigla} maxLength={2} placeholder="N" onChange={(e) => setB({ ...b, sigla: e.target.value })} /></Campo>
+          <Campo etichetta="Sigla (fino a 6 caratteri)"><input value={b.sigla} maxLength={6} placeholder="N" onChange={(e) => setB({ ...b, sigla: e.target.value })} /></Campo>
         </div>
         <Campo etichetta="Tipo">
           <select value={b.tipo} onChange={(e) => setB({ ...b, tipo: tipoTurnoDa(e.target.value) })}>
@@ -167,7 +185,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
             {sedi.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
           </select>
         </Campo>
-        {record && <PulsanteElimina onElimina={() => void elimina('modelliTurno', record.id).then(() => { onChiudi(); mostraAvviso(`${record.nome} eliminato`, () => void ripristina('modelliTurno', record.id)) })} />}
+        {record && <PulsanteElimina onElimina={() => void elimina('modelliTurno', record.id).then(() => { onChiudi(); mostraAvviso(`Eliminato: ${record.nome}`, () => void ripristina('modelliTurno', record.id)) })} />}
       </div>
     </Foglio>
   )
@@ -202,7 +220,7 @@ function FormSede({ record, indirizzoCasa, onChiudi }: { record?: Sede; indirizz
         <Campo etichetta="Minuti di viaggio">
           <input inputMode="numeric" value={b.viaggio} placeholder="es. 35" onChange={(e) => setB({ ...b, viaggio: e.target.value })} />
         </Campo>
-        {record && <PulsanteElimina onElimina={() => void elimina('sedi', record.id).then(() => { onChiudi(); mostraAvviso(`${record.nome} eliminata`, () => void ripristina('sedi', record.id)) })} />}
+        {record && <PulsanteElimina onElimina={() => void elimina('sedi', record.id).then(() => { onChiudi(); mostraAvviso(`Eliminata la sede ${record.nome}`, () => void ripristina('sedi', record.id)) })} />}
       </div>
     </Foglio>
   )

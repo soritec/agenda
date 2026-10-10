@@ -127,6 +127,8 @@ h1, h2, h3 { margin: 0; }
 .sigla.t-sostituzioneMMG { background: #E6D9E4; color: #5A3E57; }
 .sigla.t-festivo { background: #F0D8CC; color: #6E3826; }
 .sigla.t-domiciliare { background: #E4DED4; color: #4A443B; }
+.sigla.t-ecografia { background: #D6EAE8; color: #2C5652; }
+.sigla.t-salaOperatoria { background: #E9DCD3; color: #6A4632; }
 @media (prefers-color-scheme: dark) {
   .sigla.t-guardiaNotturna { background: #4A6390; color: #F2F4F8; }
   .sigla.t-guardiaDiurna { background: #4B3F28; color: #F0DDB2; }
@@ -135,6 +137,8 @@ h1, h2, h3 { margin: 0; }
   .sigla.t-sostituzioneMMG { background: #46344A; color: #EBD3E7; }
   .sigla.t-festivo { background: #503229; color: #F3CDBD; }
   .sigla.t-domiciliare { background: #3C3832; color: #E6E0D6; }
+  .sigla.t-ecografia { background: #24413F; color: #C8E6E2; }
+  .sigla.t-salaOperatoria { background: #4A372B; color: #F0D9C8; }
 }
 a.sigla { text-decoration: none; }
 a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
@@ -166,7 +170,7 @@ a.sigla:hover, a.sigla:focus-visible { outline: 2px solid var(--accento); outlin
 .cella:hover { background: var(--superficie-2); }
 .cella .numero { width: 30px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 .cella.festivo .numero { color: var(--testo-2); }
-.cella.oggi .numero { box-shadow: inset 0 0 0 2px var(--accento); color: var(--accento); font-weight: 700; }
+.cella.oggi .numero { color: var(--accento); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; }
 .cella.scelto .numero { background: var(--primario); color: var(--primario-testo); font-weight: 600; }
 .cella .sigle { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .cella .punto { width: 5px; height: 5px; border-radius: 3px; background: var(--linea-forte); }
@@ -205,7 +209,7 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .cella .sigle { flex-direction: column; align-items: stretch; gap: 3px; width: 100%; padding: 0 3px; box-sizing: border-box; }
 .cella .turno-mini { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; }
 .cella .riga-turno { display: flex; align-items: center; gap: 4px; width: 100%; }
-.cella .barra-turno { justify-content: flex-start; box-sizing: border-box; min-width: 20px; padding: 0 5px; }
+.cella .barra-turno { justify-content: flex-start; box-sizing: border-box; min-width: max-content; padding: 0 5px; }
 .cella .orario-mini { font-size: 9px; color: var(--testo-2); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.1; }
 @media (max-width: 420px) { .cella .orario-mini { font-size: 8px; letter-spacing: -0.02em; } .cella .sigle { padding: 0 1px; } }
 @media (min-width: 900px) { .cella .orario-mini { font-size: 11px; } }
@@ -260,3 +264,31 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
   .tabella-stampa tfoot td { border-top: 1.5pt solid #000; }
   .tabella-stampa .riga-ferie td, .cella.ferie { background: #F3E7CF !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Giornate senza turno (ferie, riposo, congresso, smonto notte) */
+.cella.g-ferie { background: #ECE9E4; }
+.cella.g-riposo { background: #E2EEF5; }
+.cella.g-congresso { background: #E6EFD9; }
+.cella.g-smontoNotte { background: #E6E6F1; }
+.etichetta-giornata { font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 5px; border: none; background: none; cursor: pointer; pointer-events: auto; position: relative; align-self: flex-start; }
+.etichetta-giornata.g-ferie { color: #5E5A54; } .etichetta-giornata.g-riposo { color: #2F5A73; } .etichetta-giornata.g-congresso { color: #4A6A2A; } .etichetta-giornata.g-smontoNotte { color: #4B4B78; }
+.scelta.giornata[aria-pressed='true'] { border: 2px solid var(--primario); padding: 11px; }
+.pallino-giornata { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; border: 1px solid var(--linea-forte); }
+.pallino-giornata.g-ferie { background: #D9D4CC; } .pallino-giornata.g-riposo { background: #BFDCEC; } .pallino-giornata.g-congresso { background: #BFD99B; } .pallino-giornata.g-smontoNotte { background: #C9C9E6; }
+@media (prefers-color-scheme: dark) {
+  .cella.g-ferie { background: #34312D; } .cella.g-riposo { background: #22333D; } .cella.g-congresso { background: #2D3824; } .cella.g-smontoNotte { background: #2D2D40; }
+  .etichetta-giornata.g-ferie { color: #D8D2C8; } .etichetta-giornata.g-riposo { color: #B9D8EA; } .etichetta-giornata.g-congresso { color: #CDE3B4; } .etichetta-giornata.g-smontoNotte { color: #CFCFF0; }
+}
+@media print { .cella.g-ferie, .cella.g-riposo, .cella.g-congresso, .cella.g-smontoNotte { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+/* Pannello rapido del giorno */
+.giorno-rapido .navigazione-giorno { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.giorno-rapido .gruppo-titolo { font-size: 12px; font-weight: 600; color: var(--testo-2); text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 -6px; }
+.scelte-rapide { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.scelta-rapida { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--linea); background: var(--superficie); color: var(--testo); cursor: pointer; text-align: left; font-size: 13px; min-height: 44px; }
+.scelta-rapida:active { transform: scale(0.98); }
+.scelta-rapida .nome { flex: 1; min-width: 0; line-height: 1.2; }
+.scelta-rapida .orario { font-size: 11px; color: var(--testo-2); }
+.tabella-stampa .riga-giornata td { font-weight: 600; }
+.tabella-stampa .riga-giornata.g-ferie td { background: #ECE9E4; } .tabella-stampa .riga-giornata.g-riposo td { background: #E2EEF5; }
+.tabella-stampa .riga-giornata.g-congresso td { background: #E6EFD9; } .tabella-stampa .riga-giornata.g-smontoNotte td { background: #E6E6F1; }
+@media print { .tabella-stampa .riga-giornata td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

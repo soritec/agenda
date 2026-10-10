@@ -60,10 +60,12 @@ export interface PeriodoRotazione extends Base {
   area: AreaRotazione
 }
 
-/** Un giorno di ferie. */
-export interface GiornoFerie extends Base {
+/** Giornata senza turno: ferie, riposo, congresso, smonto notte (archivio "ferie" per compatibilità). */
+export interface GiornataSpeciale extends Base {
   /** "2026-10-21" */
   giorno: string
+  /** Assente nei record più vecchi = ferie. */
+  tipo?: string
 }
 
 export interface Impostazioni {
@@ -81,7 +83,7 @@ export interface Collezioni {
   modelliTurno: ModelloTurno
   turni: Turno
   periodiRotazione: PeriodoRotazione
-  ferie: GiornoFerie
+  ferie: GiornataSpeciale
 }
 export type NomeCollezione = keyof Collezioni
 export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie']

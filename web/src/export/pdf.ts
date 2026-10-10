@@ -104,7 +104,7 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
         c.cell.styles.fontStyle = 'italic'
         c.cell.styles.textColor = SECONDARIO
       }
-      if (riga.evidenza === 'ferie') c.cell.styles.fillColor = FERIE
+      if (riga.evidenza === 'ferie') c.cell.styles.fillColor = riga.colore ?? FERIE
       else if (riga.colore && c.column.index === d.colonnaColore) c.cell.styles.fillColor = riga.colore
       if (riga.evidenza === 'festivo' && c.column.index === 0) c.cell.styles.textColor = FESTIVO
     },
