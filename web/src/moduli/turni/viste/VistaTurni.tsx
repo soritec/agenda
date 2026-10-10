@@ -101,6 +101,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
       <header className="intestazione">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h1 className="titolo-grande" style={{ marginRight: 4 }}>Turni</h1>
             {periodi && (
               <button type="button" className={`pillola${area ? ` ${area.area}` : ''}`} onClick={() => setSceltaArea(true)}>
                 {area ? `${TITOLI_AREA[area.area]} · mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE}` : 'Scegli l’area di rotazione'}
@@ -114,7 +115,6 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
               </button>
             )}
           </div>
-          <h1 className="titolo-grande">Turni</h1>
           <div className="riga-azioni" style={{ marginTop: 10 }}>
             <a className="pulsante tondo" href={`#/turni?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
             <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`} title="Torna al mese di oggi"
