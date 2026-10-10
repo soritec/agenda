@@ -101,7 +101,6 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
       <header className="intestazione">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span className="sopratitolo">{F.mese(istante(anno, mese, 1))}</span>
             {periodi && (
               <button type="button" className={`pillola${area ? ` ${area.area}` : ''}`} onClick={() => setSceltaArea(true)}>
                 {area ? `${TITOLI_AREA[area.area]} · mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE}` : 'Scegli l’area di rotazione'}
@@ -118,7 +117,8 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <h1 className="titolo-grande">Turni</h1>
           <div className="riga-azioni" style={{ marginTop: 10 }}>
             <a className="pulsante tondo" href={`#/turni?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
-            <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`}>Oggi</a>
+            <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`} title="Torna al mese di oggi"
+              style={{ minWidth: 150, fontWeight: 600, textTransform: 'capitalize' }}>{F.mese(istante(anno, mese, 1))}</a>
             <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
           </div>
         </div>
