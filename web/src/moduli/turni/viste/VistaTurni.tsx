@@ -116,11 +116,13 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
             )}
           </div>
           <h1 className="titolo-grande">Turni</h1>
+          <div className="riga-azioni" style={{ marginTop: 10 }}>
+            <a className="pulsante tondo" href={`#/turni?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
+            <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`}>Oggi</a>
+            <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
+          </div>
         </div>
-        <div className="riga-azioni">
-          <a className="pulsante tondo" href={`#/turni?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
-          <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`}>Oggi</a>
-          <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
+        <div className="riga-azioni" style={{ alignSelf: 'flex-start' }}>
           <a className="pulsante" href={`#/turni/stampa?mese=${qui}`}>Stampa · PDF</a>
           {delMese.length + giornateMese.reduce((n, g) => n + g.numero, 0) > 0 && (
             <button type="button" className="pulsante tondo pericolo" onClick={() => setSvuota(true)} aria-label="Svuota il mese" title="Svuota il mese"><IconaCestino dimensione={18} /></button>
