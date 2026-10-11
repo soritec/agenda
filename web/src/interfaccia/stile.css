@@ -669,3 +669,13 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
   .grande-piu, .grande-meno, .grande-risparmio { min-height: 58px; font-size: 14px; flex-direction: column; gap: 0; }
   .grande-piu span, .grande-meno span { font-size: 26px; }
 }
+.icona-sezione { display: inline-flex; flex-shrink: 0; }
+
+/* Trascinamento */
+.in-trascinamento { opacity: 0.35; }
+.fantasma-trascina { opacity: 0.92; box-shadow: 0 8px 24px rgba(0,0,0,0.22); transform: scale(1.04); border-radius: 6px; }
+.bersaglio { outline: 2px dashed var(--primario); outline-offset: -2px; background-color: var(--accento-tenue) !important; }
+body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+.icona-task-ore { color: #8C6BB0; }
+.riga-task-giorno { min-height: 26px; }
+@media (hover: hover) { .riga-giornata:hover .piu-nota { display: block; } }

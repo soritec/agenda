@@ -8,12 +8,13 @@ import type { Evento, NotaGiorno } from '../../../dati/modello'
 import { creaIcs, type EventoIcs } from '../../../export/ics'
 import { condividiOScarica } from '../../../export/pdf'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
-import { IconaAvanti, IconaIndietro, IconaPin, IconaPiu } from '../../../interfaccia/icone'
+import { IconaAvanti, IconaIndietro, IconaPin, IconaPiu, IconaTask } from '../../../interfaccia/icone'
 import { vai } from '../../../interfaccia/navigazione'
-import { usePressioneLunga } from '../../../interfaccia/pressione'
-import { eliminaTurno } from '../../turni/smonto'
+import { useTrascinamento, type Rilascio } from '../../../interfaccia/trascina'
+import { differenzaGiorni, piuGiorniData, turnoSpostato } from '../sposta'
+import { eliminaTurno, spostaTurno } from '../../turni/smonto'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
-import { segnaFatto } from '../../task/viste/Task'
+import { FormTask, segnaFatto } from '../../task/viste/Task'
 import type { Attivita } from '../../../dati/modello'
 import { celleMese, chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti, perId } from '../../turni/supporto'
 import {
@@ -121,7 +122,49 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     e?.preventDefault()
     setEventoInModifica(i.id)
   }
-  const pressione = usePressioneLunga()
+  const pressione = useTrascinamento<Impegno>((i, dove) => void spostaImpegno(i, dove))
+
+  /** Sposta un elemento trascinato nel giorno (e all'ora) dove è stato lasciato; con "Annulla". */
+  async function spostaImpegno(i: Impegno, dove: Rilascio) {
+    const delta = differenzaGiorni(i.giorno, dove.giorno)
+    if (delta === 0 && (dove.minuto === undefined || dove.minuto === i.minutoInizio)) return
+    let annulla: (() => Promise<unknown>) | undefined
+    if (i.fonte === 'turno') {
+      const t = turni?.find((x) => x.id === i.id)
+      if (t) annulla = await spostaTurno(t, turnoSpostato(t, dove))
+    } else if (i.fonte === 'evento') {
+      const e = eventi?.find((x) => x.id === i.id)
+      if (!e) return
+      const conOra = dove.minuto !== undefined && !e.giornoFine
+      const durata = e.minutoFine !== undefined && e.minutoInizio !== undefined ? e.minutoFine - e.minutoInizio : 60
+      await salva('eventi', {
+        ...e, giorno: piuGiorniData(e.giorno, delta), giornoFine: e.giornoFine ? piuGiorniData(e.giornoFine, delta) : undefined,
+        ...(conOra ? { tuttoIlGiorno: undefined, minutoInizio: dove.minuto, minutoFine: Math.min(dove.minuto! + Math.max(durata, 15), 23 * 60 + 59) } : {}),
+      })
+      annulla = () => salva('eventi', e)
+    } else if (i.fonte === 'nota') {
+      const n = note?.find((x) => x.id === i.id)
+      if (!n) return
+      await salva('noteGiorno', { ...n, giorno: piuGiorniData(n.giorno, delta), giornoFine: n.giornoFine ? piuGiorniData(n.giornoFine, delta) : undefined })
+      annulla = () => salva('noteGiorno', n)
+    } else if (i.fonte === 'task') {
+      const t = attivita?.find((x) => x.id === i.id)
+      if (!t) return
+      await salva('attivita', { ...t, scadenza: dove.giorno, minuto: dove.minuto ?? t.minuto })
+      annulla = () => salva('attivita', t)
+    } else if (i.fonte === 'esame' || i.fonte === 'lezione') {
+      const x = esami?.find((y) => y.id === i.id)
+      if (!x) return
+      await salva('esami', { ...x, giorno: dove.giorno })
+      annulla = () => salva('esami', x)
+    } else if (i.fonte === 'giornata') {
+      const g = giornate?.find((y) => y.id === i.id)
+      if (!g) return
+      await salva('ferie', { ...g, giorno: dove.giorno })
+      annulla = () => salva('ferie', g)
+    }
+    if (annulla) mostraAvviso(`Spostato a ${dataEstesa(dove.giorno)}${dove.minuto !== undefined && i.fonte !== 'giornata' && i.fonte !== 'nota' && i.fonte !== 'esame' && i.fonte !== 'lezione' ? ` alle ${orarioBreve(dove.minuto)}` : ''}`, () => void annulla!())
+  }
   async function eliminaImpegno(i: Impegno) {
     pressione.setAttivo(undefined)
     let annulla: () => Promise<void>
@@ -134,6 +177,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     mostraAvviso(`Eliminato: ${i.titolo}`, () => void annulla())
   }
   const rimozione: Rimozione = { gestori: pressione.gestori, elimina: (i) => void eliminaImpegno(i) }
+  const [taskNuovo, setTaskNuovo] = useState<string>()
 
   // Passaggio fluido: la nuova settimana (o mese) entra scorrendo dal lato giusto; su iPhone basta trascinare.
   const precedenteDa = useRef(da)
@@ -142,6 +186,8 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   const tocco = useRef<{ x: number; y: number; bordoSinistro: boolean; bordoDestro: boolean } | undefined>(undefined)
   function inizioTocco(e: TouchEvent) {
     const t = e.touches[0]!
+    // Sopra un elemento il dito serve a trascinarlo, non a cambiare settimana.
+    if ((e.target as HTMLElement).closest('.rimovibile')) { tocco.current = undefined; return }
     const scorri = (e.target as HTMLElement).closest('.settimana-scorri')
     tocco.current = {
       x: t.clientX, y: t.clientY,
@@ -169,7 +215,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     if (notaAperta) vai(linkAgenda(vista, riferimento))
   }
   const mappaAttivita = useMemo(() => perId(attivita), [attivita])
-  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }), aggiungiNota: (giorno: string) => setAggiunta({ giorno, cosa: 'nota' }) }
+  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }), aggiungiNota: (giorno: string) => setAggiunta({ giorno, cosa: 'nota' }), aggiungiTask: (giorno: string) => setTaskNuovo(giorno) }
 
   return (
     <div className="schermata">
@@ -211,6 +257,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       {(aggiunta?.cosa === 'esame' || aggiunta?.cosa === 'lezione') && <FormAttivita tipo={aggiunta.cosa} giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {evento && <FormEvento key={evento.id} record={evento} giorno={evento.giorno} onChiudi={chiudiEvento} />}
       {aggiunta?.cosa === 'nota' && <FormNota giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
+      {taskNuovo && <FormTask giorno={taskNuovo} onChiudi={() => setTaskNuovo(undefined)} />}
       {nota && <FormNota key={nota.id} record={nota} giorno={nota.giorno} onChiudi={chiudiNota} />}
       {esporta && <EsportaCalendario anno={Number(riferimento.slice(0, 4))} mese={Number(riferimento.slice(5, 7))} dati={dati} nascoste={nascoste} onChiudi={() => setEsporta(false)} />}
     </div>
@@ -219,7 +266,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
 
 /** Eliminazione con la × (pressione prolungata, clic destro o passaggio del mouse). */
 interface Rimozione {
-  gestori: ReturnType<typeof usePressioneLunga>['gestori']
+  gestori: ReturnType<typeof useTrascinamento<Impegno>>['gestori']
   elimina: (i: Impegno) => void
 }
 /** Le scadenze delle tasse si tolgono dalla loro sezione. */
@@ -234,10 +281,11 @@ function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; 
   )
 }
 /** Proprietà da aggiungere a un elemento che si può eliminare. */
-const rimovibile = (i: Impegno, r: Rimozione) => (eliminabile(i) ? r.gestori(i.chiave) : {})
+const rimovibile = (i: Impegno, r: Rimozione) => (eliminabile(i) ? r.gestori(i.chiave, i) : {})
 
 interface PropsVista {
   aggiungiNota: (giorno: string) => void
+  aggiungiTask: (giorno: string) => void
   mappaAttivita: Map<string, Attivita>
   rimozione: Rimozione
   visibili: Impegno[]
@@ -292,7 +340,7 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, m
               const voci = mappa.get(k) ?? []
               const classi = ['cella', festivo(k) && 'festivo', k === oggiChiave && 'oggi', k === scelto && 'selezionato', voci.some((v) => v.fonte === 'nota') && 'con-nota'].filter(Boolean).join(' ')
               return (
-                <div key={k} className={classi}>
+                <div key={k} className={classi} data-giorno={k}>
                   <button type="button" className="aggiungi" onClick={() => onScegli(k)} onDoubleClick={() => aggiungi(k)}
                     aria-label={`${dataEstesa(k)}: ${voci.length ? `${voci.length} impegni` : 'nessun impegno'}`} />
                   <span className="numero">{g.giorno}</span>
@@ -341,7 +389,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
           const voci = tutte.filter((v) => v.fonte !== 'task')
           const task = tutte.filter((v) => v.fonte === 'task')
           return (
-            <div key={g} className={['giorno-esteso', festivo(g) && 'festivo', g === oggiChiave && 'oggi'].filter(Boolean).join(' ')}
+            <div key={g} data-giorno={g} className={['giorno-esteso', festivo(g) && 'festivo', g === oggiChiave && 'oggi'].filter(Boolean).join(' ')}
               onClick={(e) => { if (!(e.target as HTMLElement).closest('a')) aggiungi(g) }} title="Tocca uno spazio libero per aggiungere">
               <div className="testa-giorno">
                 <span className="numero">{numeroGiorno(g)}</span>
@@ -368,7 +416,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
 
 const ALTEZZA_ORA = 48
 
-function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, aggiungiNota, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
+function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, aggiungiNota, aggiungiTask, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
   // I task stanno in una tendina sopra le ore, non nella griglia.
   const visibili = tutte.filter((v) => v.fonte !== 'task')
   const taskPerGiorno = perGiorno(tutte.filter((v) => v.fonte === 'task'))
@@ -419,9 +467,8 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
             </a>
           )
           return (
-          <div key={g} className="riga-giornata" onClick={(e) => { if (e.target === e.currentTarget) aggiungiNota(g) }}>
+          <div key={g} className="riga-giornata" data-giorno={g} onClick={(e) => { if (e.target === e.currentTarget) aggiungiNota(g) }}>
             {delGiorno.filter((v) => v.fonte === 'nota').map(voce)}
-            {(taskPerGiorno.get(g) ?? []).length > 0 && <TendinaTask voci={taskPerGiorno.get(g)!} mappaAttivita={mappaAttivita} />}
             {delGiorno.filter((v) => v.fonte !== 'nota').map(voce)}
             <button type="button" className="piu-nota" onClick={() => aggiungiNota(g)}>+ nota</button>
             {(blocchi.get(g) ?? []).filter((b) => b.continuaPrima && b.a <= oraDa * 60).map((b) => (
@@ -432,11 +479,19 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
           </div>
           )
         })}
+        <div className="etichetta-ore pin-ore icona-task-ore" title="Task del giorno"><IconaTask dimensione={16} /></div>
+        {giorni.map((g) => (
+          <div key={g} className="riga-giornata riga-task-giorno" data-giorno={g} onClick={(e) => { if (e.target === e.currentTarget) aggiungiTask(g) }}>
+            {(taskPerGiorno.get(g) ?? []).length > 0 && <TendinaTask voci={taskPerGiorno.get(g)!} mappaAttivita={mappaAttivita} />}
+            <button type="button" className="piu-nota" onClick={() => aggiungiTask(g)}>+ task</button>
+          </div>
+        ))}
         <div className="colonna-ore" style={{ height: altezza }}>
           {ore.map((h, i) => i > 0 && <span key={h} style={{ top: i * ALTEZZA_ORA }}>{h}:00</span>)}
         </div>
         {giorni.map((g) => (
           <div key={g} className={`colonna-giorno${festivo(g) ? ' festivo' : ''}`} style={{ height: altezza, backgroundSize: `100% ${ALTEZZA_ORA}px` }}
+            data-giorno={g} data-ora-da={oraDa} data-altezza-ora={ALTEZZA_ORA}
             onClick={(e) => clicVuoto(g, e)} title="Clic su un orario libero per aggiungere">
             {g === oggiChiave && minutoAdesso >= oraDa * 60 && minutoAdesso <= oraA * 60 && <span className="linea-adesso" style={{ top: y(minutoAdesso) }} />}
             {(blocchi.get(g) ?? []).filter((b) => !(b.continuaPrima && b.a <= oraDa * 60)).map((b) => {

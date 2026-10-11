@@ -5,7 +5,7 @@ import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Collegamento, EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
-import { IconaImpostazioni } from '../../../interfaccia/icone'
+import { IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLogbook, IconaMicroscopio } from '../../../interfaccia/icone'
 import { assegnazioneDelMese } from '../../turni/assegnazioni'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../../turni/rotazione'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
@@ -79,29 +79,29 @@ export function Specializzazione() {
 
       <div className="sezioni-spec">
         <a className="riquadro-sezione" href="#/specializzazione/logbook">
-          <span className="titolo">Logbook</span>
+          <span className="titolo"><span className="icona-sezione" style={{ color: '#1C7A5C' }}><IconaLogbook dimensione={19} /></span>Logbook</span>
           <span className="valore">{c.totale}</span>
           <span className="dettaglio">{c.perRuolo.primo} da 1° operatore{anno && c.perAnno.get(anno) ? ` · ${c.perAnno.get(anno)} quest'anno` : ''}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/esami">
-          <span className="titolo"><span className="etichetta-tipo colore-esame">Esami</span></span>
+          <span className="titolo"><span className="icona-sezione" style={{ color: '#A4472A' }}><IconaCappello dimensione={19} /></span>Esami</span>
           <span className="dettaglio">{prossimoEsame ? <><strong style={{ color: 'var(--testo)' }}>{prossimoEsame.titolo}</strong><br />{dataBreve(prossimoEsame.giorno)}</> : 'Nessun esame in programma'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/lezioni">
-          <span className="titolo"><span className="etichetta-tipo colore-lezione">Lezioni</span></span>
+          <span className="titolo"><span className="icona-sezione" style={{ color: '#2D6AA6' }}><IconaLavagna dimensione={19} /></span>Lezioni</span>
           <span className="dettaglio">{prossimaLezione ? <><strong style={{ color: 'var(--testo)' }}>{prossimaLezione.titolo}</strong><br />{dataBreve(prossimaLezione.giorno)}</> : 'Nessuna lezione in programma'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/tasse">
-          <span className="titolo">Tasse {statoPeggiore && statoPeggiore !== 'daPagare' && <span className={`etichetta-tipo colore-${statoPeggiore}`}>{statoPeggiore === 'scaduta' ? 'scaduta' : 'in scadenza'}</span>}</span>
+          <span className="titolo"><span className="icona-sezione" style={{ color: '#8A6516' }}><IconaEuro dimensione={19} /></span>Tasse {statoPeggiore && statoPeggiore !== 'daPagare' && <span className={`etichetta-tipo colore-${statoPeggiore}`}>{statoPeggiore === 'scaduta' ? 'scaduta' : 'in scadenza'}</span>}</span>
           <span className="valore">{daPagare.length ? F.importo(totaleDaPagare) : '—'}</span>
           <span className="dettaglio">{daPagare.length ? `${daPagare.length} da pagare` : 'Niente da pagare'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/calcolatori">
-          <span className="titolo">Calcolatori</span>
+          <span className="titolo"><span className="icona-sezione" style={{ color: '#534AB7' }}><IconaCalcolatrice dimensione={19} /></span>Calcolatori</span>
           <span className="dettaglio">EG e DPP, peso fetale, Bishop, Robson, rischio TEV, β-hCG e altri</span>
         </a>
         <a className="riquadro-sezione in-arrivo" href="#/specializzazione/ricerca">
-          <span className="titolo">Ricerca</span>
+          <span className="titolo"><span className="icona-sezione" style={{ color: '#6B6862' }}><IconaMicroscopio dimensione={19} /></span>Ricerca</span>
           <span className="dettaglio">Da sviluppare più avanti</span>
         </a>
       </div>

@@ -50,3 +50,21 @@ export async function eliminaTurno(id: string): Promise<() => Promise<void>> {
     for (const s of smonti) await ripristina('ferie', s.id)
   }
 }
+
+/**
+ * Sposta un turno a nuovi orari (trascinandolo): lo smonto automatico segue la notte.
+ * Restituisce la funzione per annullare.
+ */
+export async function spostaTurno(t: Turno, tempi: Pick<Turno, 'inizio' | 'fine'>): Promise<() => Promise<void>> {
+  const smonti = (await elenca('ferie')).filter((g) => g.turnoId === t.id && tipoGiornataDa(g.tipo) === 'smontoNotte')
+  for (const s of smonti) await elimina('ferie', s.id)
+  const nuovo = await salva('turni', { ...t, ...tempi })
+  const prima = new Set((await elenca('ferie')).map((g) => g.id))
+  await aggiungiSmonti([nuovo])
+  const creati = (await elenca('ferie')).filter((g) => !prima.has(g.id))
+  return async () => {
+    for (const c of creati) await elimina('ferie', c.id)
+    await salva('turni', t)
+    for (const s of smonti) await ripristina('ferie', s.id)
+  }
+}

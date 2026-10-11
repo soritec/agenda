@@ -203,7 +203,7 @@ export function Task({ apertoId, giorno, minuto, scheda: schedaParam }: { aperto
   )
 }
 
-function FormTask({ record, giorno, minuto, area, onChiudi }: { record?: Attivita; giorno?: string; minuto?: number; area?: Area; onChiudi: () => void }) {
+export function FormTask({ record, giorno, minuto, area, onChiudi }: { record?: Attivita; giorno?: string; minuto?: number; area?: Area; onChiudi: () => void }) {
   const parametroArea = new URLSearchParams(location.hash.split('?')[1] ?? '').get('area')
   const [b, setB] = useState({
     titolo: record?.titolo ?? '',

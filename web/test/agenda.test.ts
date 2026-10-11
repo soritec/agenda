@@ -81,3 +81,21 @@ describe('Note del giorno', () => {
     expect(r[1]!.dettaglio).toBe('fino al 13/9')
   })
 })
+
+describe('Spostare trascinando', () => {
+  test('turni: stesso orario nel nuovo giorno, anche con il cambio dell’ora', async () => {
+    const { turnoSpostato, differenzaGiorni, piuGiorniData } = await import('../src/moduli/agenda/sposta')
+    const { componenti } = await import('../src/nucleo/calendario')
+    const notte = { ...base, id: 'n', inizio: istante(2026, 10, 20, 20), fine: istante(2026, 10, 21, 8), tipo: 'guardiaNotturna', stato: 'pianificato', origine: 'manuale' } as const
+    const r = turnoSpostato(notte, { giorno: '2026-10-24' })
+    expect(componenti(r.inizio)).toMatchObject({ giorno: 24, ora: 20 })
+    expect(componenti(r.fine)).toMatchObject({ giorno: 25, ora: 8 })
+    expect((r.fine - r.inizio) / 3_600_000).toBe(13) // la notte del cambio dell'ora dura 13 ore
+    const g = turnoSpostato(notte, { giorno: '2026-10-22', minuto: 21 * 60 + 30 })
+    expect(componenti(g.inizio)).toMatchObject({ giorno: 22, ora: 21, minuto: 30 })
+    const tutto = turnoSpostato({ ...notte, tuttoIlGiorno: true }, { giorno: '2026-10-25' })
+    expect((tutto.fine - tutto.inizio) / 3_600_000).toBe(25)
+    expect(differenzaGiorni('2026-10-30', '2026-11-02')).toBe(3)
+    expect(piuGiorniData('2026-12-30', 3)).toBe('2027-01-02')
+  })
+})

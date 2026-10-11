@@ -58,6 +58,25 @@ export const IconaPin = (p: P) => (
 export const IconaSalvadanaio = (p: P) => (
   <Icona {...p}><path d="M5.5 9.6A6.5 6.5 0 0 1 11 7h3a6.5 6.5 0 0 1 6.5 6.5 5 5 0 0 1-2 4V20a.5.5 0 0 1-.5.5h-1.8l-.9-1.8h-4.6l-.9 1.8H7.5A.5.5 0 0 1 7 20v-2.4A6.4 6.4 0 0 1 5 16H3.5a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5h1.2a6 6 0 0 1 .8-2.4L4.5 7.2h2z" /><path d="M15.5 12.5v.01" /><path d="M10 4.5h4" /></Icona>
 )
+/* Icone delle sezioni di Specializzazione */
+export const IconaLogbook = (p: P) => (
+  <Icona {...p}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1" /><path d="M9 10h6M9 14h6M9 18h3" /></Icona>
+)
+export const IconaCappello = (p: P) => (
+  <Icona {...p}><path d="M3 9l9-4.5L21 9l-9 4.5z" /><path d="M7 11v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11" /><path d="M21 9v5" /></Icona>
+)
+export const IconaLavagna = (p: P) => (
+  <Icona {...p}><rect x="3" y="4" width="18" height="12" rx="1.5" /><path d="M12 16v3M8 21l4-2 4 2" /><path d="M7 12l3-3 2 2 4-4" /></Icona>
+)
+export const IconaEuro = (p: P) => (
+  <Icona {...p}><path d="M17.5 6.5A7 7 0 1 0 17.5 17.5" /><path d="M4 10h10M4 14h10" /></Icona>
+)
+export const IconaCalcolatrice = (p: P) => (
+  <Icona {...p}><rect x="5" y="3" width="14" height="18" rx="2" /><rect x="8" y="6" width="8" height="3.5" rx="0.5" /><path d="M8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01" /></Icona>
+)
+export const IconaMicroscopio = (p: P) => (
+  <Icona {...p}><path d="M6 21h12" /><path d="M8 18h8" /><path d="M14 18a5 5 0 0 0 1-9.9" /><path d="M9.5 3.5l3 1.5-3 6-3-1.5z" /><path d="M8 11.5L7 13.5" /><path d="M10.5 9.5l2 1" /></Icona>
+)
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )

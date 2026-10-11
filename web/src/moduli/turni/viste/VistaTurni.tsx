@@ -1,10 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
-import { intervalloMese, istante, stessoGiorno } from '../../../nucleo/calendario'
+import { useMemo, useState } from 'react'
+import { giornoDi, intervalloMese, istante, stessoGiorno } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaTanti } from '../../../dati/archivio'
 import { CATALOGO_SCUOLA } from '../catalogoScuola'
-import { eliminaTurno as eliminaTurnoConSmonto } from '../smonto'
+import { eliminaTurno as eliminaTurnoConSmonto, spostaTurno } from '../smonto'
+import { useTrascinamento, type Rilascio } from '../../../interfaccia/trascina'
+import { turnoSpostato } from '../../agenda/sposta'
+import type { GiornataSpeciale, Turno } from '../../../dati/modello'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
@@ -35,20 +38,24 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   // Giorno in cui l'utente ha tenuto premuto un turno: mostra le × per eliminare.
   const [inModifica, setInModifica] = useState<string>()
   const [giornoAperto, setGiornoAperto] = useState<string>()
-  const pressione = useRef<{ timer?: ReturnType<typeof setTimeout>; scattata: boolean }>({ scattata: false })
   const ferieDelGiorno = useMemo(() => new Map((ferie ?? []).map((f) => [f.giorno, f])), [ferie])
-
-  function iniziaPressione(giorno: string) {
-    pressione.current.scattata = false
-    clearTimeout(pressione.current.timer)
-    pressione.current.timer = setTimeout(() => {
-      pressione.current.scattata = true
-      setInModifica(giorno)
-      navigator.vibrate?.(15)
-    }, 500)
-  }
-  function fermaPressione() {
-    clearTimeout(pressione.current.timer)
+  type Trascinato = { turno?: Turno; giornata?: GiornataSpeciale }
+  // Tenere premuto: compare la × del giorno; tenere premuto e muovere (o trascinare col mouse): sposta in un altro giorno.
+  const pressione = useTrascinamento<Trascinato>((x, dove) => void sposta(x, dove), (giorno) => setInModifica(giorno.split('|')[0]))
+  async function sposta(x: Trascinato, dove: Rilascio) {
+    setInModifica(undefined)
+    if (x.turno) {
+      const da = chiaveGiorno(giornoDi(x.turno.inizio))
+      if (da === dove.giorno) return
+      const annulla = await spostaTurno(x.turno, turnoSpostato(x.turno, { giorno: dove.giorno }))
+      mostraAvviso(`${titoloTurno(x.turno, mappaModelli)} spostato a ${F.dataEstesa(istante(Number(dove.giorno.slice(0, 4)), Number(dove.giorno.slice(5, 7)), Number(dove.giorno.slice(8, 10)), 12))}`, () => void annulla())
+    } else if (x.giornata) {
+      const g = x.giornata
+      if (g.giorno === dove.giorno) return
+      if (ferieDelGiorno.has(dove.giorno)) { mostraAvviso('Quel giorno ha già una giornata segnata'); return }
+      await salva('ferie', { ...g, giorno: dove.giorno })
+      mostraAvviso(`${TITOLI_GIORNATA[tipoGiornataDa(g.tipo)]} spostato`, () => void salva('ferie', g))
+    }
   }
   async function eliminaGiornata(id: string, nome: string) {
     await elimina('ferie', id)
@@ -158,7 +165,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                 const ferieGiorno = ferieDelGiorno.get(k)
                 const modifica = inModifica === k
                 return (
-                  <div key={k} className={`${classi}${ferieGiorno ? ` g-${tipoGiornataDa(ferieGiorno.tipo)}` : ''}`}>
+                  <div key={k} data-giorno={k} className={`${classi}${ferieGiorno ? ` g-${tipoGiornataDa(ferieGiorno.tipo)}` : ''}`}>
                     <button type="button" className="aggiungi"
                       onClick={() => (inModifica ? setInModifica(undefined) : setGiornoAperto(k))}
                       aria-label={`Apri ${F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}: aggiungi turni o giornate`} />
@@ -167,9 +174,8 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                       {ferieGiorno && (
                         <span className="riga-turno">
                           <button type="button" className={`etichetta-giornata g-${tipoGiornataDa(ferieGiorno.tipo)}`}
-                            onPointerDown={() => iniziaPressione(k)} onPointerUp={fermaPressione} onPointerLeave={fermaPressione}
-                            onContextMenu={(e) => { e.preventDefault(); setInModifica(k) }}
-                            onClick={() => { if (pressione.current.scattata || modifica) { pressione.current.scattata = false; return } setGiornoAperto(k) }}
+                            {...pressione.gestori(`${k}|g`, { giornata: ferieGiorno })}
+                            onClick={() => { if (pressione.eraPressione() || modifica) return; setGiornoAperto(k) }}
                             aria-label={`${TITOLI_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)]}. Tieni premuto per togliere`}>
                             {ETICHETTE_GIORNATA[tipoGiornataDa(ferieGiorno.tipo)]}
                           </button>
@@ -184,9 +190,8 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                             <span className="riga-turno">
                               <a className={`${classeSigla(t.tipo)} barra-turno`} style={{ width: larghezzaTurno(t) }} href={`#/turni/${t.id}`}
                                 data-nota={modifica ? undefined : t.note || undefined}
-                                onPointerDown={() => iniziaPressione(k)} onPointerUp={fermaPressione} onPointerLeave={fermaPressione}
-                                onContextMenu={(e) => { e.preventDefault(); setInModifica(k) }}
-                                onClick={(e) => { if (pressione.current.scattata || modifica) { e.preventDefault(); pressione.current.scattata = false } }}
+                                {...pressione.gestori(`${k}|${t.id}`, { turno: t })}
+                                onClick={(e) => { if (pressione.eraPressione() || modifica) e.preventDefault() }}
                                 aria-label={`${nome}, ${t.tuttoIlGiorno ? 'tutto il giorno' : `${F.ora(t.inizio)}–${F.ora(t.fine)}`}${t.note ? `. Nota: ${t.note}` : ''}. Tieni premuto per eliminare`}>
                                 {siglaTurno(t, mappaModelli)}
                                 {t.note && !modifica && <span className="ha-nota" />}
@@ -203,7 +208,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
               })}
             </div>
           </section>
-          <span className="secondario piccolo non-stampare">Tocca un giorno per aggiungere turni, ferie, riposo… Tieni premuto un turno per eliminarlo.</span>
+          <span className="secondario piccolo non-stampare">Tocca un giorno per aggiungere turni, ferie, riposo… Tieni premuto un turno per eliminarlo, o tienilo premuto e trascinalo in un altro giorno.</span>
           {tipiDelMese.length > 0 && (
             <div className="legenda">
               {tipiDelMese.filter((t) => TITOLI_TIPO_TURNO[t]).map((t) => (
