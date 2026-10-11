@@ -347,6 +347,14 @@ function VistaTaccuino({ t, pagine, paginaId, foto, onModifica, modifica, chiudi
                     <span style={{ fontWeight: 600 }}>{p.titolo || 'Senza titolo'}</span>
                     <span className="secondario piccolo">{F.dataBreve(ms(p.giorno))}{u ? ` · ${TITOLI_UMORE[u].toLowerCase()}` : ''}</span>
                   </span>
+                  <button type="button" className="elimina-task" aria-label={`Elimina ${p.titolo || 'la pagina'}`}
+                    onClick={(e) => {
+                      e.preventDefault(); e.stopPropagation()
+                      void elimina('pagineDiario', p.id).then(() => {
+                        if (p.id === paginaId) vai(`#/journaling/${t.id}`)
+                        mostraAvviso(`Eliminata: ${p.titolo || 'pagina'}`, () => void ripristina('pagineDiario', p.id))
+                      })
+                    }}>×</button>
                 </a>
               )
             })}
