@@ -3,7 +3,7 @@ import { aggiungiGiorni, inizioGiorno } from './nucleo/calendario'
 import * as F from './nucleo/formati'
 import { linkGoogleMaps } from './nucleo/viaggio'
 import { useCollezione } from './dati/hooks'
-import { Guscio, InArrivo, type Sezione } from './interfaccia/Guscio'
+import { Guscio, InArrivo, SEZIONI, type Sezione } from './interfaccia/Guscio'
 import { meseDaParametro, useRotta } from './interfaccia/navigazione'
 import { DettaglioTurno } from './moduli/turni/viste/DettaglioTurno'
 import { ImpostazioniTurni } from './moduli/turni/viste/ImpostazioniTurni'
@@ -11,9 +11,11 @@ import { NuoviTurni } from './moduli/turni/viste/NuoviTurni'
 import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { Impostazioni } from './interfaccia/Impostazioni'
-import { Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
+import { SezioneInArrivo, Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
-import { Esami } from './moduli/specializzazione/viste/Esami'
+import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
+import { Tasse } from './moduli/specializzazione/viste/Tasse'
+import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni } from './interfaccia/icone'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
@@ -37,15 +39,23 @@ export function App() {
   } else if (sezione === 'agenda') pagina = <InArrivo titolo="Agenda" />
   else if (sezione === 'specializzazione') {
     if (sotto === 'logbook') pagina = <Logbook key={parametri.get('nuova') ?? ''} apriNuova={parametri.get('nuova') === '1'} />
-    else if (sotto === 'esami') pagina = <Esami />
+    else if (sotto === 'esami') pagina = <EsamiOLezioni key="esame" tipo="esame" />
+    else if (sotto === 'lezioni') pagina = <EsamiOLezioni key="lezione" tipo="lezione" />
+    else if (sotto === 'tasse') pagina = <Tasse />
+    else if (sotto === 'procedura' && percorso[2]) pagina = <SchedaProcedura id={percorso[2]} />
+    else if (sotto === 'calcolatori') pagina = <SezioneInArrivo titolo="Calcolatori" testo="Età gestazionale e DPP, peso fetale (Hadlock), liquido amniotico, Bishop, Apgar, Robson, shock index, rischio tromboembolico, RMI, β-hCG, BMI: arriveranno qui, ognuno con formula e fonte." />
+    else if (sotto === 'ricerca') pagina = <SezioneInArrivo titolo="Ricerca" testo="Questa sezione la sviluppiamo più avanti: dimmi tu cosa ti serve (progetti, articoli, scadenze, dati raccolti…)." />
     else if (sotto === 'impostazioni') pagina = <ImpostazioniSpecializzazione />
     else pagina = <Specializzazione />
-  } else if (sezione === 'moduli') pagina = <Moduli />
+  } else if (sezione === 'task') pagina = <InArrivo titolo="Task" />
+  else if (sezione === 'studio') pagina = <InArrivo titolo="Studio e risorse" />
+  else if (sezione === 'budget') pagina = <InArrivo titolo="Budget" />
+  else if (sezione === 'journaling') pagina = <InArrivo titolo="Journaling" />
   else if (sezione === 'cerca') pagina = <InArrivo titolo="Cerca" />
   else if (sezione === 'impostazioni') pagina = <Impostazioni />
   else pagina = <Oggi />
 
-  const attiva = (sezione === 'specializzazione' ? 'moduli' : ['oggi', 'agenda', 'turni', 'moduli', 'cerca', 'impostazioni'].includes(sezione) ? sezione : 'oggi') as Sezione | 'impostazioni'
+  const attiva = (sezione === 'impostazioni' || SEZIONI.some((x) => x.id === sezione) ? sezione : 'oggi') as Sezione | 'impostazioni'
   return <Guscio attiva={attiva}>{pagina}</Guscio>
 }
 
@@ -123,20 +133,3 @@ function Oggi() {
   )
 }
 
-/** Elenco dei moduli: si aggiungono uno alla volta. */
-function Moduli() {
-  return (
-    <div className="schermata" style={{ maxWidth: 720 }}>
-      <h1 className="titolo-grande">Moduli</h1>
-      <div className="lista">
-        <a className="riga" href="#/specializzazione">
-          <span className="crescente"><span style={{ fontWeight: 600 }}>Specializzazione</span><span className="secondario piccolo">Logbook, esami e lezioni, servizi di ateneo</span></span>
-        </a>
-        <a className="riga" href="#/turni">
-          <span className="crescente"><span style={{ fontWeight: 600 }}>Turni</span><span className="secondario piccolo">Calendario, ferie, stampa e PDF</span></span>
-        </a>
-      </div>
-      <p className="secondario piccolo">Calcolatori, task, studio, budget e documenti arriveranno uno alla volta.</p>
-    </div>
-  )
-}

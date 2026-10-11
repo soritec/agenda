@@ -1,22 +1,33 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Toast } from './componenti'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaCerca, IconaImpostazioni, IconaModuli, IconaOggi, IconaTurni } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni } from './icone'
 
-export type Sezione = 'oggi' | 'agenda' | 'turni' | 'moduli' | 'cerca'
-
-const SEZIONI: { id: Sezione; titolo: string; Icona: (p: { dimensione?: number }) => ReactNode }[] = [
+export const SEZIONI = [
   { id: 'oggi', titolo: 'Oggi', Icona: IconaOggi },
   { id: 'agenda', titolo: 'Agenda', Icona: IconaAgenda },
   { id: 'turni', titolo: 'Turni', Icona: IconaTurni },
-  { id: 'moduli', titolo: 'Moduli', Icona: IconaModuli },
+  { id: 'task', titolo: 'Task', Icona: IconaTask },
+  { id: 'specializzazione', titolo: 'Specializzazione', Icona: IconaSpecializzazione },
+  { id: 'studio', titolo: 'Studio e risorse', Icona: IconaStudio },
+  { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
+  { id: 'journaling', titolo: 'Journaling', Icona: IconaJournaling },
   { id: 'cerca', titolo: 'Cerca', Icona: IconaCerca },
-]
+] as const satisfies readonly { id: string; titolo: string; Icona: (p: { dimensione?: number }) => ReactNode }[]
+
+export type Sezione = (typeof SEZIONI)[number]['id']
+/** Titoli brevi per la barra in basso dell'iPhone. */
+const TITOLI_BREVI: Partial<Record<Sezione, string>> = { specializzazione: 'Specializz.', studio: 'Studio' }
 
 /** Barra laterale sul Mac (schermi larghi), barra in basso su iPhone. */
 export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni'; children: ReactNode }) {
   const stato = useStatoSincronizzazione()
+  const barra = useRef<HTMLElement>(null)
+  // Sull'iPhone la barra in basso scorre: si porta in vista la sezione attiva quando cambia.
+  useEffect(() => {
+    barra.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' })
+  }, [attiva])
   return (
     <div className="guscio">
       <nav className="laterale" aria-label="Sezioni">
@@ -26,8 +37,6 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
             {titolo}
           </a>
         ))}
-        <div className="gruppo">Moduli</div>
-        <a href="#/specializzazione">Specializzazione</a>
         <span style={{ flex: 1 }} />
         <a href="#/impostazioni" aria-current={attiva === 'impostazioni' ? 'page' : undefined} title={testoStato(stato)}>
           <IconaImpostazioni dimensione={17} />
@@ -37,13 +46,17 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
       </nav>
       <main className="contenuto">{children}</main>
       <Toast />
-      <nav className="barra-schede" aria-label="Sezioni">
+      <nav className="barra-schede" aria-label="Sezioni" ref={barra}>
         {SEZIONI.map(({ id, titolo, Icona }) => (
           <a key={id} href={`#/${id}`} aria-current={id === attiva ? 'page' : undefined}>
             <Icona dimensione={24} />
-            {titolo}
+            <span>{TITOLI_BREVI[id] ?? titolo}</span>
           </a>
         ))}
+        <a href="#/impostazioni" aria-current={attiva === 'impostazioni' ? 'page' : undefined}>
+          <IconaImpostazioni dimensione={24} />
+          <span>Impostazioni</span>
+        </a>
       </nav>
     </div>
   )

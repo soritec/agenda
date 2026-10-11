@@ -84,6 +84,12 @@ export interface Assegnazione extends Base {
 export interface TipoProcedura extends Base {
   nome: string
   ordine: number
+  /** Procedura chirurgica (per filtrare e raggruppare il logbook). */
+  chirurgica?: boolean
+  /** Link per studiare la procedura (es. video su WebSurg). */
+  link?: { titolo: string; url: string }[]
+  /** Appunti personali sulla procedura. */
+  appunti?: string
 }
 
 /** Procedura del logbook. Solo dati anonimi: niente nomi, date di nascita, codici fiscali o indirizzi. */
@@ -112,6 +118,33 @@ export interface EsameOLezione extends Base {
   /** Esito o voto. */
   esito?: string
   note?: string
+  /** Segnato come completato (anche prima della data). */
+  completato?: boolean
+}
+
+export interface Tassa extends Base {
+  descrizione: string
+  importoCent: number
+  /** "2026-10-31" */
+  scadenza?: string
+  /** 'daPagare' | 'pagato' */
+  stato: string
+  pagatoIl?: string
+  note?: string
+}
+
+/**
+ * File allegato (es. appunti in PDF, referto anonimizzato). Il record si sincronizza con gli altri dati;
+ * il contenuto sta in un archivio a parte e su GitHub in un file cifrato separato.
+ */
+export interface Allegato extends Base {
+  nome: string
+  tipoMime: string
+  dimensione: number
+  /** "tipoProcedura:<id>" oppure "procedura:<id>" */
+  collegatoA: string
+  /** Il contenuto cifrato è già su GitHub (gli altri dispositivi possono scaricarlo). */
+  caricato?: boolean
 }
 
 export interface Collegamento extends Base {
@@ -150,6 +183,8 @@ export interface Collezioni {
   procedure: Procedura
   esami: EsameOLezione
   collegamenti: Collegamento
+  tasse: Tassa
+  allegati: Allegato
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati']

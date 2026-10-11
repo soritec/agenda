@@ -70,8 +70,9 @@ h1, h2, h3 { margin: 0; }
 .laterale a svg { color: var(--accento); }
 .laterale .gruppo { font-size: 11px; font-weight: 600; color: var(--testo-2); padding: 14px 10px 4px; }
 .contenuto { flex: 1; min-width: 0; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-.barra-schede { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--superficie) 92%, transparent); backdrop-filter: blur(16px); border-top: 1px solid var(--linea); z-index: 10; }
-.barra-schede a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 500; color: var(--testo-2); padding: 4px 0; }
+.barra-schede { position: fixed; left: 0; right: 0; bottom: 0; display: flex; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--superficie) 92%, transparent); backdrop-filter: blur(16px); border-top: 1px solid var(--linea); z-index: 10; }
+.barra-schede a { flex: 0 0 auto; min-width: 66px; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 500; color: var(--testo-2); padding: 4px 4px; white-space: nowrap; }
+.barra-schede::-webkit-scrollbar { display: none; }
 .barra-schede a[aria-current='page'] { color: var(--accento); }
 @media (min-width: 900px) {
   .laterale { display: flex; }
@@ -320,3 +321,52 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 /* Con la × visibile la barra si accorcia, così la × resta sempre dentro la casella. */
 .cella .riga-turno .barra-turno { flex-shrink: 1; min-width: max-content; padding: 0 4px; letter-spacing: -0.02em; }
 .cella .riga-turno .elimina { flex-shrink: 0; }
+
+/* Intestazione dei Turni: titolo e azioni sulla stessa riga; etichette accanto al titolo (Mac) o sotto (iPhone). */
+.testata-turni { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.testata-turni .pillole { display: flex; flex-wrap: wrap; gap: 6px; }
+.testata-turni .azioni { margin-left: auto; }
+.navigazione-mese { margin-top: -6px; }
+.pulsante.con-icona { gap: 8px; }
+@media (max-width: 700px) {
+  .testata-turni .pillole { order: 3; flex-basis: 100%; }
+  .testata-turni .azioni { order: 2; gap: 6px; }
+  .testata-turni .titolo-grande { font-size: 28px; }
+  .testata-turni .pulsante.tondo, .testata-turni .pulsante.con-icona { width: 40px; height: 40px; padding: 0; }
+  .solo-largo { display: none; }
+  .pillola { height: 28px; font-size: 12px; padding: 0 10px; }
+  .schermata { gap: 16px; padding-left: 14px; padding-right: 14px; }
+  .mese { padding: 8px 4px 6px; }
+}
+
+/* Specializzazione: riquadri delle sezioni */
+.sezioni-spec { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.riquadro-sezione { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: var(--raggio); background: var(--superficie); border: 1px solid var(--linea); color: var(--testo); min-height: 96px; position: relative; }
+.riquadro-sezione .titolo { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.riquadro-sezione .dettaglio { font-size: 13px; color: var(--testo-2); line-height: 1.35; }
+.riquadro-sezione .valore { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.riquadro-sezione.in-arrivo { opacity: 0.6; }
+.etichetta-tipo { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; }
+.colore-esame { background: #F0D8CC; color: #6E3826; }
+.colore-lezione { background: #D8E2EE; color: #2F4560; }
+.colore-pagato { background: #DCEBD9; color: #2F5A2B; }
+.colore-inScadenza { background: #F6EEDF; color: #6E4B12; }
+.colore-scaduta { background: #F6DADA; color: #8A2A2A; }
+.colore-daPagare { background: #ECE6DD; color: #4A443B; }
+@media (prefers-color-scheme: dark) {
+  .colore-esame { background: #503229; color: #F3CDBD; } .colore-lezione { background: #2E3D52; color: #CADAF0; }
+  .colore-pagato { background: #2C3F2A; color: #CFE6C9; } .colore-inScadenza { background: #3A2F1C; color: #F0D9A8; }
+  .colore-scaduta { background: #4A2626; color: #F3C3C3; } .colore-daPagare { background: #34312D; color: #E6E0D6; }
+}
+.riga.conclusa { opacity: 0.5; }
+@media (max-width: 700px) {
+  .tessere { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sezioni-spec { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .riquadro-sezione { min-height: 84px; padding: 12px; }
+  .intestazione .titolo-grande { font-size: 28px; }
+}
+.tabella-logbook { min-width: 0; }
+.tabella-logbook .num { text-align: right; width: 54px; font-variant-numeric: tabular-nums; }
+.tabella-logbook .riga-gruppo td { background: var(--superficie-2); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--testo-2); }
+@media (max-width: 700px) { .tabella-logbook .num { width: 38px; padding-left: 2px; padding-right: 2px; } .tabella-logbook th { font-size: 10px; } }
+.appunti { min-height: 220px; width: 100%; padding: 14px 16px; border-radius: var(--raggio); border: 1px solid var(--linea-forte); background: var(--superficie); line-height: 1.55; font-size: 15px; resize: vertical; }

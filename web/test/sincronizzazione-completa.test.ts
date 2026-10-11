@@ -78,6 +78,18 @@ describe('Sincronizzazione completa tra due dispositivi', () => {
     await collega('token-di-prova-abbastanza-lungo', 'tre parole e 7', 'utente', 'dati')
     expect((await elenca('ferie')).map((f) => f.giorno)).toEqual(['2026-10-21'])
 
+    // Allegato: caricato cifrato dal primo dispositivo, scaricato dal secondo quando serve
+    const { aggiungiAllegato, contenutoAllegato } = await import('../src/dati/allegati')
+    const allegato = await aggiungiAllegato(new File(['appunti segreti'], 'appunti.txt', { type: 'text/plain' }), 'tipoProcedura:x')
+    await sincronizza()
+    await sincronizza()
+    expect(file.get(`allegati/${allegato.id}.cifrato`)!.testo).not.toContain('appunti segreti')
+    await nuovoDispositivo()
+    await collega('token-di-prova-abbastanza-lungo', 'tre parole e 7', 'utente', 'dati')
+    const sullAltro = (await elenca('allegati')).find((x) => x.id === allegato.id)!
+    expect(sullAltro.caricato).toBe(true)
+    expect(await (await contenutoAllegato(sullAltro)).text()).toBe('appunti segreti')
+
     // Senza modifiche non si riscrive su GitHub
     const prima = scritture
     await sincronizza()

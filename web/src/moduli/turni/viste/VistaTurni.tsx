@@ -11,7 +11,7 @@ import { GiornoRapido } from './GiornoRapido'
 import { SceltaOspedale } from './SceltaOspedale'
 import { SvuotaMese } from './SvuotaMese'
 import { assegnazioneDelMese } from '../assegnazioni'
-import { IconaAvanti, IconaCestino, IconaImpostazioni, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
+import { IconaAvanti, IconaCestino, IconaImpostazioni, IconaIndietro, IconaPiu, IconaStampa } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { sovrapposizioni } from '../controlli'
 import { calcolaRiepilogo } from '../riepilogo'
@@ -98,32 +98,24 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
 
   return (
     <div className="schermata">
-      <header className="intestazione">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h1 className="titolo-grande" style={{ marginRight: 4 }}>Turni</h1>
-            {periodi && (
-              <button type="button" className={`pillola${area ? ` ${area.area}` : ''}`} onClick={() => setSceltaArea(true)}>
-                {area ? `${TITOLI_AREA[area.area]} · mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE}` : 'Scegli l’area di rotazione'}
-              </button>
-            )}
-            {assegnazioni && (
-              <button type="button" className={`pillola${ospedale ? ' ospedale' : ''}`} onClick={() => setSceltaOspedale(true)}>
-                {ospedale && mappaSedi.get(ospedale.periodo.sedeId)
-                  ? `${mappaSedi.get(ospedale.periodo.sedeId)!.nome} · mese ${ospedale.meseDelPeriodo} di ${ospedale.periodo.mesi}`
-                  : 'Scegli l’ospedale'}
-              </button>
-            )}
-          </div>
-          <div className="riga-azioni" style={{ marginTop: 10 }}>
-            <a className="pulsante tondo" href={`#/turni?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
-            <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`} title="Torna al mese di oggi"
-              style={{ minWidth: 150, fontWeight: 600, textTransform: 'capitalize' }}>{F.mese(istante(anno, mese, 1))}</a>
-            <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
-          </div>
+      <header className="testata-turni">
+        <h1 className="titolo-grande">Turni</h1>
+        <div className="pillole">
+          {periodi && (
+            <button type="button" className={`pillola${area ? ` ${area.area}` : ''}`} onClick={() => setSceltaArea(true)}>
+              {area ? `${TITOLI_AREA[area.area]} · mese ${area.meseDellaRotazione} di ${MESI_PER_ROTAZIONE}` : 'Scegli l’area di rotazione'}
+            </button>
+          )}
+          {assegnazioni && (
+            <button type="button" className={`pillola${ospedale ? ' ospedale' : ''}`} onClick={() => setSceltaOspedale(true)}>
+              {ospedale && mappaSedi.get(ospedale.periodo.sedeId)
+                ? `${mappaSedi.get(ospedale.periodo.sedeId)!.nome} · mese ${ospedale.meseDelPeriodo} di ${ospedale.periodo.mesi}`
+                : 'Scegli l’ospedale'}
+            </button>
+          )}
         </div>
-        <div className="riga-azioni" style={{ alignSelf: 'flex-start' }}>
-          <a className="pulsante" href={`#/turni/stampa?mese=${qui}`}>Stampa · PDF</a>
+        <div className="riga-azioni azioni">
+          <a className="pulsante con-icona" href={`#/turni/stampa?mese=${qui}`} aria-label="Stampa e PDF"><IconaStampa dimensione={18} /><span className="solo-largo">Stampa · PDF</span></a>
           {delMese.length + giornateMese.reduce((n, g) => n + g.numero, 0) > 0 && (
             <button type="button" className="pulsante tondo pericolo" onClick={() => setSvuota(true)} aria-label="Svuota il mese" title="Svuota il mese"><IconaCestino dimensione={18} /></button>
           )}
@@ -131,6 +123,12 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <a className="pulsante tondo primario" href={`#/turni/nuovi?mese=${qui}`} aria-label="Aggiungi turni"><IconaPiu dimensione={18} /></a>
         </div>
       </header>
+      <div className="riga-azioni navigazione-mese">
+        <a className="pulsante tondo" href={`#/turni?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
+        <a className="pulsante" href={`#/turni?mese=${parametroMese(g0.anno, g0.mese)}`} title="Torna al mese di oggi"
+          style={{ minWidth: 150, fontWeight: 600, textTransform: 'capitalize' }}>{F.mese(istante(anno, mese, 1))}</a>
+        <a className="pulsante tondo" href={`#/turni?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
+      </div>
 
       {modelli && modelli.length === 0 && (
         <div className="scheda">

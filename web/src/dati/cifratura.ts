@@ -75,3 +75,14 @@ export async function apriChiave(password: string, d: DescrittoreChiave): Promis
     return undefined
   }
 }
+
+/** Come `cifra`, ma per file (byte). */
+export async function cifraByte(chiave: CryptoKey, byte: Uint8Array<ArrayBuffer>): Promise<Cifrato> {
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const dati = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, chiave, byte)
+  return { iv: inBase64(iv), dati: inBase64(new Uint8Array(dati)) }
+}
+
+export async function decifraByte(chiave: CryptoKey, c: Cifrato): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: daBase64(c.iv) }, chiave, daBase64(c.dati)))
+}

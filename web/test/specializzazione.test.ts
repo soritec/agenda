@@ -37,3 +37,29 @@ describe('Specializzazione', () => {
     expect(TIPI_PROCEDURA_PREDEFINITI).toContain('Taglio cesareo')
   })
 })
+
+import { CHIRURGICHE_PREDEFINITE, eConcluso, nelFiltro, statoTassa } from '../src/moduli/specializzazione/logica'
+
+describe('Specializzazione: filtri, esami e tasse', () => {
+  test('chirurgiche e non chirurgiche', () => {
+    expect(nelFiltro({ chirurgica: true }, 'chirurgiche')).toBe(true)
+    expect(nelFiltro({ chirurgica: true }, 'nonChirurgiche')).toBe(false)
+    expect(nelFiltro({}, 'nonChirurgiche')).toBe(true)
+    expect(nelFiltro(undefined, 'tutte')).toBe(true)
+    expect(CHIRURGICHE_PREDEFINITE.has('Taglio cesareo')).toBe(true)
+    expect(CHIRURGICHE_PREDEFINITE.has('Ecografia ostetrica')).toBe(false)
+  })
+  test('esami conclusi', () => {
+    expect(eConcluso({ giorno: '2026-10-10' }, '2026-10-11')).toBe(true)
+    expect(eConcluso({ giorno: '2026-10-20' }, '2026-10-11')).toBe(false)
+    expect(eConcluso({ giorno: '2026-10-20', completato: true }, '2026-10-11')).toBe(true)
+  })
+  test('stato delle tasse', () => {
+    const oggi = '2026-10-11'
+    expect(statoTassa({ stato: 'pagato', scadenza: '2026-01-01' }, oggi)).toBe('pagato')
+    expect(statoTassa({ stato: 'daPagare', scadenza: '2026-10-01' }, oggi)).toBe('scaduta')
+    expect(statoTassa({ stato: 'daPagare', scadenza: '2026-10-20' }, oggi)).toBe('inScadenza')
+    expect(statoTassa({ stato: 'daPagare', scadenza: '2026-12-20' }, oggi)).toBe('daPagare')
+    expect(statoTassa({ stato: 'daPagare' }, oggi)).toBe('daPagare')
+  })
+})

@@ -8,7 +8,7 @@ import type { Istantanea } from './fusione'
  */
 
 const NOME_DB = 'agenda'
-const VERSIONE_DB = 5
+const VERSIONE_DB = 6
 
 /** `sincronizzazione` = la modifica arriva da GitHub (non va rimandata indietro). */
 export type OrigineModifica = 'utente' | 'sincronizzazione'
@@ -37,6 +37,12 @@ function apri(): Promise<IDBPDatabase> {
       }
       if (vecchiaVersione < 5) {
         for (const nome of ['tipiProcedura', 'procedure', 'esami', 'collegamenti']) database.createObjectStore(nome, { keyPath: 'id' })
+      }
+      if (vecchiaVersione < 6) {
+        database.createObjectStore('tasse', { keyPath: 'id' })
+        database.createObjectStore('allegati', { keyPath: 'id' })
+        // Contenuto dei file allegati (chiave = id dell'allegato): non fa parte dell'istantanea sincronizzata.
+        database.createObjectStore('file')
       }
     },
   })
@@ -182,4 +188,14 @@ export async function salvaConfigurazioneSincronizzazione(c: ConfigurazioneSincr
   const database = await apri()
   if (c) await database.put('impostazioni', c, 'sincronizzazione')
   else await database.delete('impostazioni', 'sincronizzazione')
+}
+
+/* Contenuto dei file allegati */
+
+export async function leggiContenuto(id: string): Promise<Blob | undefined> {
+  return (await (await apri()).get('file', id)) as Blob | undefined
+}
+
+export async function salvaContenuto(id: string, contenuto: Blob): Promise<void> {
+  await (await apri()).put('file', contenuto, id)
 }

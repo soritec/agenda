@@ -73,6 +73,10 @@ export function ImpostazioniSpecializzazione() {
               <input value={t.nome} aria-label="Nome della procedura"
                 onChange={(e) => void salva('tipiProcedura', { ...t, nome: e.target.value })}
                 style={{ flex: 1, minWidth: 0, border: 'none', background: 'none', padding: '4px 0', fontSize: 15 }} />
+              <label className="secondario piccolo" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+                <input type="checkbox" checked={Boolean(t.chirurgica)} onChange={(e) => void salva('tipiProcedura', { ...t, chirurgica: e.target.checked || undefined })} />
+                Chirurgica
+              </label>
               <button type="button" className="link piccolo" disabled={i === 0} aria-label="Sposta su"
                 onClick={() => { const prima = elenco[i - 1]!; void salva('tipiProcedura', { ...t, ordine: prima.ordine }).then(() => salva('tipiProcedura', { ...prima, ordine: t.ordine })) }}>↑</button>
               <button type="button" className="elimina-riga" aria-label={`Elimina ${t.nome}`}

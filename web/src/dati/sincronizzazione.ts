@@ -6,6 +6,7 @@ import {
 import { apriChiave, cifra, decifra, nuovaChiave, type Cifrato, type DescrittoreChiave } from './cifratura'
 import { differenze, fondi, haDifferenze, istantaneaVuota, type Istantanea } from './fusione'
 import { ErroreGitHub, leggiFile, scriviFile, verificaAccesso, type ConfigurazioneGitHub } from './github'
+import { caricaAllegatiMancanti } from './allegati'
 
 /**
  * Sincronizzazione tra dispositivi tramite il repository privato dei dati su GitHub.
@@ -128,6 +129,7 @@ async function esegui(): Promise<void> {
       }
       const adesso = Date.now()
       await salvaConfigurazioneSincronizzazione({ ...config, sha, ultimaSincronizzazione: adesso })
+      await caricaAllegatiMancanti()
       return imposta({ tipo: 'pronto', ultima: adesso })
     }
     throw new Error('Troppe modifiche contemporanee: riprovo tra poco.')

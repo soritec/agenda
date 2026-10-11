@@ -36,3 +36,21 @@ export const IconaAvviso = (p: P) => <Icona {...p}><path d="M12 4l9 16H3z" /><pa
 export const IconaImpostazioni = (p: P) => (
   <Icona {...p}><circle cx="12" cy="12" r="3" /><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z" /></Icona>
 )
+export const IconaTask = (p: P) => (
+  <Icona {...p}><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8.5 12l2.5 2.5 4.5-5" /></Icona>
+)
+export const IconaSpecializzazione = (p: P) => (
+  <Icona {...p}><path d="M3 9l9-4.5L21 9l-9 4.5z" /><path d="M7 11v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11" /></Icona>
+)
+export const IconaStudio = (p: P) => (
+  <Icona {...p}><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z" /><path d="M12 6.5V19" /></Icona>
+)
+export const IconaBudget = (p: P) => (
+  <Icona {...p}><rect x="3.5" y="6" width="17" height="13" rx="3" /><path d="M3.5 10h17M15 14.5h2" /></Icona>
+)
+export const IconaJournaling = (p: P) => (
+  <Icona {...p}><path d="M6 3.5h10a2 2 0 0 1 2 2v15H8a2 2 0 0 1-2-2z" /><path d="M6 17.5a2 2 0 0 1 2-2h10M10 8h5M10 11h3" /></Icona>
+)
+export const IconaStampa = (p: P) => (
+  <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
+)
