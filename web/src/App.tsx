@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { aggiungiGiorni, inizioGiorno } from './nucleo/calendario'
 import * as F from './nucleo/formati'
 import { linkGoogleMaps } from './nucleo/viaggio'
@@ -13,7 +13,8 @@ import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { Impostazioni } from './interfaccia/Impostazioni'
 import { SezioneInArrivo, Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
 import { Agenda, ElencoImpegni } from './moduli/agenda/viste/Agenda'
-import { Task } from './moduli/task/viste/Task'
+import { Task, TaskDiOggi } from './moduli/task/viste/Task'
+import { fraseDelGiorno } from './moduli/oggi/frasi'
 import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
@@ -80,9 +81,10 @@ function Oggi() {
   const g0 = oggi()
   // Gli altri impegni dell'agenda (i turni hanno le loro schede qui sotto).
   const altri = impegniTra({ giornate, eventi, esami, tasse, attivita }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
-  const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0))
+  // I task di oggi hanno un riquadro a parte, con il cerchio da spuntare.
+  const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte !== 'task')
   const altriDomani = altri.filter((i) => i.giorno !== chiaveGiorno(g0))
-  const inRitardo = (attivita ?? []).filter((t) => !t.completataIl && t.scadenza && t.scadenza < chiaveGiorno(g0)).length
+  const [scartoFrase, setScartoFrase] = useState(0)
   const inizioOggi = inizioGiorno(g0), inizioDomani = inizioGiorno(aggiungiGiorni(g0, 1)), inizioDopodomani = inizioGiorno(aggiungiGiorni(g0, 2))
   const ordinati = [...(turni ?? [])].sort((x, y) => x.inizio - y.inizio)
   // Oggi: turni che iniziano oggi o sono ancora in corso (es. la notte iniziata ieri sera).
@@ -100,7 +102,10 @@ function Oggi() {
       </header>
 
       {diOggi.length === 0 && altriOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/agenda">Vai all'agenda</a></div>}
-      {inRitardo > 0 && <a className="avviso" href="#/task" style={{ color: 'var(--avviso-testo)' }}>{inRitardo === 1 ? '1 task in ritardo' : `${inRitardo} task in ritardo`} ›</a>}
+      <button type="button" className="frase-del-giorno" onClick={() => setScartoFrase((n) => n + 1)} title="Tocca per un'altra frase">
+        <span>{fraseDelGiorno(chiaveGiorno(g0), scartoFrase)}</span>
+        <span className="altra" aria-hidden="true">↻</span>
+      </button>
       {altriOggi.length > 0 && <ElencoImpegni voci={altriOggi} />}
       {diOggi.map((t) => {
         const sede = mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')
@@ -127,6 +132,8 @@ function Oggi() {
           </div>
         )
       })}
+
+      <TaskDiOggi />
 
       <details className="domani" open={diOggi.length === 0 && altriOggi.length === 0}>
         <summary className="titolo-sezione" style={{ cursor: 'pointer' }}>

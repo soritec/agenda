@@ -534,3 +534,35 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 }
 .colonna-giorno .blocco.corto .titolo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .pillola { white-space: nowrap; }
+.spunta.p-alta { border-color: #C0504D; } .spunta.p-media { border-color: #C9A15A; }
+.spunta.fatta { border-color: var(--primario) !important; }
+.etichetta-priorita { border-radius: 6px; padding: 1px 6px; font-size: 11px; font-weight: 600; }
+.etichetta-priorita.p-alta { background: #F6DADA; color: #8A2A2A; } .etichetta-priorita.p-media { background: #F6EEDF; color: #6E4B12; } .etichetta-priorita.p-bassa { background: #ECEAE6; color: #55524D; }
+.pillola.priorita-scelta[aria-pressed="true"].p-alta { background: #F6DADA; color: #8A2A2A; border-color: #C0504D; font-weight: 700; }
+.pillola.priorita-scelta[aria-pressed="true"].p-media { background: #F6EEDF; color: #6E4B12; border-color: #C9A15A; font-weight: 700; }
+.pillola.priorita-scelta[aria-pressed="true"].p-bassa { background: #ECEAE6; color: #55524D; border-color: #9C968C; font-weight: 700; }
+@media (prefers-color-scheme: dark) {
+  .etichetta-priorita.p-alta, .pillola.priorita-scelta[aria-pressed="true"].p-alta { background: #4A2626; color: #F3C3C3; }
+  .etichetta-priorita.p-media, .pillola.priorita-scelta[aria-pressed="true"].p-media { background: #3A2F1C; color: #F0D9A8; }
+  .etichetta-priorita.p-bassa, .pillola.priorita-scelta[aria-pressed="true"].p-bassa { background: #33312E; color: #E2DED7; }
+}
+.opzioni-veloci { display: flex; flex-direction: column; gap: 6px; margin-top: -6px; }
+.opzioni-veloci .riga-azioni { gap: 6px; }
+.data-piccola { min-height: 30px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); font-size: 13px; }
+.campo-in-riga { flex: 1; min-width: 0; border: none; background: none; font-size: 15px; padding: 4px 0; outline: none; color: var(--testo); }
+.frase-del-giorno { display: flex; align-items: flex-start; gap: 10px; text-align: left; width: 100%; padding: 12px 16px; border-radius: var(--raggio); border: none; background: var(--accento-tenue); color: var(--accento); font-size: 15px; font-style: italic; line-height: 1.45; cursor: pointer; font-family: Georgia, 'Times New Roman', serif; }
+.frase-del-giorno span:first-child { flex: 1; }
+.frase-del-giorno .altra { font-style: normal; opacity: 0.6; font-family: inherit; }
+.tendina-task { border-radius: 6px; background: #EEE6F5; color: #4B3466; font-size: 11.5px; }
+.tendina-task summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 2px 6px; font-weight: 700; }
+.tendina-task summary::-webkit-details-marker { display: none; }
+.tendina-task summary::after { content: '▾'; margin-left: auto; opacity: 0.7; }
+.tendina-task[open] summary::after { content: '▴'; }
+.tendina-task .conteggio { font-weight: 500; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.tendina-task .elenco { display: flex; flex-direction: column; gap: 3px; padding: 2px 6px 6px; }
+.voce-tendina { display: flex; align-items: flex-start; gap: 6px; line-height: 1.25; }
+.voce-tendina a { color: inherit; overflow-wrap: anywhere; }
+.voce-tendina.conclusa { opacity: 0.5; } .voce-tendina.conclusa a { text-decoration: line-through; }
+.spunta.piccola { width: 15px; height: 15px; border-radius: 8px; border-width: 1.5px; font-size: 9px; margin-top: 0; border-color: currentColor; }
+@media (prefers-color-scheme: dark) { .tendina-task { background: #3B3048; color: #E3D6F2; } }
+@media (max-width: 700px) { .tendina-task { font-size: 13px; } .spunta.piccola { width: 18px; height: 18px; } }

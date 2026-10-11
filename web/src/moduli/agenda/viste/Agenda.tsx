@@ -13,6 +13,8 @@ import { vai } from '../../../interfaccia/navigazione'
 import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { eliminaTurno } from '../../turni/smonto'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
+import { segnaFatto } from '../../task/viste/Task'
+import type { Attivita } from '../../../dati/modello'
 import { celleMese, chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti, perId } from '../../turni/supporto'
 import {
   blocchiPerGiorno, CATEGORIE_EVENTO, categoriaDa, FONTI, giorniTra, impegniTra, lunediDi, perGiorno, spostaGiorni, testoOrario,
@@ -154,7 +156,8 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     setEventoInModifica(undefined)
     if (eventoAperto) vai(linkAgenda(vista, riferimento))
   }
-  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }) }
+  const mappaAttivita = useMemo(() => perId(attivita), [attivita])
+  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }) }
 
   return (
     <div className="schermata">
@@ -220,6 +223,7 @@ function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; 
 const rimovibile = (i: Impegno, r: Rimozione) => (eliminabile(i) ? r.gestori(i.chiave) : {})
 
 interface PropsVista {
+  mappaAttivita: Map<string, Attivita>
   rimozione: Rimozione
   visibili: Impegno[]
   oggiChiave: string
@@ -309,14 +313,16 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, m
 
 /* Vista due settimane: ogni giorno con tutti gli impegni scritti per esteso (su iPhone diventa un elenco). */
 
-function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, giorni }: PropsVista & { giorni: string[] }) {
+function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
   const mappa = perGiorno(visibili)
   return (
     <section className="due-settimane" aria-label="Due settimane">
       <div className="giorni-settimana">{GIORNI.map((g) => <span key={g}>{g}</span>)}</div>
       <div className="griglia">
         {giorni.map((g) => {
-          const voci = mappa.get(g) ?? []
+          const tutte = mappa.get(g) ?? []
+          const voci = tutte.filter((v) => v.fonte !== 'task')
+          const task = tutte.filter((v) => v.fonte === 'task')
           return (
             <div key={g} className={['giorno-esteso', festivo(g) && 'festivo', g === oggiChiave && 'oggi'].filter(Boolean).join(' ')}
               onClick={(e) => { if (!(e.target as HTMLElement).closest('a')) aggiungi(g) }} title="Tocca uno spazio libero per aggiungere">
@@ -324,6 +330,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
                 <span className="numero">{numeroGiorno(g)}</span>
                 <span className="nome-giorno">{F.dataEstesa(msGiorno(g)).split(' ')[0]}{numeroGiorno(g) === 1 ? ` · ${nomeMese(g).split(' ')[0]}` : ''}</span>
               </div>
+              {task.length > 0 && <TendinaTask voci={task} mappaAttivita={mappaAttivita} />}
               {voci.map((v) => (
                 <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`voce-estesa rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>
                   {v.minutoInizio !== undefined && <span className="ora numeri">{testoOrario(v)}</span>}
@@ -344,7 +351,10 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
 
 const ALTEZZA_ORA = 48
 
-function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, giorni }: PropsVista & { giorni: string[] }) {
+function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
+  // I task stanno in una tendina sopra le ore, non nella griglia.
+  const visibili = tutte.filter((v) => v.fonte !== 'task')
+  const taskPerGiorno = perGiorno(tutte.filter((v) => v.fonte === 'task'))
   const blocchi = blocchiPerGiorno(visibili, giorni)
   const tuttoIlGiorno = perGiorno(visibili.filter((i) => i.minutoInizio === undefined))
   // Fascia oraria: almeno 7–22, allargata se serve (le notti che continuano dal giorno prima non la allargano).
@@ -386,6 +396,7 @@ function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, rimozio
         <div className="etichetta-ore secondario piccolo">giorno</div>
         {giorni.map((g) => (
           <div key={g} className="riga-giornata">
+            {(taskPerGiorno.get(g) ?? []).length > 0 && <TendinaTask voci={taskPerGiorno.get(g)!} mappaAttivita={mappaAttivita} />}
             {(tuttoIlGiorno.get(g) ?? []).map((v) => (
               <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>
                 {v.titolo}<XElimina i={v} rimozione={rimozione} />
@@ -592,3 +603,28 @@ function EsportaCalendario({ anno, mese, dati, nascoste, onChiudi }: {
   )
 }
 
+
+/** "Task · 3": si apre con un tocco e mostra i task del giorno, da spuntare. */
+function TendinaTask({ voci, mappaAttivita }: { voci: Impegno[]; mappaAttivita: Map<string, Attivita> }) {
+  const fatti = voci.filter((v) => v.concluso).length
+  return (
+    <details className="tendina-task" onClick={(e) => e.stopPropagation()}>
+      <summary>
+        <span>Task</span>
+        <span className="conteggio">{fatti}/{voci.length}</span>
+      </summary>
+      <div className="elenco">
+        {[...voci].sort((x, y) => Number(Boolean(x.concluso)) - Number(Boolean(y.concluso))).map((v) => {
+          const t = mappaAttivita.get(v.id)
+          return (
+            <div key={v.chiave} className={`voce-tendina${v.concluso ? ' conclusa' : ''}`}>
+              <button type="button" className={`spunta piccola${v.concluso ? ' fatta' : ''}`} aria-label={v.concluso ? `Riapri ${v.titolo}` : `Segna fatto ${v.titolo}`}
+                onClick={() => { if (t) void segnaFatto(t) }}>{v.concluso ? '✓' : ''}</button>
+              <a href={v.link}>{v.minutoInizio !== undefined && <span className="numeri secondario">{orarioBreve(v.minutoInizio)} </span>}{v.titolo}</a>
+            </div>
+          )
+        })}
+      </div>
+    </details>
+  )
+}

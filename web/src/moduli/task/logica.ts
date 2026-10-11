@@ -6,6 +6,12 @@ export type Area = (typeof AREE)[number]
 export const TITOLI_AREA: Record<Area, string> = { personale: 'Personale', lavoro: 'Lavoro', specializzazione: 'Specializzazione', studio: 'Studio', altro: 'Altro' }
 export const areaDa = (grezzo: string): Area => ((AREE as readonly string[]).includes(grezzo) ? (grezzo as Area) : 'altro')
 
+export const PRIORITA = ['alta', 'media', 'bassa'] as const
+export type Priorita = (typeof PRIORITA)[number]
+export const TITOLI_PRIORITA: Record<Priorita, string> = { alta: 'Alta', media: 'Media', bassa: 'Bassa' }
+/** I task salvati prima avevano 'normale': vale come media. */
+export const prioritaDa = (grezzo: string | undefined): Priorita => ((PRIORITA as readonly string[]).includes(grezzo ?? '') ? (grezzo as Priorita) : 'media')
+
 export const RIPETIZIONI = ['mai', 'giorno', 'settimana', 'mese', 'anno'] as const
 export type Ripetizione = (typeof RIPETIZIONI)[number]
 export const TITOLI_RIPETIZIONE: Record<Ripetizione, string> = { mai: 'Non si ripete', giorno: 'Ogni giorno', settimana: 'Ogni settimana', mese: 'Ogni mese', anno: 'Ogni anno' }
@@ -65,7 +71,7 @@ export function raggruppa(elenco: Attivita[], oggi: string): Record<Gruppo, Atti
   }
   const ordine = (a: Attivita, b: Attivita) =>
     (a.scadenza ?? '9999').localeCompare(b.scadenza ?? '9999')
-    || (a.priorita === 'alta' ? 0 : 1) - (b.priorita === 'alta' ? 0 : 1)
+    || PRIORITA.indexOf(prioritaDa(a.priorita)) - PRIORITA.indexOf(prioritaDa(b.priorita))
     || (a.minuto ?? 9999) - (b.minuto ?? 9999)
     || a.creatoIl - b.creatoIl
   for (const k of Object.keys(g) as Gruppo[]) g[k].sort(ordine)
@@ -76,11 +82,12 @@ export function raggruppa(elenco: Attivita[], oggi: string): Record<Gruppo, Atti
 /**
  * Inserimento veloce: "Chiamare segreteria domani 9:30 !" → titolo, scadenza, ora e priorità.
  * Riconosce oggi, domani, dopodomani, i giorni della settimana (il prossimo), un orario hh:mm o "alle 9", e "!" per priorità alta.
+ * Quello che non è scritto (giorno, priorità) lo decide chi chiama, con i pulsanti accanto al campo.
  */
-export function leggiTestoVeloce(testo: string, oggi: string, giornoSettimanaOggi: number): { titolo: string; scadenza?: string; minuto?: number; priorita: 'alta' | 'normale' } {
+export function leggiTestoVeloce(testo: string, oggi: string, giornoSettimanaOggi: number): { titolo: string; scadenza?: string; minuto?: number; priorita?: 'alta' } {
   let t = ` ${testo.trim()} `
   let scadenza: string | undefined, minuto: number | undefined
-  let priorita: 'alta' | 'normale' = 'normale'
+  let priorita: 'alta' | undefined
   if (/\s!+\s?/.test(t) || /!\s*$/.test(t)) { priorita = 'alta'; t = t.replace(/!+/g, ' ') }
   const ora = t.match(/\s(?:alle\s+)?(\d{1,2})[:.](\d{2})\s/i) ?? t.match(/\salle\s+(\d{1,2})\s/i)
   if (ora) {
@@ -100,6 +107,5 @@ export function leggiTestoVeloce(testo: string, oggi: string, giornoSettimanaOgg
   for (const [re, calcola] of parole) {
     if (re.test(t)) { scadenza = calcola(); t = t.replace(re, ' '); break }
   }
-  if (minuto !== undefined && !scadenza) scadenza = oggi
   return { titolo: t.replace(/\s+/g, ' ').trim(), scadenza, minuto, priorita }
 }

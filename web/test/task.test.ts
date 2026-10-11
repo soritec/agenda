@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { Attivita } from '../src/dati/modello'
-import { completa, leggiTestoVeloce, piuGiorni, prossimaScadenza, raggruppa } from '../src/moduli/task/logica'
+import { completa, leggiTestoVeloce, prioritaDa, piuGiorni, prossimaScadenza, raggruppa } from '../src/moduli/task/logica'
 
 const base = (id: string, extra: Partial<Attivita> = {}): Attivita => ({ id, creatoIl: 1, modificatoIl: 1, titolo: id, priorita: 'normale', area: 'altro', ...extra })
 
@@ -28,11 +28,11 @@ describe('Task', () => {
   test('gruppi e ordine', () => {
     const g = raggruppa([
       base('vecchio', { scadenza: '2026-10-01' }), base('oggi-normale', { scadenza: '2026-10-11', minuto: 600 }),
-      base('oggi-alta', { scadenza: '2026-10-11', priorita: 'alta' }), base('domani', { scadenza: '2026-10-12' }),
+      base('oggi-alta', { scadenza: '2026-10-11', priorita: 'alta' }), base('oggi-bassa', { scadenza: '2026-10-11', priorita: 'bassa' }), base('domani', { scadenza: '2026-10-12' }),
       base('poi', { scadenza: '2026-11-01' }), base('libero'), base('fatto', { completataIl: 5 }),
     ], '2026-10-11')
     expect(g.inRitardo.map((t) => t.id)).toEqual(['vecchio'])
-    expect(g.oggi.map((t) => t.id)).toEqual(['oggi-alta', 'oggi-normale'])
+    expect(g.oggi.map((t) => t.id)).toEqual(['oggi-alta', 'oggi-normale', 'oggi-bassa'])
     expect(g.domani.map((t) => t.id)).toEqual(['domani'])
     expect(g.prossimi.map((t) => t.id)).toEqual(['poi'])
     expect(g.senzaData.map((t) => t.id)).toEqual(['libero'])
@@ -44,7 +44,17 @@ describe('Task', () => {
     expect(leggiTestoVeloce('Chiamare segreteria domani 9:30 !', '2026-10-11', 7)).toEqual({ titolo: 'Chiamare segreteria', scadenza: '2026-10-12', minuto: 570, priorita: 'alta' })
     expect(leggiTestoVeloce('Pagare la rata venerdì', '2026-10-11', 7)).toMatchObject({ titolo: 'Pagare la rata', scadenza: '2026-10-16' })
     expect(leggiTestoVeloce('Riunione domenica', '2026-10-11', 7).scadenza).toBe('2026-10-18')
-    expect(leggiTestoVeloce('Ricetta alle 18', '2026-10-11', 7)).toMatchObject({ titolo: 'Ricetta', scadenza: '2026-10-11', minuto: 1080 })
-    expect(leggiTestoVeloce('Leggere linee guida', '2026-10-11', 7)).toEqual({ titolo: 'Leggere linee guida', priorita: 'normale', scadenza: undefined, minuto: undefined })
+    expect(leggiTestoVeloce('Ricetta alle 18', '2026-10-11', 7)).toMatchObject({ titolo: 'Ricetta', scadenza: undefined, minuto: 1080 })
+    expect(leggiTestoVeloce('Leggere linee guida', '2026-10-11', 7)).toEqual({ titolo: 'Leggere linee guida', priorita: undefined, scadenza: undefined, minuto: undefined })
+    expect(prioritaDa('normale')).toBe('media')
+  })
+})
+
+describe('Frasi', () => {
+  test('una frase stabile per giorno, che cambia con lo scarto', async () => {
+    const { fraseDelGiorno, FRASI } = await import('../src/moduli/oggi/frasi')
+    expect(fraseDelGiorno('2026-10-11')).toBe(fraseDelGiorno('2026-10-11'))
+    expect(fraseDelGiorno('2026-10-11', 1)).not.toBe(fraseDelGiorno('2026-10-11'))
+    expect(new Set(FRASI).size).toBe(FRASI.length)
   })
 })
