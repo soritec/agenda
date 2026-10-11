@@ -149,6 +149,14 @@ export interface Allegato extends Base {
 
 /* Agenda */
 
+/** Nota fissata su un giorno dell'agenda (es. "Inizia il 2° scorrimento"), anche per più giorni. */
+export interface NotaGiorno extends Base {
+  testo: string
+  /** "2026-09-12" */
+  giorno: string
+  giornoFine?: string
+}
+
 /** Impegno dell'agenda che non è un turno (visita, riunione, appuntamento, viaggio…). */
 export interface Evento extends Base {
   titolo: string
@@ -276,6 +284,7 @@ export interface Collezioni {
   categorieBudget: CategoriaBudget
   movimenti: Movimento
   ricorrenti: Ricorrente
+  noteGiorno: NotaGiorno
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno']

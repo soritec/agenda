@@ -21,7 +21,7 @@ import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
 import { Tasse } from './moduli/specializzazione/viste/Tasse'
 import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
-import { IconaImpostazioni } from './interfaccia/icone'
+import { IconaImpostazioni, IconaPin } from './interfaccia/icone'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
 import { impegniTra } from './moduli/agenda/impegni'
 import { chiaveGiorno, classeSigla, datiDa, oggi, perId, sedeEffettiva, siglaTurno, titoloTurno } from './moduli/turni/supporto'
@@ -42,7 +42,7 @@ export function App() {
     else if (sotto) pagina = <DettaglioTurno key={sotto} id={sotto} />
     else pagina = <VistaTurni anno={anno} mese={mese} />
   } else if (sezione === 'agenda') {
-    pagina = <Agenda key={sotto === 'evento' ? percorso[2] : 'agenda'} vistaParam={parametri.get('vista')} giornoParam={parametri.get('giorno')} eventoAperto={sotto === 'evento' ? percorso[2] : undefined} />
+    pagina = <Agenda key={sotto ? `${sotto}-${percorso[2]}` : 'agenda'} vistaParam={parametri.get('vista')} giornoParam={parametri.get('giorno')} eventoAperto={sotto === 'evento' ? percorso[2] : undefined} notaAperta={sotto === 'nota' ? percorso[2] : undefined} />
   } else if (sezione === 'specializzazione') {
     if (sotto === 'logbook') pagina = <Logbook key={parametri.get('nuova') ?? ''} apriNuova={parametri.get('nuova') === '1'} />
     else if (sotto === 'esami') pagina = <EsamiOLezioni key="esame" tipo="esame" />
@@ -76,13 +76,15 @@ function Oggi() {
   const esami = useCollezione('esami')
   const tasse = useCollezione('tasse')
   const attivita = useCollezione('attivita')
+  const note = useCollezione('noteGiorno')
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
   // Gli altri impegni dell'agenda (i turni hanno le loro schede qui sotto).
-  const altri = impegniTra({ giornate, eventi, esami, tasse, attivita }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
+  const altri = impegniTra({ giornate, eventi, esami, tasse, attivita, note }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
   // I task di oggi hanno un riquadro a parte, con il cerchio da spuntare.
-  const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte !== 'task')
+  const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte !== 'task' && i.fonte !== 'nota')
+  const noteOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte === 'nota')
   const altriDomani = altri.filter((i) => i.giorno !== chiaveGiorno(g0))
   const inizioOggi = inizioGiorno(g0), inizioDomani = inizioGiorno(aggiungiGiorni(g0, 1)), inizioDopodomani = inizioGiorno(aggiungiGiorni(g0, 2))
   const ordinati = [...(turni ?? [])].sort((x, y) => x.inizio - y.inizio)
@@ -100,6 +102,12 @@ function Oggi() {
         <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a>
       </header>
 
+      {noteOggi.map((n) => (
+        <a key={n.chiave} className="nota-oggi" href={n.link}>
+          <IconaPin dimensione={18} />
+          <span className="crescente"><span>{n.titolo}</span>{n.dettaglio && <span className="piccolo" style={{ opacity: 0.75 }}>{n.dettaglio}</span>}</span>
+        </a>
+      ))}
       {diOggi.length === 0 && altriOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/agenda">Vai all'agenda</a></div>}
       {altriOggi.length > 0 && <ElencoImpegni voci={altriOggi} />}
       {diOggi.map((t) => {

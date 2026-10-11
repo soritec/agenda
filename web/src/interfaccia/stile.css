@@ -622,3 +622,23 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
   .tessere-budget .valore { font-size: 17px; }
   .tessere-budget .tessera > .secondario:last-child { display: none; }
 }
+
+/* Note del giorno (giallo chiaro) */
+.colore-nota { background: #FFF8E1; color: #6B5317; box-shadow: inset 0 0 0 1px #F3E3B5; }
+.voce.colore-nota svg, .voce-estesa.colore-nota svg { vertical-align: -2px; margin-right: 3px; color: #B8902F; flex-shrink: 0; }
+.riga-giornata .voce.colore-nota { display: flex; align-items: flex-start; gap: 2px; font-weight: 600; }
+.f-nota { background: #E8C766; }
+.cella.con-nota { background: #FFFBEE; }
+.pin-cella { position: absolute; top: 4px; right: 5px; color: #B8902F; pointer-events: none; }
+.pin-ore { display: flex; justify-content: center; align-items: flex-start; color: #B8902F; }
+.riga-giornata { cursor: copy; }
+.riga-giornata a, .riga-giornata details { cursor: pointer; }
+.piu-nota { display: none; align-self: flex-start; border: none; background: none; color: var(--testo-2); font-size: 11px; padding: 1px 4px; cursor: pointer; border-radius: 4px; }
+@media (hover: hover) { .riga-giornata:hover .piu-nota { display: block; } .piu-nota:hover { background: #FFF8E1; color: #6B5317; } }
+.nota-oggi { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--raggio); background: #FFF8E1; color: #6B5317; border: 1px solid #F3E3B5; font-weight: 600; }
+.nota-oggi svg { color: #B8902F; flex-shrink: 0; margin-top: 1px; }
+.nota-oggi .crescente { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+@media (prefers-color-scheme: dark) {
+  .colore-nota, .nota-oggi { background: #3A3320; color: #F2E2B0; box-shadow: none; border-color: #4E4428; }
+  .cella.con-nota { background: #2F2A1C; }
+}

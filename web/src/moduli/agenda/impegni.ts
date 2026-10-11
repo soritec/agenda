@@ -1,5 +1,5 @@
 import { componenti, giornoDi, istante } from '../../nucleo/calendario'
-import type { Assegnazione, Attivita, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
+import type { Assegnazione, Attivita, NotaGiorno, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
 import { vociDelMese, spostaMese, type DatiBudget } from '../budget/logica'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
 import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
@@ -8,14 +8,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['turno', 'giornata', 'evento', 'task', 'esame', 'lezione', 'tassa'] as const
+export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'esame', 'lezione', 'tassa'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', tassa: 'Scadenza' }
+export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', tassa: 'Scadenza' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -56,6 +56,7 @@ export interface DatiAgenda {
   esami?: EsameOLezione[]
   tasse?: Tassa[]
   attivita?: Attivita[]
+  note?: NotaGiorno[]
   /** Uscite fisse e in programma del budget, mostrate come scadenze. */
   budget?: DatiBudget
 }
@@ -100,6 +101,17 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       chiave: `giornata:${g.id}`, fonte: 'giornata', id: g.id, giorno: g.giorno, titolo: TITOLI_GIORNATA[tipo],
       colore: `g-${tipo}`, link: `#/turni?mese=${g.giorno.slice(0, 7)}`, concluso: g.giorno < oggi, modificatoIl: g.modificatoIl,
     })
+  }
+  for (const n of d.note ?? []) {
+    const fine = n.giornoFine && n.giornoFine > n.giorno ? n.giornoFine : n.giorno
+    if (fine < da || n.giorno > a) continue
+    for (const giorno of fine !== n.giorno ? giorniTra(n.giorno > da ? n.giorno : da, fine < a ? fine : a) : [n.giorno]) {
+      out.push({
+        chiave: `nota:${n.id}:${giorno}`, fonte: 'nota', id: n.id, giorno, titolo: n.testo,
+        dettaglio: fine !== n.giorno ? `fino al ${Number(fine.slice(8, 10))}/${Number(fine.slice(5, 7))}` : undefined,
+        colore: 'colore-nota', link: `#/agenda/nota/${n.id}`, modificatoIl: n.modificatoIl,
+      })
+    }
   }
   for (const e of d.eventi ?? []) {
     const fine = e.giornoFine && e.giornoFine > e.giorno ? e.giornoFine : e.giorno

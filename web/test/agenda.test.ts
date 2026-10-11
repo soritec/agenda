@@ -70,3 +70,14 @@ describe('Vista a settimana', () => {
     expect(spostaGiorni('2026-10-26', 7)).toBe('2026-11-02')
   })
 })
+
+describe('Note del giorno', () => {
+  test('compaiono per prime, anche su più giorni', () => {
+    const r = impegniTra({
+      note: [{ ...base, id: 'n1', testo: 'Inizia il 2° scorrimento', giorno: '2026-09-12' }, { ...base, id: 'n2', testo: 'Periodo esami', giorno: '2026-09-11', giornoFine: '2026-09-13' }],
+      eventi: [{ ...base, id: 'e1', titolo: 'Corso', giorno: '2026-09-12', tuttoIlGiorno: true, categoria: 'studio' }],
+    }, '2026-09-12', '2026-09-30', adesso)
+    expect(r.map((i) => i.chiave)).toEqual(['nota:n1:2026-09-12', 'nota:n2:2026-09-12', 'evento:e1:2026-09-12', 'nota:n2:2026-09-13'])
+    expect(r[1]!.dettaglio).toBe('fino al 13/9')
+  })
+})

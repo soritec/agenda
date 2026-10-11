@@ -4,11 +4,11 @@ import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
-import type { Evento } from '../../../dati/modello'
+import type { Evento, NotaGiorno } from '../../../dati/modello'
 import { creaIcs, type EventoIcs } from '../../../export/ics'
 import { condividiOScarica } from '../../../export/pdf'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
-import { IconaAvanti, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
+import { IconaAvanti, IconaIndietro, IconaPin, IconaPiu } from '../../../interfaccia/icone'
 import { vai } from '../../../interfaccia/navigazione'
 import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { eliminaTurno } from '../../turni/smonto'
@@ -51,10 +51,10 @@ const orarioBreve = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padSt
 export const linkAgenda = (vista: Vista, giorno: string) => `#/agenda?vista=${vista}&giorno=${giorno}`
 
 /** Che cosa aggiungere e quando (dal "+"). */
-interface Aggiunta { giorno: string; minuto?: number; cosa?: 'evento' | 'esame' | 'lezione' }
+interface Aggiunta { giorno: string; minuto?: number; cosa?: 'evento' | 'esame' | 'lezione' | 'nota' }
 
 /** Tutti gli impegni in un solo calendario, a mese, due settimane o settimana. */
-export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?: string | null; giornoParam?: string | null; eventoAperto?: string }) {
+export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { vistaParam?: string | null; giornoParam?: string | null; eventoAperto?: string; notaAperta?: string }) {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
@@ -80,6 +80,8 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   const [scelto, setScelto] = useState(riferimento)
   const [aggiunta, setAggiunta] = useState<Aggiunta>()
   const [eventoInModifica, setEventoInModifica] = useState<string | undefined>(eventoAperto)
+  const [notaInModifica, setNotaInModifica] = useState<string | undefined>(notaAperta)
+  const note = useCollezione('noteGiorno')
   const [esporta, setEsporta] = useState(false)
 
   // Periodo mostrato
@@ -95,11 +97,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget }
+  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -114,6 +116,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   function apri(i: Impegno, e?: MouseEvent) {
     // Il clic che chiude una pressione prolungata (o con la × visibile) non apre niente.
     if (pressione.eraPressione() || pressione.attivo === i.chiave) { e?.preventDefault(); return }
+    if (i.fonte === 'nota') { e?.preventDefault(); setNotaInModifica(i.id); return }
     if (i.fonte !== 'evento') return
     e?.preventDefault()
     setEventoInModifica(i.id)
@@ -124,7 +127,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     let annulla: () => Promise<void>
     if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
     else {
-      const collezione = i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
+      const collezione = i.fonte === 'nota' ? 'noteGiorno' : i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
       await elimina(collezione, i.id)
       annulla = () => ripristina(collezione, i.id)
     }
@@ -160,8 +163,13 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     setEventoInModifica(undefined)
     if (eventoAperto) vai(linkAgenda(vista, riferimento))
   }
+  const nota = note?.find((n) => n.id === notaInModifica)
+  const chiudiNota = () => {
+    setNotaInModifica(undefined)
+    if (notaAperta) vai(linkAgenda(vista, riferimento))
+  }
   const mappaAttivita = useMemo(() => perId(attivita), [attivita])
-  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }) }
+  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }), aggiungiNota: (giorno: string) => setAggiunta({ giorno, cosa: 'nota' }) }
 
   return (
     <div className="schermata">
@@ -202,6 +210,8 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
       {aggiunta?.cosa === 'evento' && <FormEvento giorno={aggiunta.giorno} minuto={aggiunta.minuto} onChiudi={() => setAggiunta(undefined)} />}
       {(aggiunta?.cosa === 'esame' || aggiunta?.cosa === 'lezione') && <FormAttivita tipo={aggiunta.cosa} giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {evento && <FormEvento key={evento.id} record={evento} giorno={evento.giorno} onChiudi={chiudiEvento} />}
+      {aggiunta?.cosa === 'nota' && <FormNota giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
+      {nota && <FormNota key={nota.id} record={nota} giorno={nota.giorno} onChiudi={chiudiNota} />}
       {esporta && <EsportaCalendario anno={Number(riferimento.slice(0, 4))} mese={Number(riferimento.slice(5, 7))} dati={dati} nascoste={nascoste} onChiudi={() => setEsporta(false)} />}
     </div>
   )
@@ -227,6 +237,7 @@ function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; 
 const rimovibile = (i: Impegno, r: Rimozione) => (eliminabile(i) ? r.gestori(i.chiave) : {})
 
 interface PropsVista {
+  aggiungiNota: (giorno: string) => void
   mappaAttivita: Map<string, Attivita>
   rimozione: Rimozione
   visibili: Impegno[]
@@ -237,7 +248,7 @@ interface PropsVista {
 }
 
 /** Il "+" chiede che cosa aggiungere; i turni si inseriscono nella loro sezione. */
-function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; onScegli: (c: 'evento' | 'esame' | 'lezione') => void; onChiudi: () => void }) {
+function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; onScegli: (c: 'evento' | 'esame' | 'lezione' | 'nota') => void; onChiudi: () => void }) {
   const voce = (titolo: string, dettaglio: string, azione: () => void, colore: string) => (
     <button type="button" className="scelta-rapida" onClick={azione}>
       <span className={`pallino-fonte ${colore}`} style={{ width: 10, height: 10, borderRadius: 5 }} />
@@ -250,6 +261,7 @@ function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; 
         {dataEstesa(aggiunta.giorno)}{aggiunta.minuto !== undefined ? ` · ${orarioDaMinuti(aggiunta.minuto)}` : ''}
       </p>
       <div className="scelte-rapide">
+        {voce('Nota del giorno', 'promemoria fissato sul giorno', () => onScegli('nota'), 'f-nota')}
         {voce('Impegno', 'visita, riunione, appuntamento…', () => onScegli('evento'), 'f-evento')}
         {voce('Turno', 'guardia, reparto, sala…', () => vai(`#/turni/nuovi?mese=${aggiunta.giorno.slice(0, 7)}&giorni=${aggiunta.giorno}`), 'f-turno')}
         {voce('Ferie o riposo', 'dal calendario dei turni', () => vai(`#/turni?mese=${aggiunta.giorno.slice(0, 7)}`), 'f-giornata')}
@@ -278,14 +290,15 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, m
               if (!g) return <span key={`v${i}`} />
               const k = chiaveGiorno(g)
               const voci = mappa.get(k) ?? []
-              const classi = ['cella', festivo(k) && 'festivo', k === oggiChiave && 'oggi', k === scelto && 'selezionato'].filter(Boolean).join(' ')
+              const classi = ['cella', festivo(k) && 'festivo', k === oggiChiave && 'oggi', k === scelto && 'selezionato', voci.some((v) => v.fonte === 'nota') && 'con-nota'].filter(Boolean).join(' ')
               return (
                 <div key={k} className={classi}>
                   <button type="button" className="aggiungi" onClick={() => onScegli(k)} onDoubleClick={() => aggiungi(k)}
                     aria-label={`${dataEstesa(k)}: ${voci.length ? `${voci.length} impegni` : 'nessun impegno'}`} />
                   <span className="numero">{g.giorno}</span>
+                  {voci.some((v) => v.fonte === 'nota') && <span className="pin-cella" aria-label="Nota del giorno"><IconaPin dimensione={13} /></span>}
                   <span className="voci">
-                    {voci.slice(0, 3).map((v) => <span key={v.chiave} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>{v.minutoInizio !== undefined && <span className="ora-mini">{orarioBreve(v.minutoInizio)}</span>}{v.titolo}</span>)}
+                    {voci.slice(0, 3).map((v) => <span key={v.chiave} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>{v.minutoInizio !== undefined && <span className="ora-mini">{orarioBreve(v.minutoInizio)}</span>}{v.titolo}</span>)}
                     {voci.length > 3 && <span className="altre">+{voci.length - 3}</span>}
                   </span>
                   <span className="puntini" aria-hidden="true">{voci.slice(0, 4).map((v) => <span key={v.chiave} className={`pallino-fonte f-${v.fonte}`} />)}</span>
@@ -338,7 +351,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
               {voci.map((v) => (
                 <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`voce-estesa rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>
                   {v.minutoInizio !== undefined && <span className="ora numeri">{testoOrario(v)}</span>}
-                  <span className="titolo">{v.titolo}</span>
+                  <span className="titolo">{v.fonte === 'nota' && <IconaPin dimensione={12} />} {v.titolo}</span>
                   {v.dettaglio && <span className="dettaglio">{v.dettaglio}</span>}
                   <XElimina i={v} rimozione={rimozione} />
                 </a>
@@ -355,7 +368,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
 
 const ALTEZZA_ORA = 48
 
-function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
+function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, aggiungiNota, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
   // I task stanno in una tendina sopra le ore, non nella griglia.
   const visibili = tutte.filter((v) => v.fonte !== 'task')
   const taskPerGiorno = perGiorno(tutte.filter((v) => v.fonte === 'task'))
@@ -397,22 +410,28 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
             <span className="numero">{numeroGiorno(g)}</span>
           </div>
         ))}
-        <div className="etichetta-ore secondario piccolo">giorno</div>
-        {giorni.map((g) => (
-          <div key={g} className="riga-giornata">
+        <div className="etichetta-ore pin-ore" title="Note del giorno"><IconaPin dimensione={16} /></div>
+        {giorni.map((g) => {
+          const delGiorno = tuttoIlGiorno.get(g) ?? []
+          const voce = (v: Impegno) => (
+            <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>
+              {v.fonte === 'nota' && <IconaPin dimensione={12} />}{v.titolo}<XElimina i={v} rimozione={rimozione} />
+            </a>
+          )
+          return (
+          <div key={g} className="riga-giornata" onClick={(e) => { if (e.target === e.currentTarget) aggiungiNota(g) }}>
+            {delGiorno.filter((v) => v.fonte === 'nota').map(voce)}
             {(taskPerGiorno.get(g) ?? []).length > 0 && <TendinaTask voci={taskPerGiorno.get(g)!} mappaAttivita={mappaAttivita} />}
-            {(tuttoIlGiorno.get(g) ?? []).map((v) => (
-              <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>
-                {v.titolo}<XElimina i={v} rimozione={rimozione} />
-              </a>
-            ))}
+            {delGiorno.filter((v) => v.fonte !== 'nota').map(voce)}
+            <button type="button" className="piu-nota" onClick={() => aggiungiNota(g)}>+ nota</button>
             {(blocchi.get(g) ?? []).filter((b) => b.continuaPrima && b.a <= oraDa * 60).map((b) => (
               <a key={`c${b.impegno.chiave}`} href={b.impegno.link} onClick={(e) => apri(b.impegno, e)} className={classeVoce(b.impegno)}>
                 {b.impegno.titolo} fino alle {orarioDaMinuti(b.a)}
               </a>
             ))}
           </div>
-        ))}
+          )
+        })}
         <div className="colonna-ore" style={{ height: altezza }}>
           {ore.map((h, i) => i > 0 && <span key={h} style={{ top: i * ALTEZZA_ORA }}>{h}:00</span>)}
         </div>
@@ -630,5 +649,44 @@ function TendinaTask({ voci, mappaAttivita }: { voci: Impegno[]; mappaAttivita: 
         })}
       </div>
     </details>
+  )
+}
+
+/* Nota del giorno */
+
+function FormNota({ record, giorno, onChiudi }: { record?: NotaGiorno; giorno: string; onChiudi: () => void }) {
+  const [testo, setTesto] = useState(record?.testo ?? '')
+  const [da, setDa] = useState(record?.giorno ?? giorno)
+  const [piuGiorni, setPiuGiorni] = useState(Boolean(record?.giornoFine))
+  const [al, setAl] = useState(record?.giornoFine ?? giorno)
+  const valido = testo.trim() !== '' && !!giornoDaChiave(da) && (!piuGiorni || (!!giornoDaChiave(al) && al >= da))
+  async function conferma() {
+    if (!valido) return
+    await salva('noteGiorno', { ...record, testo: testo.trim(), giorno: da, giornoFine: piuGiorni && al > da ? al : undefined })
+    onChiudi()
+  }
+  return (
+    <Foglio aperto titolo="Nota del giorno" onChiudi={onChiudi}
+      azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
+      <div className="modulo">
+        <Campo etichetta="Nota"><textarea value={testo} autoFocus={!record} rows={2} placeholder="es. Inizia il 2° scorrimento SSM26" onChange={(e) => setTesto(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void conferma() } }} /></Campo>
+        <div className="campi-affiancati">
+          <Campo etichetta={piuGiorni ? 'Dal' : 'Giorno'}><input type="date" value={da} onChange={(e) => setDa(e.target.value)} /></Campo>
+          {piuGiorni && <Campo etichetta="Al"><input type="date" value={al} min={da} onChange={(e) => setAl(e.target.value)} /></Campo>}
+        </div>
+        <label className="interruttore">
+          <span>Più giorni</span>
+          <input type="checkbox" checked={piuGiorni} onChange={(e) => { setPiuGiorni(e.target.checked); if (al < da) setAl(da) }} />
+        </label>
+        <NotaPrivacy />
+        {record && (
+          <button type="button" className="pulsante pericolo"
+            onClick={() => void elimina('noteGiorno', record.id).then(() => { onChiudi(); mostraAvviso('Nota eliminata', () => void ripristina('noteGiorno', record.id)) })}>
+            Elimina
+          </button>
+        )}
+      </div>
+    </Foglio>
   )
 }
