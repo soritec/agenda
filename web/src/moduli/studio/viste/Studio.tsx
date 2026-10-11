@@ -4,22 +4,22 @@ import * as F from '../../../nucleo/formati'
 import { elimina, nuovoId, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { contenutoAllegato } from '../../../dati/allegati'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
-import type { Appunto, ArgomentoStudio, Flashcard, Risorsa } from '../../../dati/modello'
+import type { Allegato, ArgomentoStudio, Flashcard, Risorsa } from '../../../dati/modello'
 import { condividiOScarica, creaPdfTesto } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
 import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
-import { AZIONI_AI, elabora, leggiChiave, salvaChiave, type AzioneAI } from '../ai'
+import { AZIONI_AI, elabora, generaFlashcard, generaQuiz, leggiChiave, salvaChiave, type AzioneAI, type DomandaQuiz, type Materiale } from '../ai'
 import {
   cercaGoogle, cercaPubMed, daRipassare, leggiFlashcardDaTesto, minutiSettimana, rispondi, SITI_STUDIO, STATI_LETTURA, statoLetturaDa, TIPI_RISORSA,
   tipoRisorsaDa, TITOLI_STATO_LETTURA, TITOLI_TIPO_RISORSA, type TipoRisorsa,
 } from '../logica'
 import { ascoltaTimer, avvia, controlla, ferma, leggiTimer, metti_in_pausa, rimanente, scegliArgomento, scegliDurate } from '../timer'
 
-const SCHEDE = ['libreria', 'daLeggere', 'appunti', 'flashcard'] as const
+const SCHEDE = ['libreria', 'quiz', 'flashcard'] as const
 type Scheda = (typeof SCHEDE)[number]
-const TITOLI_SCHEDA: Record<Scheda, string> = { libreria: 'Libreria', daLeggere: 'Da leggere', appunti: 'Appunti', flashcard: 'Flashcard' }
+const TITOLI_SCHEDA: Record<Scheda, string> = { libreria: 'Libreria', quiz: 'Quiz', flashcard: 'Flashcard' }
 const COLORI_TIPO: Record<TipoRisorsa, [string, string]> = {
   lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
 }
@@ -30,7 +30,6 @@ const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c
 export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
   const argomenti = useCollezione('argomentiStudio')
   const risorse = useCollezione('risorse')
-  const appunti = useCollezione('appunti')
   const flashcard = useCollezione('flashcard')
   const sessioni = useCollezione('sessioniStudio')
   const impostazioni = useImpostazioni()
@@ -67,13 +66,12 @@ export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
           <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div className="segmenti" role="tablist">
               {SCHEDE.map((k) => {
-                const n = k === 'daLeggere' ? (risorse ?? []).filter((r) => statoLetturaDa(r.stato) === 'daLeggere').length
-                  : k === 'flashcard' ? daRipassare(flashcard ?? [], oggiChiave).length : 0
+                const n = k === 'flashcard' ? daRipassare(flashcard ?? [], oggiChiave).length : 0
                 return <a key={k} role="tab" aria-selected={scheda === k} className={scheda === k ? 'attivo' : ''} href={`#/studio?scheda=${k}`}>{TITOLI_SCHEDA[k]}{n ? ` · ${n}` : ''}</a>
               })}
             </div>
             <div className="riga-azioni" style={{ gap: 6 }}>
-              <input className="cerca-studio" value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca tra risorse e appunti…" aria-label="Cerca" />
+              <input className="cerca-studio" value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca nella libreria…" aria-label="Cerca" />
             </div>
             <div className="filtri-agenda">
               {[{ id: 'tutti', nome: 'Tutti' }, ...elencoArgomenti].map((a) => (
@@ -82,16 +80,15 @@ export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
               <NuovoArgomento ordine={(elencoArgomenti.at(-1)?.ordine ?? 0) + 1} />
             </div>
 
-            {(scheda === 'libreria' || scheda === 'daLeggere') && (
-              <Libreria risorse={(risorse ?? []).filter((r) => filtro(r) && (scheda === 'libreria' || statoLetturaDa(r.stato) === 'daLeggere'))}
+            {scheda === 'libreria' && (
+              <Libreria risorse={(risorse ?? []).filter((r) => filtro(r))}
                 argomenti={elencoArgomenti} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
             )}
-            {scheda === 'appunti' && (
-              <Appunti appunti={(appunti ?? []).filter((a) => filtro({ ...a, testo: a.testo }))} argomenti={elencoArgomenti} nomeArgomento={nomeArgomento}
-                argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
+            {scheda === 'quiz' && (
+              <Quiz risorse={risorse ?? []} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
             )}
             {scheda === 'flashcard' && (
-              <Flashcards carte={(flashcard ?? []).filter((c) => argomento === 'tutti' || c.argomentoId === argomento)} argomenti={elencoArgomenti}
+              <Flashcards carte={(flashcard ?? []).filter((c) => argomento === 'tutti' || c.argomentoId === argomento)} argomenti={elencoArgomenti} risorse={risorse ?? []}
                 nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} oggiChiave={oggiChiave} />
             )}
           </section>
@@ -210,6 +207,7 @@ function CollegamentiRapidi() {
         <a href="https://drive.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#1C7A5C' }}>▲</span> Google Drive</a>
         <a href="https://www.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#2D6AA6', fontWeight: 800 }}>G</span> Google</a>
         <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" rel="noreferrer"><span style={{ color: '#A4472A', fontWeight: 800 }}>P</span> PubMed</a>
+        <a href="https://claude.ai" target="_blank" rel="noreferrer"><span style={{ color: '#C96442', fontWeight: 800 }}>✳</span> Claude</a>
       </div>
       <div className="aggiunta-veloce">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cerca subito (es. PPROM linee guida)" aria-label="Cerca su Google o PubMed"
@@ -221,7 +219,19 @@ function CollegamentiRapidi() {
   )
 }
 
-/* Assistente AI */
+/* Assistente Gemini */
+
+/** Materiale per Gemini dalle risorse scelte: titoli, link e note come testo, PDF allegati come documenti. */
+async function materialeDa(risorse: Risorsa[], allegati: Allegato[], nomeArgomento: (id?: string) => string | undefined): Promise<Materiale> {
+  const testo = risorse.map((r) => [`Fonte: ${r.titolo} (${TITOLI_TIPO_RISORSA[tipoRisorsaDa(r.tipo)]}${nomeArgomento(r.argomentoId) ? `, ${nomeArgomento(r.argomentoId)}` : ''})`, r.url ? `Link: ${r.url}` : '', r.note ? `Note: ${r.note}` : ''].filter(Boolean).join('\n')).join('\n\n')
+  const pdf: { nome: string; blob: Blob }[] = []
+  for (const r of risorse) {
+    for (const a of allegati.filter((x) => x.collegatoA === `risorsa:${r.id}` && x.tipoMime === 'application/pdf')) {
+      pdf.push({ nome: a.nome, blob: await contenutoAllegato(a) })
+    }
+  }
+  return { testo, pdf }
+}
 
 function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; risorse: Risorsa[] }) {
   const allegati = useCollezione('allegati')
@@ -246,17 +256,12 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
         const a = allegati?.find((x) => x.id === pdf.allegatoId)
         if (a) blob = await contenutoAllegato(a)
       }
-      setRisultato({ azione, testo: await elabora(azione, testo, blob) })
+      setRisultato({ azione, testo: await elabora(azione, { testo, pdf: blob ? [{ nome: pdf!.nome, blob }] : [] }) })
     } catch (e) {
       setErrore(e instanceof Error ? e.message : 'Qualcosa non ha funzionato.')
     } finally {
       setInCorso(undefined)
     }
-  }
-  async function salvaAppunto() {
-    if (!risultato) return
-    await salva('appunti', { titolo: `${AZIONI_AI[risultato.azione].titolo}${pdf ? ` · ${pdf.nome}` : ''}`, testo: risultato.testo, argomentoId: argomentoSalva || undefined })
-    mostraAvviso('Salvato negli appunti')
   }
   async function salvaFlashcard() {
     if (!risultato) return
@@ -264,15 +269,20 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
     for (const c of carte) await salva('flashcard', { ...c, argomentoId: argomentoSalva || undefined, scatola: 1, prossima: chiaveGiorno(oggi()) })
     mostraAvviso(`${carte.length} flashcard aggiunte`)
   }
+  async function esportaPdf() {
+    if (!risultato) return
+    const titolo = `${AZIONI_AI[risultato.azione].titolo}${pdf ? ` · ${pdf.nome}` : ''}`
+    await condividiOScarica(await creaPdfTesto(titolo, F.dataEstesa(Date.now()), [{ titolo, testo: risultato.testo }]), `${titolo}.pdf`, titolo)
+  }
 
   if (!chiave || modificaChiave) {
     return (
       <section className="scheda modulo">
-        <h2 className="titolo-sezione">✦ Assistente AI</h2>
+        <h2 className="titolo-sezione">✦ Assistente Gemini</h2>
         <p className="secondario piccolo" style={{ margin: 0 }}>
-          Per riassumere e rielaborare testi l'app usa Claude di Anthropic. Serve la tua chiave personale: creala su
-          {' '}<a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a> e incollala qui.
-          Resta solo su questo dispositivo. Il testo che scegli viene inviato ad Anthropic; si paga a consumo (pochi centesimi a riassunto).
+          Riassunti, schemi, quiz e flashcard con Gemini di Google, gratis. Crea la tua chiave su
+          {' '}<a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">aistudio.google.com</a> (basta un account Google, senza carta) e incollala qui.
+          Resta solo su questo dispositivo. Nella versione gratuita Google può usare i testi inviati: solo materiale di studio, niente di personale.
         </p>
         <ChiaveAI onSalva={(k) => { salvaChiave(k); setChiave(k); setModificaChiave(false) }} onAnnulla={chiave ? () => setModificaChiave(false) : undefined} />
       </section>
@@ -282,7 +292,7 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
   return (
     <section className="scheda modulo">
       <div className="intestazione" style={{ alignItems: 'center' }}>
-        <h2 className="titolo-sezione">✦ Assistente AI</h2>
+        <h2 className="titolo-sezione">✦ Assistente Gemini</h2>
         <button type="button" className="link piccolo" onClick={() => setModificaChiave(true)}>Chiave</button>
       </div>
       <textarea value={testo} onChange={(e) => setTesto(e.target.value)} rows={4} placeholder="Incolla qui un testo, oppure scegli un PDF…" />
@@ -305,20 +315,23 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
           </button>
         ))}
       </div>
-      <NotaPrivacy />
+      <span className="nota-privacy">Solo materiale di studio: niente dati delle pazienti o personali.</span>
       {errore && <Avviso>{errore}</Avviso>}
       {risultato && (
         <div className="risultato-ai">
           <div className="testo-ai">{risultato.testo}</div>
           <div className="riga-azioni">
-            <select className="data-piccola" value={argomentoSalva} onChange={(e) => setArgomentoSalva(e.target.value)} aria-label="Argomento">
-              <option value="">Argomento…</option>
-              {argomenti.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
-            </select>
-            {risultato.azione === 'flashcard'
-              ? <button type="button" className="pulsante primario piccolo" onClick={() => void salvaFlashcard()}>Aggiungi alle flashcard</button>
-              : <button type="button" className="pulsante primario piccolo" onClick={() => void salvaAppunto()}>Salva negli appunti</button>}
+            {risultato.azione === 'flashcard' && (
+              <>
+                <select className="data-piccola" value={argomentoSalva} onChange={(e) => setArgomentoSalva(e.target.value)} aria-label="Argomento">
+                  <option value="">Argomento…</option>
+                  {argomenti.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                </select>
+                <button type="button" className="pulsante primario piccolo" onClick={() => void salvaFlashcard()}>Aggiungi alle flashcard</button>
+              </>
+            )}
             <button type="button" className="pulsante piccolo" onClick={() => void navigator.clipboard?.writeText(risultato.testo).then(() => mostraAvviso('Copiato'))}>Copia</button>
+            <button type="button" className="pulsante piccolo" onClick={() => void esportaPdf()}>Esporta in PDF</button>
           </div>
         </div>
       )}
@@ -330,11 +343,162 @@ function ChiaveAI({ onSalva, onAnnulla }: { onSalva: (k: string) => void; onAnnu
   const [k, setK] = useState('')
   return (
     <div className="aggiunta-veloce">
-      <input type="password" autoComplete="off" value={k} onChange={(e) => setK(e.target.value)} placeholder="sk-ant-…" aria-label="Chiave Anthropic" />
-      <button type="button" className="pulsante primario" disabled={!k.trim().startsWith('sk-')} onClick={() => onSalva(k.trim())}>Salva</button>
+      <input type="password" autoComplete="off" value={k} onChange={(e) => setK(e.target.value)} placeholder="Incolla la chiave (AIza…)" aria-label="Chiave Gemini" />
+      <button type="button" className="pulsante primario" disabled={k.trim().length < 20} onClick={() => onSalva(k.trim())}>Salva</button>
       {onAnnulla && <button type="button" className="pulsante" onClick={onAnnulla}>Annulla</button>}
       {onAnnulla && <button type="button" className="pulsante pericolo" onClick={() => onSalva('')}>Togli</button>}
     </div>
+  )
+}
+
+/** Foglio per scegliere le risorse da cui Gemini crea quiz o flashcard. */
+function SceltaRisorse({ titolo, risorse, nomeArgomento, argomentoScelto, onConferma, onChiudi }: {
+  titolo: string; risorse: Risorsa[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string
+  onConferma: (scelte: Risorsa[], quante: number) => Promise<void>; onChiudi: () => void
+}) {
+  const allegati = useCollezione('allegati')
+  const [scelte, setScelte] = useState<Set<string>>(() => new Set(risorse.filter((r) => argomentoScelto && r.argomentoId === argomentoScelto).map((r) => r.id)))
+  const [quante, setQuante] = useState(10)
+  const [inCorso, setInCorso] = useState(false)
+  const [errore, setErrore] = useState<string>()
+  const conPdf = (r: Risorsa) => (allegati ?? []).some((a) => a.collegatoA === `risorsa:${r.id}` && a.tipoMime === 'application/pdf')
+  const ordinate = [...risorse].sort((a, b) => (nomeArgomento(a.argomentoId) ?? '~').localeCompare(nomeArgomento(b.argomentoId) ?? '~') || a.titolo.localeCompare(b.titolo))
+  async function vai() {
+    setErrore(undefined)
+    setInCorso(true)
+    try {
+      await onConferma(risorse.filter((r) => scelte.has(r.id)), quante)
+      onChiudi()
+    } catch (e) {
+      setErrore(e instanceof Error ? e.message : 'Qualcosa non ha funzionato.')
+    } finally {
+      setInCorso(false)
+    }
+  }
+  return (
+    <Foglio aperto titolo={titolo} onChiudi={onChiudi}
+      azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!scelte.size || inCorso} onClick={() => void vai()}>{inCorso ? 'Attendi…' : 'Crea'}</button>}>
+      <div className="modulo">
+        <span className="secondario piccolo">Scegli le fonti della libreria: Gemini legge i loro PDF (e titoli, link, note) e crea le domande solo da lì.</span>
+        <div className="lista">
+          {ordinate.length === 0 && <div className="vuoto piccolo">La libreria è vuota: aggiungi prima qualche risorsa.</div>}
+          {ordinate.map((r) => (
+            <label key={r.id} className="riga" style={{ cursor: 'pointer' }}>
+              <input type="checkbox" checked={scelte.has(r.id)} style={{ width: 20, height: 20, accentColor: 'var(--primario)' }}
+                onChange={(e) => { const n = new Set(scelte); if (e.target.checked) n.add(r.id); else n.delete(r.id); setScelte(n) }} />
+              <span className="crescente">
+                <span style={{ fontWeight: 600 }}>{r.titolo}</span>
+                <span className="secondario piccolo">{[nomeArgomento(r.argomentoId), conPdf(r) ? 'PDF' : 'senza PDF: solo titolo e note'].filter(Boolean).join(' · ')}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="riga-azioni">
+          <span className="secondario piccolo">Quante</span>
+          {[10, 20, 30].map((n) => <button key={n} type="button" className={`pillola${quante === n ? ' filtro-attivo' : ''}`} onClick={() => setQuante(n)}>{n}</button>)}
+        </div>
+        {inCorso && <span className="secondario">Gemini sta leggendo le fonti… può volerci un minuto.</span>}
+        {errore && <Avviso>{errore}</Avviso>}
+      </div>
+    </Foglio>
+  )
+}
+
+/* Quiz */
+
+const CHIAVE_ULTIMO_QUIZ = 'agenda.ultimoQuiz'
+type RispostaQuiz = { scelta: number; giusta: boolean }
+
+function Quiz({ risorse, nomeArgomento, argomentoScelto }: { risorse: Risorsa[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string }) {
+  const allegati = useCollezione('allegati')
+  const [scegli, setScegli] = useState(false)
+  const [quiz, setQuiz] = useState<{ domande: DomandaQuiz[]; argomentoId?: string; risposte: RispostaQuiz[] }>()
+  const [precedente] = useState<number | undefined>(() => { try { const v = localStorage.getItem(CHIAVE_ULTIMO_QUIZ); return v ? Number(v) : undefined } catch { return undefined } })
+  const indice = quiz?.risposte.length ?? 0
+  const finito = quiz && indice >= quiz.domande.length
+  const corrente = quiz && !finito ? quiz.domande[indice] : undefined
+  const [scelta, setScelta] = useState<number>()
+
+  async function crea(scelte: Risorsa[], quante: number) {
+    const domande = await generaQuiz(await materialeDa(scelte, allegati ?? [], nomeArgomento), quante)
+    const argomentiScelti = new Set(scelte.map((r) => r.argomentoId).filter(Boolean))
+    setQuiz({ domande, risposte: [], argomentoId: argomentiScelti.size === 1 ? [...argomentiScelti][0] : undefined })
+    setScelta(undefined)
+  }
+  function avanti() {
+    if (!quiz || !corrente || scelta === undefined) return
+    const risposte = [...quiz.risposte, { scelta, giusta: scelta === corrente.corretta }]
+    setQuiz({ ...quiz, risposte })
+    setScelta(undefined)
+    if (risposte.length === quiz.domande.length) {
+      try { localStorage.setItem(CHIAVE_ULTIMO_QUIZ, String(Math.round((risposte.filter((r) => r.giusta).length / risposte.length) * 100))) } catch { /* niente */ }
+    }
+  }
+  async function erroriInFlashcard() {
+    if (!quiz) return
+    const sbagliate = quiz.domande.filter((_, i) => !quiz.risposte[i]?.giusta)
+    for (const d of sbagliate) {
+      await salva('flashcard', { domanda: d.domanda, risposta: `${d.opzioni[d.corretta]}${d.spiegazione ? `\n${d.spiegazione}` : ''}`, argomentoId: quiz.argomentoId, scatola: 1, prossima: chiaveGiorno(oggi()) })
+    }
+    mostraAvviso(`${sbagliate.length} flashcard aggiunte`)
+  }
+
+  if (!leggiChiave()) return <div className="scheda secondario">Per creare i quiz inserisci prima la chiave Gemini nell'assistente qui sopra.</div>
+
+  return (
+    <>
+      {!quiz && (
+        <div className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <strong>Quiz a risposta multipla dalle tue fonti</strong>
+          <span className="secondario piccolo">Scegli le risorse della libreria e quante domande: Gemini prepara il quiz, tu rispondi e alla fine vedi il punteggio.
+            {precedente !== undefined ? ` Ultimo quiz: ${precedente}%.` : ''}</span>
+          <button type="button" className="pulsante primario" style={{ alignSelf: 'flex-start' }} onClick={() => setScegli(true)}>✦ Crea un quiz</button>
+        </div>
+      )}
+      {corrente && quiz && (
+        <div className="scheda quiz-domanda">
+          <span className="secondario piccolo">Domanda {indice + 1} di {quiz.domande.length}</span>
+          <span className="barra-mini" style={{ width: '100%' }}><i style={{ width: `${(indice / quiz.domande.length) * 100}%` }} /></span>
+          <strong className="testo-domanda">{corrente.domanda}</strong>
+          {corrente.opzioni.map((o, i) => {
+            const stato = scelta === undefined ? '' : i === corrente.corretta ? ' giusta' : i === scelta ? ' sbagliata' : ''
+            return (
+              <button key={i} type="button" className={`opzione-quiz${stato}`} disabled={scelta !== undefined} onClick={() => setScelta(i)}>
+                {o}{stato === ' giusta' ? ' ✓' : stato === ' sbagliata' ? ' ✗' : ''}
+              </button>
+            )
+          })}
+          {scelta !== undefined && (corrente.spiegazione || corrente.fonte) && (
+            <span className="secondario piccolo">{[corrente.spiegazione, corrente.fonte ? `Fonte: ${corrente.fonte}` : ''].filter(Boolean).join(' · ')}</span>
+          )}
+          <div className="riga-azioni">
+            <button type="button" className="pulsante primario" disabled={scelta === undefined} onClick={avanti}>{indice + 1 === quiz.domande.length ? 'Vedi il risultato' : 'Avanti'}</button>
+            <button type="button" className="link piccolo" onClick={() => setQuiz(undefined)}>Esci</button>
+          </div>
+        </div>
+      )}
+      {finito && quiz && (
+        <div className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="secondario piccolo">Risultato</span>
+          <span className="valore-grande">{quiz.risposte.filter((r) => r.giusta).length} / {quiz.domande.length}</span>
+          <span className="secondario">{Math.round((quiz.risposte.filter((r) => r.giusta).length / quiz.domande.length) * 100)}%{precedente !== undefined ? ` · quiz precedente ${precedente}%` : ''}</span>
+          {quiz.risposte.some((r) => !r.giusta) && (
+            <div className="lista">
+              {quiz.domande.map((d, i) => !quiz.risposte[i]?.giusta && (
+                <div key={i} className="riga" style={{ cursor: 'default' }}>
+                  <span className="crescente"><span style={{ fontWeight: 600 }}>{d.domanda}</span><span className="secondario piccolo">Giusta: {d.opzioni[d.corretta]}{d.fonte ? ` · ${d.fonte}` : ''}</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="riga-azioni">
+            {quiz.risposte.some((r) => !r.giusta) && <button type="button" className="pulsante primario" onClick={() => void erroriInFlashcard()}>Aggiungi gli errori alle flashcard</button>}
+            <button type="button" className="pulsante" onClick={() => setQuiz(undefined)}>Nuovo quiz</button>
+          </div>
+        </div>
+      )}
+      {scegli && <SceltaRisorse titolo="Crea un quiz" risorse={risorse} nomeArgomento={nomeArgomento} argomentoScelto={argomentoScelto} onConferma={crea} onChiudi={() => setScegli(false)} />}
+    </>
   )
 }
 
@@ -448,81 +612,24 @@ function FormRisorsa({ r, iniziale, argomenti, onChiudi }: { r?: Risorsa; inizia
   )
 }
 
-/* Appunti */
-
-function Appunti({ appunti, argomenti, nomeArgomento, argomentoScelto }: { appunti: Appunto[]; argomenti: ArgomentoStudio[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string }) {
-  const [modifica, setModifica] = useState<{ a?: Appunto }>()
-  const ordinati = [...appunti].sort((a, b) => b.modificatoIl - a.modificatoIl)
-  async function esporta() {
-    const titolo = argomentoScelto ? `Appunti · ${nomeArgomento(argomentoScelto)}` : 'Appunti'
-    const blob = await creaPdfTesto(titolo, `${ordinati.length} appunti · ${F.dataEstesa(Date.now())}`,
-      [...ordinati].sort((a, b) => (nomeArgomento(a.argomentoId) ?? '').localeCompare(nomeArgomento(b.argomentoId) ?? '') || a.creatoIl - b.creatoIl)
-        .map((a) => ({ titolo: argomentoScelto ? a.titolo : `${a.titolo}${nomeArgomento(a.argomentoId) ? ` (${nomeArgomento(a.argomentoId)})` : ''}`, testo: a.testo })))
-    await condividiOScarica(blob, `${titolo}.pdf`, titolo)
-  }
-  return (
-    <>
-      <div className="lista">
-        {ordinati.length === 0 && <div className="vuoto piccolo">Nessun appunto. Scrivine uno o salva un riassunto dell'assistente.</div>}
-        {ordinati.map((a) => (
-          <div key={a.id} className="riga" style={{ cursor: 'default', alignItems: 'flex-start' }}>
-            <button type="button" className="crescente" onClick={() => setModifica({ a })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
-              <span style={{ fontWeight: 600 }}>{a.titolo}</span>
-              <span className="secondario piccolo">{[nomeArgomento(a.argomentoId), F.dataBreve(a.modificatoIl)].filter(Boolean).join(' · ')}</span>
-              <span className="piccolo anteprima-appunto">{a.testo.slice(0, 160)}{a.testo.length > 160 ? '…' : ''}</span>
-            </button>
-            <button type="button" className="elimina-task" aria-label={`Elimina ${a.titolo}`}
-              onClick={() => void elimina('appunti', a.id).then(() => mostraAvviso(`Eliminato: ${a.titolo}`, () => void ripristina('appunti', a.id)))}>×</button>
-          </div>
-        ))}
-      </div>
-      <div className="riga-azioni">
-        <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ Appunto</button>
-        <button type="button" className="pulsante" disabled={!ordinati.length} onClick={() => void esporta()}>Esporta in PDF{argomentoScelto ? ` (${nomeArgomento(argomentoScelto)})` : ''}</button>
-      </div>
-      {modifica && <FormAppunto a={modifica.a} argomentoIniziale={argomentoScelto} argomenti={argomenti} onChiudi={() => setModifica(undefined)} />}
-    </>
-  )
-}
-
-function FormAppunto({ a, argomentoIniziale, argomenti, onChiudi }: { a?: Appunto; argomentoIniziale?: string; argomenti: ArgomentoStudio[]; onChiudi: () => void }) {
-  const [titolo, setTitolo] = useState(a?.titolo ?? '')
-  const [testo, setTesto] = useState(a?.testo ?? '')
-  const [argomentoId, setArgomentoId] = useState(a?.argomentoId ?? argomentoIniziale ?? '')
-  const valido = titolo.trim() !== '' || testo.trim() !== ''
-  async function conferma() {
-    if (!valido) return
-    await salva('appunti', { ...a, titolo: titolo.trim() || testo.trim().split('\n')[0]!.slice(0, 60), testo, argomentoId: argomentoId || undefined })
-    onChiudi()
-  }
-  return (
-    <Foglio aperto titolo={a ? 'Appunto' : 'Nuovo appunto'} onChiudi={onChiudi}
-      azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
-      <div className="modulo">
-        <div className="campi-affiancati">
-          <Campo etichetta="Titolo"><input value={titolo} autoFocus={!a} onChange={(e) => setTitolo(e.target.value)} /></Campo>
-          <Campo etichetta="Argomento">
-            <select value={argomentoId} onChange={(e) => setArgomentoId(e.target.value)}>
-              <option value="">—</option>
-              {argomenti.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-            </select>
-          </Campo>
-        </div>
-        <textarea className="appunti" value={testo} onChange={(e) => setTesto(e.target.value)} placeholder="Scrivi qui…" />
-        <NotaPrivacy />
-      </div>
-    </Foglio>
-  )
-}
-
 /* Flashcard */
 
-function Flashcards({ carte, argomenti, nomeArgomento, argomentoScelto, oggiChiave }: {
-  carte: Flashcard[]; argomenti: ArgomentoStudio[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string; oggiChiave: string
+function Flashcards({ carte, argomenti, risorse, nomeArgomento, argomentoScelto, oggiChiave }: {
+  carte: Flashcard[]; argomenti: ArgomentoStudio[]; risorse: Risorsa[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string; oggiChiave: string
 }) {
   const [ripasso, setRipasso] = useState(false)
   const [girata, setGirata] = useState(false)
   const [nuova, setNuova] = useState<{ c?: Flashcard }>()
+  const [genera, setGenera] = useState(false)
+  const allegati = useCollezione('allegati')
+  async function creaDaFonti(scelte: Risorsa[], quante: number) {
+    const nuove = await generaFlashcard(await materialeDa(scelte, allegati ?? [], nomeArgomento), quante)
+    for (const c of nuove) {
+      const fonte = scelte.find((r) => r.titolo === c.fonte) ?? (scelte.length === 1 ? scelte[0] : undefined)
+      await salva('flashcard', { domanda: c.domanda, risposta: c.risposta, argomentoId: fonte?.argomentoId ?? argomentoScelto, scatola: 1, prossima: oggiChiave })
+    }
+    mostraAvviso(`${nuove.length} flashcard create`)
+  }
   const dovute = daRipassare(carte, oggiChiave).sort((a, b) => a.scatola - b.scatola || a.creatoIl - b.creatoIl)
   const attuale = dovute[0]
   async function rispondiCarta(giusta: boolean) {
@@ -558,7 +665,7 @@ function Flashcards({ carte, argomenti, nomeArgomento, argomentoScelto, oggiChia
         </div>
       )}
       <div className="lista">
-        {carte.length === 0 && <div className="vuoto piccolo">Nessuna flashcard. Creale a mano o con l'assistente AI.</div>}
+        {carte.length === 0 && <div className="vuoto piccolo">Nessuna flashcard. Creale dalle fonti della libreria o a mano.</div>}
         {[...carte].sort((a, b) => a.prossima.localeCompare(b.prossima)).map((c) => (
           <div key={c.id} className="riga" style={{ cursor: 'default' }}>
             <button type="button" className="crescente" onClick={() => setNuova({ c })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
@@ -570,7 +677,11 @@ function Flashcards({ carte, argomenti, nomeArgomento, argomentoScelto, oggiChia
           </div>
         ))}
       </div>
-      <div className="riga-azioni"><button type="button" className="pulsante primario" onClick={() => setNuova({})}>+ Flashcard</button></div>
+      <div className="riga-azioni">
+        <button type="button" className="pulsante primario" onClick={() => setGenera(true)} disabled={!leggiChiave()} title={leggiChiave() ? '' : 'Inserisci prima la chiave Gemini'}>✦ Crea dalle fonti</button>
+        <button type="button" className="pulsante" onClick={() => setNuova({})}>+ Flashcard a mano</button>
+      </div>
+      {genera && <SceltaRisorse titolo="Crea flashcard" risorse={risorse} nomeArgomento={nomeArgomento} argomentoScelto={argomentoScelto} onConferma={creaDaFonti} onChiudi={() => setGenera(false)} />}
       {nuova && <FormFlashcard c={nuova.c} argomentoIniziale={argomentoScelto} argomenti={argomenti} onChiudi={() => setNuova(undefined)} />}
     </>
   )

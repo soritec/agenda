@@ -50,3 +50,17 @@ describe('Timer di studio', () => {
     expect(T.leggiTimer().fase).toBe('fermo')
   })
 })
+
+describe('Quiz di Gemini', () => {
+  test('legge le domande valide e scarta le altre', async () => {
+    const { leggiQuiz } = await import('../src/moduli/studio/ai')
+    const json = JSON.stringify([
+      { domanda: 'AFI oligoidramnios?', opzioni: ['< 2', '< 5', '< 8', '< 10'], corretta: 1, spiegazione: 'ACOG', fonte: 'Linee guida' },
+      { domanda: 'senza opzioni', corretta: 0 },
+      { domanda: 'indice fuori', opzioni: ['a', 'b'], corretta: 3 },
+    ])
+    expect(leggiQuiz(json)).toEqual([{ domanda: 'AFI oligoidramnios?', opzioni: ['< 2', '< 5', '< 8', '< 10'], corretta: 1, spiegazione: 'ACOG', fonte: 'Linee guida' }])
+    expect(leggiQuiz('```json\n{"domande":[{"domanda":"x","opzioni":["a","b"],"corretta":0}]}\n```')).toHaveLength(1)
+    expect(leggiQuiz('non è json')).toEqual([])
+  })
+})
