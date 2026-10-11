@@ -81,7 +81,8 @@ export function AbitudiniDiOggi({ titolo = true }: { titolo?: boolean }) {
   )
 }
 
-export function HabitTracker({ meseParam }: { meseParam?: string | null }) {
+/** Habit tracker; `base` è l'indirizzo della pagina che lo contiene (per cambiare mese). */
+export function HabitTracker({ meseParam, base = '#/journaling?scheda=habit', soloGriglia }: { meseParam?: string | null; base?: string; soloGriglia?: boolean }) {
   const { elenco, fatti, segni, pronto } = useDati()
   const protetti = useGiorniProtetti()
   const oggiChiave = chiaveGiorno(oggi())
@@ -107,18 +108,18 @@ export function HabitTracker({ meseParam }: { meseParam?: string | null }) {
   }
 
   return (
-    <div className="schermata" style={{ maxWidth: 1100 }}>
-      <header className="testata-turni">
-        <h1 className="titolo-grande">Habit tracker</h1>
+    <div className="habit-tracker">
+      <div className="testata-turni">
+        <h2 className="titolo-sezione">Habit tracker</h2>
         <div className="riga-azioni azioni">
-          <a className="pulsante tondo" href={`#/habit?mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
-          <a className="pulsante" href="#/habit" style={{ minWidth: 140, fontWeight: 600, textTransform: 'capitalize' }}>{F.mese(istante(anno, m, 1))}</a>
-          <a className="pulsante tondo" href={`#/habit?mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
+          <a className="pulsante tondo" href={`${base}&mese=${precedente}`} aria-label="Mese precedente"><IconaIndietro dimensione={18} /></a>
+          <a className="pulsante" href={base} style={{ minWidth: 140, fontWeight: 600, textTransform: 'capitalize' }}>{F.mese(istante(anno, m, 1))}</a>
+          <a className="pulsante tondo" href={`${base}&mese=${successivo}`} aria-label="Mese successivo"><IconaAvanti dimensione={18} /></a>
           <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ Abitudine</button>
         </div>
-      </header>
+      </div>
 
-      <AbitudiniDiOggi titolo={false} />
+      {!soloGriglia && <AbitudiniDiOggi titolo={false} />}
 
       {pronto && elenco.length === 0 && (
         <div className="scheda secondario">Aggiungi la prima abitudine con "+ Abitudine": dai tu il nome (es. Palestra, Meditazione, Journaling, Niente caffè dopo le 16).</div>

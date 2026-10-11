@@ -898,7 +898,8 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 
 /* Post-it su Oggi */
 .bacheca { position: relative; min-height: calc(100vh - 40px); }
-.pulsante-postit { position: absolute; top: 18px; right: 18px; z-index: 3; }
+.pulsante-postit { position: fixed; right: 22px; bottom: 22px; z-index: 40; display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 22px; border: 1px solid #E3CE83; background: #F7E9B5; color: #5E4A12; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.14); }
+.pulsante-postit:hover { background: #F3E09B; }
 .postit { position: absolute; width: 180px; min-height: 150px; border-radius: 4px; box-shadow: 0 6px 16px rgba(0,0,0,0.13), 0 1px 2px rgba(0,0,0,0.08); display: flex; flex-direction: column; color: #2A2622; transform: rotate(-0.6deg); }
 .postit:nth-child(even) { transform: rotate(0.8deg); }
 .maniglia-postit { display: flex; align-items: center; justify-content: space-between; height: 26px; padding: 0 4px; cursor: grab; touch-action: none; background: rgba(0,0,0,0.05); border-radius: 4px 4px 0 0; }
@@ -906,9 +907,21 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .maniglia-postit .presa { color: rgba(0,0,0,0.35); font-size: 12px; letter-spacing: -2px; }
 .maniglia-postit button { border: none; background: none; cursor: pointer; color: rgba(0,0,0,0.5); font-size: 15px; width: 24px; height: 24px; padding: 0; }
 .maniglia-postit .colori-postit { font-size: 13px; }
-.postit textarea { flex: 1; min-height: 110px; border: none; background: none; resize: none; padding: 8px 10px; font-family: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive, sans-serif; font-size: 15px; line-height: 1.35; color: #2A2622; outline: none; }
+.postit textarea { flex: 1; min-height: 110px; border: none; background: none; resize: none; padding: 8px 10px; font-family: inherit; font-size: 14px; line-height: 1.35; color: #2A2622; outline: none; }
 .scelta-colori-postit { display: flex; gap: 4px; padding: 4px 8px; }
 .scelta-colori-postit button { width: 20px; height: 20px; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.15); cursor: pointer; padding: 0; }
 .scelta-colori-postit button.scelto { border-color: #2A2622; }
-@media (max-width: 700px) { .pulsante-postit { top: 64px; right: 12px; } .postit { width: 150px; min-height: 130px; } }
+@media (max-width: 700px) { .pulsante-postit { right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); padding: 8px 12px; font-size: 13px; } .postit { width: 150px; min-height: 130px; } }
 .riga-nome-abitudine { display: flex; align-items: center; justify-content: space-between; gap: 4px; } .riga-nome-abitudine .elimina-task { width: 24px; height: 24px; font-size: 16px; } .griglia-abitudini .nome-abitudine { min-width: 170px; max-width: 210px; }
+
+.bacheca { min-height: 100%; }
+.maniglia-postit .archivia-postit { display: inline-flex; align-items: center; justify-content: center; }
+.raccolta-postit { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.carta-postit { border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.10); display: flex; flex-direction: column; min-height: 150px; color: #2A2622; }
+.carta-postit textarea { flex: 1; border: none; background: none; resize: none; padding: 10px 12px; font-family: inherit; font-size: 14px; line-height: 1.4; color: #2A2622; outline: none; min-height: 100px; }
+.azioni-carta-postit { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 6px 12px; color: rgba(0,0,0,0.55); }
+.azioni-carta-postit .pillola { background: rgba(255,255,255,0.55); border-color: rgba(0,0,0,0.12); color: #2A2622; }
+.habit-tracker { display: flex; flex-direction: column; gap: 12px; }
+.riga-diario.tre { grid-template-columns: minmax(0, 320px) minmax(0, 1fr) minmax(0, 1.2fr); }
+@media (max-width: 1000px) { .riga-diario.tre { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .riga-diario.tre > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .riga-diario.tre { grid-template-columns: 1fr; } }

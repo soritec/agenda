@@ -1,9 +1,10 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Toast } from './componenti'
+import { BachecaPostIt } from '../moduli/oggi/PostIt'
 import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaAbitudini } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt } from './icone'
 
 export const SEZIONI = [
   { id: 'oggi', titolo: 'Oggi', Icona: IconaOggi },
@@ -13,14 +14,14 @@ export const SEZIONI = [
   { id: 'specializzazione', titolo: 'Specializzazione', Icona: IconaSpecializzazione },
   { id: 'studio', titolo: 'Studio e risorse', Icona: IconaStudio },
   { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
-  { id: 'journaling', titolo: 'Journaling', Icona: IconaJournaling },
-  { id: 'habit', titolo: 'Habit tracker', Icona: IconaAbitudini },
+  { id: 'journaling', titolo: 'Journaling e habit tracker', Icona: IconaJournaling },
+  { id: 'postit', titolo: 'Raccolta post-it', Icona: IconaPostIt },
   { id: 'cerca', titolo: 'Cerca', Icona: IconaCerca },
 ] as const satisfies readonly { id: string; titolo: string; Icona: (p: { dimensione?: number }) => ReactNode }[]
 
 export type Sezione = (typeof SEZIONI)[number]['id']
 /** Titoli brevi per la barra in basso dell'iPhone. */
-const TITOLI_BREVI: Partial<Record<Sezione, string>> = { specializzazione: 'Specializz.', studio: 'Studio' }
+const TITOLI_BREVI: Partial<Record<Sezione, string>> = { specializzazione: 'Specializz.', studio: 'Studio', journaling: 'Journaling', postit: 'Post-it' }
 
 /** Barra laterale sul Mac (schermi larghi), barra in basso su iPhone. */
 export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni'; children: ReactNode }) {
@@ -46,7 +47,7 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
           <span style={{ width: 8, height: 8, borderRadius: 4, background: coloreStato(stato) }} aria-label={testoStato(stato)} />
         </a>
       </nav>
-      <main className="contenuto">{children}</main>
+      <main className="contenuto">{attiva === 'impostazioni' ? children : <BachecaPostIt pagina={attiva}>{children}</BachecaPostIt>}</main>
       <Toast />
       <Visualizzatore />
       <nav className="barra-schede" aria-label="Sezioni" ref={barra}>

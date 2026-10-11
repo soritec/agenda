@@ -12,6 +12,7 @@ import {
   IconaLucchetto, IconaLuna, IconaMusica, IconaScarica, IconaSole, IconaSpecializzazione, IconaSpunta, IconaStella, IconaStoria, IconaTazza,
 } from '../../../interfaccia/icone'
 import { mostraAllegato } from '../../../interfaccia/Visualizzatore'
+import { AbitudiniDiOggi, HabitTracker } from '../../abitudini/viste/HabitTracker'
 import { vai } from '../../../interfaccia/navigazione'
 import { celleMese, chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import {
@@ -72,7 +73,8 @@ function useFotoCopertine(taccuini: Taccuino[] | undefined, allegati: Allegato[]
 
 /* Pagina principale: scaffale, umore, un anno fa, ricerca */
 
-export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; paginaId?: string | null }) {
+export function Journaling({ taccuinoId, paginaId, scheda: schedaParam, meseHabit }: { taccuinoId?: string; paginaId?: string | null; scheda?: string | null; meseHabit?: string | null }) {
+  const scheda = schedaParam === 'taccuini' || schedaParam === 'habit' ? schedaParam : 'tutto'
   const taccuini = useCollezione('taccuini')
   const pagine = useCollezione('pagineDiario')
   const allegati = useCollezione('allegati')
@@ -109,14 +111,21 @@ export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; pagi
   return (
     <div className="schermata" style={{ maxWidth: 1000 }}>
       <header className="intestazione" style={{ alignItems: 'center' }}>
-        <h1 className="titolo-grande">Journaling</h1>
+        <h1 className="titolo-grande">Journaling e habit tracker</h1>
         <label className="cerca-diario">
           <IconaCerca dimensione={16} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cerca nei taccuini" aria-label="Cerca nei taccuini" />
         </label>
       </header>
 
-      {q.trim() ? (
+      <div className="segmenti" role="tablist" style={{ maxWidth: 440 }}>
+        {([['tutto', 'Tutto'], ['taccuini', 'Taccuini'], ['habit', 'Habit tracker']] as const).map(([k, t]) => (
+          <a key={k} role="tab" aria-selected={scheda === k} className={scheda === k ? 'attivo' : ''} href={`#/journaling?scheda=${k}`}>{t}</a>
+        ))}
+      </div>
+
+      {scheda === 'habit' && !q.trim() && <HabitTracker meseParam={meseHabit} base="#/journaling?scheda=habit" />}
+      {scheda === 'habit' && !q.trim() ? null : q.trim() ? (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <h2 className="titolo-sezione">{risultati.length ? `${risultati.length} ${risultati.length === 1 ? 'pagina trovata' : 'pagine trovate'}` : 'Nessuna pagina trovata'}</h2>
           <div className="lista">
@@ -147,7 +156,7 @@ export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; pagi
             <button type="button" className="libro nuovo" onClick={() => setModifica({})}>+ Nuovo taccuino</button>
           </div>
 
-          <div className="riga-diario">
+          <div className={`riga-diario${scheda === 'tutto' ? ' tre' : ''}`}>
             <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div className="intestazione" style={{ alignItems: 'center' }}>
                 <h2 className="titolo-sezione">Umore di {F.mese(istante(anno, m, 1))}</h2>
@@ -195,7 +204,9 @@ export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; pagi
                 </a>
               ))}
             </section>
+            {scheda === 'tutto' && <AbitudiniDiOggi titolo />}
           </div>
+          {scheda === 'tutto' && <HabitTracker meseParam={meseHabit} base="#/journaling?scheda=tutto" soloGriglia />}
         </>
       )}
 

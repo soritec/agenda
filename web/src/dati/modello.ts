@@ -272,6 +272,9 @@ export interface SegnoAbitudine extends Base {
 
 /** Post-it sulla pagina Oggi: posizione libera (x in percentuale della larghezza, y in pixel). */
 export interface PostIt extends Base {
+  /** Sezione dell'app dove sta (assente nei primi = oggi). */
+  pagina?: string
+  archiviato?: boolean
   testo: string
   colore: string
   x: number
