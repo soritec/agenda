@@ -19,6 +19,8 @@ let db: Promise<IDBPDatabase> | undefined
 
 function apri(): Promise<IDBPDatabase> {
   db ??= openDB(NOME_DB, VERSIONE_DB, {
+    // Un'altra scheda con una versione più nuova dell'app deve aggiornare l'archivio: questa si ricarica.
+    blocking() { if (typeof location !== 'undefined') location.reload() },
     upgrade(database, vecchiaVersione) {
       // Ogni nuova versione aggiunge qui i suoi passi, senza mai toccare quelli precedenti.
       if (vecchiaVersione < 1) {

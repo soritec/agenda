@@ -395,3 +395,4 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
   .risultato.attenzione { background: #3A2F1C; color: #F0D9A8; }
   .risultato.allarme { background: #4A2626; color: #F3C3C3; }
 }
+.file-nascosto { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }

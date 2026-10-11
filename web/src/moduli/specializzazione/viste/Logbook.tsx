@@ -148,7 +148,10 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
               ),
               ...g.righe.map((r) => (
                 <tr key={r.id}>
-                  <td><a href={`#/specializzazione/procedura/${r.id}`} style={{ fontWeight: 600, color: 'var(--testo)' }}>{r.nome}</a></td>
+                  <td>
+                    <a href={`#/specializzazione/procedura/${r.id}`} style={{ fontWeight: 600, color: 'var(--testo)' }}>{r.nome}</a>
+                    <EtichetteAllegati collegatoA={`tipoProcedura:${r.id}`} />
+                  </td>
                   <td className="num">{r.primo || ''}</td>
                   <td className="num">{r.secondo || ''}</td>
                   <td className="num">{r.osservatore || ''}</td>

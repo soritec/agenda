@@ -1,4 +1,4 @@
-import { elenca, elimina, leggiConfigurazioneSincronizzazione, leggiContenuto, ripristina, salva, salvaContenuto } from './archivio'
+import { elenca, elimina, leggiConfigurazioneSincronizzazione, leggiContenuto, nuovoId, ripristina, salva, salvaContenuto } from './archivio'
 import { cifraByte, decifraByte, type Cifrato } from './cifratura'
 import { ErroreGitHub, leggiFile, scriviFile } from './github'
 import type { Allegato } from './modello'
@@ -9,13 +9,20 @@ import type { Allegato } from './modello'
  * in `allegati/<id>.cifrato`, da cui gli altri dispositivi lo scaricano quando serve.
  */
 export const DIMENSIONE_MASSIMA = 20 * 1024 * 1024
+const TIPI: Record<string, string> = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', heic: 'image/heic', gif: 'image/gif', webp: 'image/webp', txt: 'text/plain' }
+const tipoDaNome = (nome: string) => TIPI[nome.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream'
 const percorso = (id: string) => `allegati/${id}.cifrato`
 
 export async function aggiungiAllegato(file: File, collegatoA: string): Promise<Allegato> {
   if (file.size > DIMENSIONE_MASSIMA) throw new Error('Il file supera 20 MB.')
-  const record = await salva('allegati', { nome: file.name, tipoMime: file.type || 'application/octet-stream', dimensione: file.size, collegatoA })
-  await salvaContenuto(record.id, file)
-  return record
+  // Safari a volte non riesce a salvare direttamente il File scelto (soprattutto da Foto o iCloud):
+  // si leggono prima i byte e si salva una copia. Il contenuto va salvato prima del record,
+  // così un errore non lascia in elenco un allegato vuoto.
+  const tipoMime = file.type || tipoDaNome(file.name)
+  const copia = new Blob([await file.arrayBuffer()], { type: tipoMime })
+  const id = nuovoId()
+  await salvaContenuto(id, copia)
+  return salva('allegati', { id, nome: file.name || 'file', tipoMime, dimensione: file.size, collegatoA })
 }
 
 export async function eliminaAllegato(a: Allegato): Promise<() => Promise<void>> {

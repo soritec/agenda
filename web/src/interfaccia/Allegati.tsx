@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { aggiungiAllegato, eliminaAllegato } from '../dati/allegati'
 import { mostraAllegato } from './Visualizzatore'
 import { useCollezione } from '../dati/hooks'
@@ -13,18 +13,21 @@ function dimensione(byte: number): string {
 /** Elenco degli allegati collegati a un elemento, con aggiunta, apertura ed eliminazione. */
 export function Allegati({ collegatoA, avvisoPrivacy }: { collegatoA: string; avvisoPrivacy?: string }) {
   const tutti = useCollezione('allegati')
-  const input = useRef<HTMLInputElement>(null)
   const [errore, setErrore] = useState<string>()
+  const [inCorso, setInCorso] = useState(0)
   const allegati = (tutti ?? []).filter((a) => a.collegatoA === collegatoA).sort((a, b) => a.creatoIl - b.creatoIl)
 
   async function aggiungi(files: FileList) {
     setErrore(undefined)
-    for (const f of Array.from(files)) {
+    const elenco = Array.from(files)
+    setInCorso(elenco.length)
+    for (const f of elenco) {
       try {
         await aggiungiAllegato(f, collegatoA)
       } catch (e) {
-        setErrore(e instanceof Error ? e.message : 'Allegato non aggiunto.')
+        setErrore(`${f.name}: non sono riuscita ad allegarlo (${e instanceof Error ? e.message : 'errore sconosciuto'}).`)
       }
+      setInCorso((n) => n - 1)
     }
   }
 
@@ -47,8 +50,13 @@ export function Allegati({ collegatoA, avvisoPrivacy }: { collegatoA: string; av
       )}
       {avvisoPrivacy && <span className="nota-privacy">{avvisoPrivacy}</span>}
       {errore && <Avviso>{errore}</Avviso>}
-      <button type="button" className="pulsante" style={{ alignSelf: 'flex-start' }} onClick={() => input.current?.click()}>+ Allega file</button>
-      <input ref={input} type="file" multiple hidden onChange={(e) => { if (e.target.files) void aggiungi(e.target.files); e.target.value = '' }} />
+      {inCorso > 0 && <span className="secondario piccolo">Allego {inCorso === 1 ? 'il file' : `${inCorso} file`}…</span>}
+      {/* Etichetta con dentro il campo file (non un clic simulato): è il modo più affidabile su Safari e iPhone. */}
+      <label className="pulsante" style={{ alignSelf: 'flex-start', cursor: 'pointer', position: 'relative' }}>
+        + Allega file
+        <input type="file" multiple className="file-nascosto"
+          onChange={(e) => { const campo = e.currentTarget, f = campo.files; if (f?.length) void aggiungi(f).finally(() => { campo.value = '' }) }} />
+      </label>
     </div>
   )
 }
