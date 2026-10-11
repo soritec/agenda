@@ -30,8 +30,8 @@ export function CorsiEcm() {
         </div>
         <div className="riga-azioni">
           <a className="pulsante" href="https://www.cogeaps.it" target="_blank" rel="noreferrer">Co.Ge.A.P.S. ›</a>
-          <button type="button" className="pulsante" onClick={() => setModifica({ tipo: 'congresso' })}>+ Congresso</button>
-          <button type="button" className="pulsante primario" onClick={() => setModifica({ tipo: 'corso' })}>+ Corso</button>
+          <button type="button" className="pulsante pulsante-corso" onClick={() => setModifica({ tipo: 'corso' })}>+ Corso</button>
+          <button type="button" className="pulsante pulsante-congresso" onClick={() => setModifica({ tipo: 'congresso' })}>+ Congresso</button>
         </div>
       </header>
       <span className="secondario piccolo">Su Co.Ge.A.P.S. trovi i crediti ECM registrati ufficialmente: confrontali con quelli segnati qui.</span>

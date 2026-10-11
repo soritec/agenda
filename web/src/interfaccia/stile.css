@@ -734,3 +734,9 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .colore-corso { background: #D6E4F7; color: #1E4A85; }
 .colore-congresso { background: #FBE1C6; color: #8A4510; }
 @media (prefers-color-scheme: dark) { .colore-corso { background: #213650; color: #C9DCF5; } .colore-congresso { background: #4A3220; color: #F6D2AE; } }
+.pulsante.pulsante-corso { background: #D6E4F7; color: #1E4A85; border-color: #A9C4EA; font-weight: 600; }
+.pulsante.pulsante-congresso { background: #FBE1C6; color: #8A4510; border-color: #EFC08F; font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  .pulsante.pulsante-corso { background: #213650; color: #C9DCF5; border-color: #33507A; }
+  .pulsante.pulsante-congresso { background: #4A3220; color: #F6D2AE; border-color: #6E4A2C; }
+}
