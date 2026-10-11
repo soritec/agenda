@@ -96,6 +96,7 @@ export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
 
         <aside className="laterale-destra">
           <Timer argomenti={elencoArgomenti} />
+          <Musica />
           <InPreparazione oggiChiave={oggiChiave} />
         </aside>
       </div>
@@ -192,6 +193,25 @@ function Timer({ argomenti }: { argomenti: ArgomentoStudio[] }) {
         </select>
       </label>
       <span className="secondario piccolo" style={{ textAlign: 'center' }}>Il tempo di studio si somma alla settimana. Il timer continua anche se cambi pagina.</span>
+    </section>
+  )
+}
+
+/* Musica mentre si studia */
+
+function Musica() {
+  return (
+    <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <h2 className="titolo-sezione">♪ Musica per studiare</h2>
+      <div className="collegamenti-rapidi musica">
+        <a href="https://open.spotify.com" target="_blank" rel="noreferrer"><span style={{ color: '#1DB954', fontWeight: 800 }}>●</span> Spotify</a>
+        <a href="https://music.youtube.com" target="_blank" rel="noreferrer"><span style={{ color: '#E62117', fontWeight: 800 }}>▶</span> YouTube</a>
+      </div>
+      <span className="secondario piccolo">
+        Playlist per concentrarsi:{' '}
+        <a href="https://open.spotify.com/search/deep%20focus/playlists" target="_blank" rel="noreferrer">Spotify</a> ·{' '}
+        <a href="https://www.youtube.com/results?search_query=lofi+study+music" target="_blank" rel="noreferrer">YouTube</a>
+      </span>
     </section>
   )
 }
@@ -657,7 +677,7 @@ function Flashcards({ carte, argomenti, risorse, nomeArgomento, argomentoScelto,
         </div>
       ) : (
         <div className="scheda" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span className="crescente" style={{ flex: 1 }}>
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <strong>{dovute.length ? `${dovute.length} flashcard da ripassare oggi` : ripasso ? 'Ripasso finito per oggi!' : 'Niente da ripassare oggi'}</strong>
             <span className="secondario piccolo">Quelle che sai ritornano sempre più tardi (1, 2, 4, 8, 16 giorni); quelle che sbagli tornano domani.</span>
           </span>
