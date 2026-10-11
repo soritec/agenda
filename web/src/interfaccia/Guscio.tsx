@@ -3,7 +3,7 @@ import { Toast } from './componenti'
 import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaAbitudini } from './icone'
 
 export const SEZIONI = [
   { id: 'oggi', titolo: 'Oggi', Icona: IconaOggi },
@@ -14,6 +14,7 @@ export const SEZIONI = [
   { id: 'studio', titolo: 'Studio e risorse', Icona: IconaStudio },
   { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
   { id: 'journaling', titolo: 'Journaling', Icona: IconaJournaling },
+  { id: 'habit', titolo: 'Habit tracker', Icona: IconaAbitudini },
   { id: 'cerca', titolo: 'Cerca', Icona: IconaCerca },
 ] as const satisfies readonly { id: string; titolo: string; Icona: (p: { dimensione?: number }) => ReactNode }[]
 

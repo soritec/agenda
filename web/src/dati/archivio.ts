@@ -8,7 +8,7 @@ import type { Istantanea } from './fusione'
  */
 
 const NOME_DB = 'agenda'
-const VERSIONE_DB = 15
+const VERSIONE_DB = 16
 
 /** `sincronizzazione` = la modifica arriva da GitHub (non va rimandata indietro). */
 export type OrigineModifica = 'utente' | 'sincronizzazione'
@@ -72,6 +72,9 @@ function apri(): Promise<IDBPDatabase> {
       }
       if (vecchiaVersione < 15) {
         database.createObjectStore('umoriGiorno', { keyPath: 'id' })
+      }
+      if (vecchiaVersione < 16) {
+        for (const nome of ['abitudini', 'segniAbitudine', 'postit']) database.createObjectStore(nome, { keyPath: 'id' })
       }
     },
   })

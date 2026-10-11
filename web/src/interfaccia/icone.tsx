@@ -119,6 +119,9 @@ export const IconaFoto = (p: P) => <Icona {...p}><rect x="3" y="5" width="18" he
 export const IconaEtichetta = (p: P) => <Icona {...p}><path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z" /><circle cx="8" cy="8" r="1.4" /></Icona>
 export const IconaScarica = (p: P) => <Icona {...p}><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" /><path d="M5 19.5h14" /></Icona>
 export const IconaStoria = (p: P) => <Icona {...p}><path d="M4 12a8 8 0 1 0 2.4-5.7" /><path d="M4 4.5v3.8h3.8" /><path d="M12 8v4l3 2" /></Icona>
+export const IconaAbitudini = (p: P) => (
+  <Icona {...p}><circle cx="6" cy="6" r="2" /><circle cx="12" cy="6" r="2" fill="currentColor" /><circle cx="18" cy="6" r="2" /><circle cx="6" cy="12" r="2" fill="currentColor" /><circle cx="12" cy="12" r="2" fill="currentColor" /><circle cx="18" cy="12" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="12" cy="18" r="2" fill="currentColor" /><circle cx="18" cy="18" r="2" fill="currentColor" /></Icona>
+)
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )

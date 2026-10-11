@@ -252,6 +252,33 @@ export interface UmoreGiorno extends Base {
   umore: string
 }
 
+/* Habit tracker */
+
+export interface Abitudine extends Base {
+  nome: string
+  colore: string
+  /** 'fare' | 'evitare' (il pallino si riempie se ci sei riuscita) */
+  tipo: string
+  /** Volte a settimana (assente = ogni giorno). */
+  volteSettimana?: number
+  ordine: number
+}
+
+/** Abitudine fatta in un giorno. Id = "<abitudineId>:<giorno>". */
+export interface SegnoAbitudine extends Base {
+  abitudineId: string
+  giorno: string
+}
+
+/** Post-it sulla pagina Oggi: posizione libera (x in percentuale della larghezza, y in pixel). */
+export interface PostIt extends Base {
+  testo: string
+  colore: string
+  x: number
+  y: number
+  z: number
+}
+
 /** Pagina di un taccuino (foto come allegati "pagina:<id>"). */
 export interface PaginaDiario extends Base {
   taccuinoId: string
@@ -460,6 +487,9 @@ export interface Collezioni {
   taccuini: Taccuino
   pagineDiario: PaginaDiario
   umoriGiorno: UmoreGiorno
+  abitudini: Abitudine
+  segniAbitudine: SegnoAbitudine
+  postit: PostIt
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit']

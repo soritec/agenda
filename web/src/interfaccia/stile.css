@@ -876,3 +876,39 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .giorno-umore:hover:not(:disabled) { filter: brightness(0.95); }
 .scegli-umore { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .riga-diario { align-items: start; }
+
+/* Habit tracker */
+.pallino-abitudine { width: 18px; height: 18px; border-radius: 50%; border: 1.6px solid; padding: 0; cursor: pointer; display: inline-block; flex-shrink: 0; background: none; transition: background 0.12s; }
+.pallino-abitudine:disabled { cursor: default; opacity: 0.35; }
+.pallino-abitudine:hover:not(:disabled) { transform: scale(1.12); }
+.abitudini-oggi { display: flex; flex-direction: column; gap: 8px; }
+.chip-abitudini { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-abitudine { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--testo); font-size: 14px; font-weight: 600; cursor: pointer; }
+.chip-abitudine .secondario { font-weight: 400; }
+.griglia-abitudini-scorri { overflow-x: auto; display: flex; flex-direction: column; gap: 8px; }
+.griglia-abitudini { border-collapse: separate; border-spacing: 2px 4px; }
+.griglia-abitudini th { font-size: 10.5px; font-weight: 600; color: var(--testo-2); text-align: center; min-width: 24px; line-height: 1.2; padding: 2px 0; border-radius: 6px; }
+.griglia-abitudini td { text-align: center; padding: 3px 0; border-radius: 6px; }
+.griglia-abitudini .oggi { background: var(--accento-tenue); }
+.griglia-abitudini .protetto { background: var(--superficie-2); }
+.griglia-abitudini .nome-abitudine { text-align: left; min-width: 150px; max-width: 190px; position: sticky; left: 0; background: var(--superficie); z-index: 1; padding-right: 8px; }
+.griglia-abitudini td.nome-abitudine { display: flex; flex-direction: column; }
+.link-abitudine { display: flex; align-items: center; gap: 6px; background: none; border: none; padding: 0; font-size: 14px; font-weight: 600; color: var(--testo); cursor: pointer; text-align: left; }
+.riepilogo-abitudine { font-size: 12px; color: var(--testo-2); white-space: nowrap; padding: 0 8px !important; }
+
+/* Post-it su Oggi */
+.bacheca { position: relative; min-height: calc(100vh - 40px); }
+.pulsante-postit { position: absolute; top: 18px; right: 18px; z-index: 3; }
+.postit { position: absolute; width: 180px; min-height: 150px; border-radius: 4px; box-shadow: 0 6px 16px rgba(0,0,0,0.13), 0 1px 2px rgba(0,0,0,0.08); display: flex; flex-direction: column; color: #2A2622; transform: rotate(-0.6deg); }
+.postit:nth-child(even) { transform: rotate(0.8deg); }
+.maniglia-postit { display: flex; align-items: center; justify-content: space-between; height: 26px; padding: 0 4px; cursor: grab; touch-action: none; background: rgba(0,0,0,0.05); border-radius: 4px 4px 0 0; }
+.maniglia-postit:active { cursor: grabbing; }
+.maniglia-postit .presa { color: rgba(0,0,0,0.35); font-size: 12px; letter-spacing: -2px; }
+.maniglia-postit button { border: none; background: none; cursor: pointer; color: rgba(0,0,0,0.5); font-size: 15px; width: 24px; height: 24px; padding: 0; }
+.maniglia-postit .colori-postit { font-size: 13px; }
+.postit textarea { flex: 1; min-height: 110px; border: none; background: none; resize: none; padding: 8px 10px; font-family: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive, sans-serif; font-size: 15px; line-height: 1.35; color: #2A2622; outline: none; }
+.scelta-colori-postit { display: flex; gap: 4px; padding: 4px 8px; }
+.scelta-colori-postit button { width: 20px; height: 20px; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.15); cursor: pointer; padding: 0; }
+.scelta-colori-postit button.scelto { border-color: #2A2622; }
+@media (max-width: 700px) { .pulsante-postit { top: 64px; right: 12px; } .postit { width: 150px; min-height: 130px; } }
+.riga-nome-abitudine { display: flex; align-items: center; justify-content: space-between; gap: 4px; } .riga-nome-abitudine .elimina-task { width: 24px; height: 24px; font-size: 16px; } .griglia-abitudini .nome-abitudine { min-width: 170px; max-width: 210px; }
