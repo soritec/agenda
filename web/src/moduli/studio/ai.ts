@@ -97,3 +97,29 @@ export async function generaFlashcard(m: Materiale, quante: number): Promise<{ d
   if (!carte.length) throw new Error('Gemini non ha creato flashcard valide: riprova.')
   return carte
 }
+
+/** Argomenti dal syllabus (testo o PDF): elenco di nomi brevi. */
+export async function estraiArgomenti(m: Materiale): Promise<string[]> {
+  const testo = await chiama('Dal syllabus/programma fornito estrai l\'elenco degli argomenti da studiare, in italiano, con nomi brevi (max 6 parole), nell\'ordine del programma. Rispondi solo con un array JSON di stringhe.', m, true)
+  try {
+    const dati = JSON.parse(testo.replace(/^```(?:json)?\s*|\s*```$/g, '')) as unknown
+    const elenco = (Array.isArray(dati) ? dati : []).map(String).map((s) => s.trim()).filter(Boolean)
+    if (elenco.length) return [...new Set(elenco)].slice(0, 80)
+  } catch { /* sotto */ }
+  throw new Error('Gemini non ha trovato argomenti: prova a incollare l\'elenco.')
+}
+
+/** Chiede a Gemini di distribuire gli argomenti nei giorni: restituisce il testo JSON da validare con leggiPianoAI. */
+export function organizzaConAI(dati: {
+  argomenti: { nome: string; fonte?: string; paginaDa?: number; paginaA?: number }[]
+  giorni: { giorno: string; occupato?: string }[]
+  minutiAlGiorno: number
+  fine: string
+}): Promise<string> {
+  return chiama(
+    `Sei un tutor per una specializzanda in ginecologia e ostetricia. Organizza un piano di studio fino al ${dati.fine} (giorno dell'esame, escluso). `
+    + `Ha circa ${dati.minutiAlGiorno} minuti al giorno. Distribuisci gli argomenti nei giorni elencati in modo ragionato: argomenti più difficili o lunghi prima e su più giorni, `
+    + 'pagine divise in blocchi continui senza buchi, carico simile tra i giorni, niente o poco studio nei giorni segnati "occupato" (es. guardia notturna), ultimo giorno disponibile per il ripasso generale. '
+    + 'Rispondi solo con un array JSON di oggetti {"giorno":"AAAA-MM-GG","tipo":"studio"|"ripassoGenerale","argomento":nome esatto dell\'argomento,"paginaDa":numero,"paginaA":numero,"minuti":numero}.',
+    { testo: `Argomenti:\n${JSON.stringify(dati.argomenti)}\n\nGiorni disponibili:\n${JSON.stringify(dati.giorni)}` }, true)
+}

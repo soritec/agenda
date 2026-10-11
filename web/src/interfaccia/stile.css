@@ -743,3 +743,57 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .intestazione > .azioni-ecm { align-self: center; justify-content: center; width: 100%; margin-left: 0; }
 .azioni-ecm .pulsante { min-width: 120px; justify-content: center; text-align: center; }
 @media (max-width: 700px) { .azioni-ecm { width: 100%; } .azioni-ecm .pulsante { flex: 1 1 0; min-width: 0; } }
+.f-studio { background: #3F9C82; }
+.colore-studio { background: #E1F2EA; color: #155E49; }
+@media (prefers-color-scheme: dark) { .colore-studio { background: #23392F; color: #BFE3D2; } }
+
+/* Piani di studio */
+.sezione-piani { display: flex; flex-direction: column; gap: 10px; }
+.schede-piani { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.scheda-piano { display: flex; flex-direction: column; gap: 3px; text-align: left; min-width: 150px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--testo); cursor: pointer; }
+.scheda-piano.attivo { border-width: 2px; }
+.scheda-piano.nuovo { justify-content: center; color: var(--testo-2); min-width: 120px; border-style: dashed; }
+.riepilogo-piano { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--testo-2); }
+.riepilogo-piano strong { color: var(--testo); }
+.settimana-piano { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.giorno-piano { min-height: 120px; border-radius: 10px; border: 1px solid var(--linea); padding: 5px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.giorno-piano.oggi { box-shadow: inset 0 0 0 2px var(--primario); }
+.giorno-piano.fuori { opacity: 0.5; }
+.blocco-piano { display: flex; flex-direction: column; gap: 1px; text-align: left; width: 100%; border: 1px solid transparent; border-radius: 7px; padding: 4px 6px; font-size: 11.5px; line-height: 1.3; background: var(--superficie-2); color: var(--testo); cursor: pointer; overflow-wrap: anywhere; }
+.blocco-piano span { color: var(--testo-2); font-size: 11px; }
+.blocco-piano.ripasso { background: none; border: 1px dashed; }
+.blocco-piano.ripassoGenerale { background: none; border: 1.5px solid; font-weight: 600; }
+.blocco-piano.esame { background: #F8E6DF; color: #8A3A22; font-weight: 700; cursor: default; }
+.blocco-piano.fatta { opacity: 0.5; }
+.avviso-occupato { display: block; font-size: 11px; line-height: 1.3; margin-top: 3px; padding: 4px 6px; border-radius: 6px; border: 1px dashed #C9922F; background: #FBF1DE; color: #6E4B12; }
+.avviso-occupato .link { font-size: 11px; font-weight: 700; text-decoration: underline; }
+.due-pulsanti { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pulsante.pulsante-gemini { background: #ECEAFB; color: #3C3489; border-color: #CFCAF2; font-weight: 600; }
+.riga-argomento-piano { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--linea); }
+.riga-argomento-piano input, .riga-argomento-piano select { min-height: 34px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--linea-forte); background: var(--superficie); font-size: 14px; }
+.riga-argomento-piano .nome { flex: 1 1 160px; font-weight: 600; }
+.riga-argomento-piano select { flex: 1 1 140px; max-width: 220px; }
+.riga-argomento-piano .pagine { display: inline-flex; align-items: center; gap: 4px; color: var(--testo-2); font-size: 13px; }
+.riga-argomento-piano .pagine input { width: 64px; text-align: right; }
+.tendina-gemini > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 8px; }
+.tendina-gemini > summary::-webkit-details-marker { display: none; }
+.tendina-gemini > summary::after { content: '▾'; margin-left: auto; color: var(--testo-2); }
+.tendina-gemini[open] > summary { margin-bottom: 10px; }
+.tendina-gemini[open] > summary::after { content: '▴'; }
+@media (prefers-color-scheme: dark) {
+  .avviso-occupato { background: #3A2F1C; color: #F0D9A8; border-color: #8A6A2C; }
+  .pulsante.pulsante-gemini { background: #2E2A4A; color: #D6D2F5; border-color: #45407A; }
+  .blocco-piano.esame { background: #503229; color: #F3CDBD; }
+}
+@media (max-width: 700px) {
+  .settimana-piano { grid-template-columns: 1fr; }
+  .giorno-piano { min-height: 0; }
+  .due-pulsanti { grid-template-columns: 1fr; }
+}
+.sezione-piani { container-type: inline-size; }
+@container (max-width: 620px) {
+  .settimana-piano { grid-template-columns: 1fr; }
+  .giorno-piano { min-height: 0; display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 6px; align-items: start; }
+  .giorno-piano .nome-giorno-piano { grid-column: 1; grid-row: 1 / span 20; padding-top: 4px; }
+  .giorno-piano > .rimovibile, .giorno-piano > .blocco-piano { grid-column: 2; }
+}

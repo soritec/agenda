@@ -58,7 +58,7 @@ export function App() {
     else if (sotto === 'impostazioni') pagina = <ImpostazioniSpecializzazione />
     else pagina = <Specializzazione />
   } else if (sezione === 'task') pagina = <Task key={parametri.get('scheda') ?? 'oggi'} apertoId={sotto} giorno={parametri.get('giorno')} minuto={parametri.get('minuto')} scheda={parametri.get('scheda')} />
-  else if (sezione === 'studio') pagina = <Studio scheda={parametri.get('scheda')} />
+  else if (sezione === 'studio') pagina = <Studio scheda={parametri.get('scheda')} risorseQuiz={parametri.get('risorse')} />
   else if (sezione === 'budget') pagina = sotto === 'categorie' ? <CategorieBudget /> : <Budget meseParam={parametri.get('mese')} />
   else if (sezione === 'journaling') pagina = <InArrivo titolo="Journaling" />
   else if (sezione === 'cerca') pagina = <InArrivo titolo="Cerca" />
@@ -81,11 +81,13 @@ function Oggi() {
   const tasse = useCollezione('tasse')
   const attivita = useCollezione('attivita')
   const note = useCollezione('noteGiorno')
+  const piani = useCollezione('pianiStudio')
+  const sessioniPiano = useCollezione('sessioniPiano')
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
   // Gli altri impegni dell'agenda (i turni hanno le loro schede qui sotto).
-  const altri = impegniTra({ giornate, eventi, esami, tasse, attivita, note }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
+  const altri = impegniTra({ giornate, eventi, esami, tasse, attivita, note, piani, sessioniPiano }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
   // I task di oggi hanno un riquadro a parte, con il cerchio da spuntare.
   const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte !== 'task' && i.fonte !== 'nota')
   const noteOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte === 'nota')

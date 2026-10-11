@@ -1,4 +1,4 @@
-import { salva } from '../../dati/archivio'
+import { elenca, salva } from '../../dati/archivio'
 import { componenti } from '../../nucleo/calendario'
 import { chiaveGiorno } from '../turni/supporto'
 
@@ -15,6 +15,9 @@ export interface StatoTimer {
   /** Millisecondi rimasti, se messo in pausa con il pulsante. */
   rimanenteMs?: number
   argomentoId?: string
+  /** Sessione di un piano di studio in corso (il tempo si somma lì). */
+  sessionePianoId?: string
+  etichetta?: string
   ciclo: number
 }
 
@@ -42,7 +45,12 @@ export function ascoltaTimer(a: () => void) {
 
 const oggi = (ms: number) => chiaveGiorno(componenti(ms))
 async function registra(minuti: number, quando: number, argomentoId?: string) {
-  if (minuti >= 1) await salva('sessioniStudio', { giorno: oggi(quando), minuti: Math.round(minuti), argomentoId })
+  if (minuti < 1) return
+  await salva('sessioniStudio', { giorno: oggi(quando), minuti: Math.round(minuti), argomentoId })
+  if (stato.sessionePianoId) {
+    const s = (await elenca('sessioniPiano')).find((x) => x.id === stato.sessionePianoId)
+    if (s) await salva('sessioniPiano', { ...s, minutiFatti: (s.minutiFatti ?? 0) + Math.round(minuti) })
+  }
 }
 
 function suona() {
@@ -68,6 +76,11 @@ export function scegliDurate(durataStudio: number, durataPausa: number) {
 export function scegliArgomento(argomentoId?: string) {
   imposta({ ...stato, argomentoId })
 }
+/** Avvia il timer su una sessione di un piano (durata = minuti previsti, arrotondati). */
+export function avviaSessione(id: string, etichetta: string, minuti: number) {
+  imposta({ ...stato, sessionePianoId: id, etichetta, durataStudio: Math.max(5, Math.min(240, minuti)), fase: 'fermo', fineIl: undefined, rimanenteMs: undefined })
+  avvia()
+}
 export function avvia() {
   if (stato.fase !== 'fermo' && stato.rimanenteMs !== undefined) {
     imposta({ ...stato, fineIl: Date.now() + stato.rimanenteMs, rimanenteMs: undefined })
@@ -85,7 +98,7 @@ export async function ferma() {
     const rimasti = stato.fineIl ? stato.fineIl - Date.now() : stato.rimanenteMs ?? 0
     await registra((stato.durataStudio * 60_000 - rimasti) / 60_000, Date.now(), stato.argomentoId)
   }
-  imposta({ ...stato, fase: 'fermo', fineIl: undefined, rimanenteMs: undefined, ciclo: 1 })
+  imposta({ ...stato, fase: 'fermo', fineIl: undefined, rimanenteMs: undefined, ciclo: 1, sessionePianoId: undefined, etichetta: undefined })
 }
 /** Da chiamare spesso: chiude le fasi finite (registrando lo studio) e passa alla successiva. */
 export async function controlla(adesso = Date.now()) {

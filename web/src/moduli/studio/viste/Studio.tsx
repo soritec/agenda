@@ -15,6 +15,7 @@ import {
   cercaGoogle, cercaPubMed, daRipassare, leggiFlashcardDaTesto, minutiSettimana, rispondi, SITI_STUDIO, STATI_LETTURA, statoLetturaDa, TIPI_RISORSA,
   tipoRisorsaDa, TITOLI_STATO_LETTURA, TITOLI_TIPO_RISORSA, type TipoRisorsa,
 } from '../logica'
+import { OggiNeiPiani, PianiStudio } from './Piani'
 import { ascoltaTimer, avvia, controlla, ferma, leggiTimer, metti_in_pausa, rimanente, scegliArgomento, scegliDurate } from '../timer'
 
 const SCHEDE = ['libreria', 'quiz', 'flashcard'] as const
@@ -27,7 +28,7 @@ const ICONE_TIPO: Record<TipoRisorsa, string> = { lineaGuida: '§', articolo: '�
 const durataTesto = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`)
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 
-export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
+export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string | null; risorseQuiz?: string | null }) {
   const argomenti = useCollezione('argomentiStudio')
   const risorse = useCollezione('risorse')
   const flashcard = useCollezione('flashcard')
@@ -61,6 +62,7 @@ export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
       <div className="colonne colonne-studio">
         <div className="principale">
           <CollegamentiRapidi />
+          <PianiStudio risorse={risorse ?? []} />
           <AssistenteAI argomenti={elencoArgomenti} risorse={risorse ?? []} />
 
           <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -85,7 +87,7 @@ export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
                 argomenti={elencoArgomenti} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
             )}
             {scheda === 'quiz' && (
-              <Quiz risorse={risorse ?? []} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
+              <Quiz key={risorseQuiz ?? ''} preselezionate={risorseQuiz ? risorseQuiz.split(',') : undefined} risorse={risorse ?? []} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
             )}
             {scheda === 'flashcard' && (
               <Flashcards carte={(flashcard ?? []).filter((c) => argomento === 'tutti' || c.argomentoId === argomento)} argomenti={elencoArgomenti} risorse={risorse ?? []}
@@ -96,6 +98,7 @@ export function Studio({ scheda: schedaParam }: { scheda?: string | null }) {
 
         <aside className="laterale-destra">
           <Timer argomenti={elencoArgomenti} />
+          <OggiNeiPiani />
           <Musica />
           <InPreparazione oggiChiave={oggiChiave} />
         </aside>
@@ -155,6 +158,7 @@ function Timer({ argomenti }: { argomenti: ArgomentoStudio[] }) {
           {s.fase === 'fermo' ? 'pronto' : s.fase === 'pausa' ? 'pausa' : `studio · ${s.ciclo}° ciclo`}{s.fase !== 'fermo' && !corre ? ' (fermo)' : ''}
         </text>
       </svg>
+      {s.etichetta && s.fase !== 'fermo' && <span className="secondario piccolo" style={{ textAlign: 'center' }}>Sessione: <strong>{s.etichetta}</strong></span>}
       <div className="riga-azioni centrata">
         <span className="secondario piccolo">Studio</span>
         {STUDIO.map((m) => (
@@ -297,22 +301,25 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
 
   if (!chiave || modificaChiave) {
     return (
-      <section className="scheda modulo">
-        <h2 className="titolo-sezione">✦ Assistente Gemini</h2>
+      <details className="scheda tendina-gemini" open={modificaChiave}>
+        <summary className="titolo-sezione">✦ Assistente Gemini <span className="secondario piccolo">{chiave ? '' : 'da collegare'}</span></summary>
+        <div className="modulo">
         <p className="secondario piccolo" style={{ margin: 0 }}>
           Riassunti, schemi, quiz e flashcard con Gemini di Google, gratis. Crea la tua chiave su
           {' '}<a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">aistudio.google.com</a> (basta un account Google, senza carta) e incollala qui.
           Resta solo su questo dispositivo. Nella versione gratuita Google può usare i testi inviati: solo materiale di studio, niente di personale.
         </p>
         <ChiaveAI onSalva={(k) => { salvaChiave(k); setChiave(k); setModificaChiave(false) }} onAnnulla={chiave ? () => setModificaChiave(false) : undefined} />
-      </section>
+        </div>
+      </details>
     )
   }
 
   return (
-    <section className="scheda modulo">
-      <div className="intestazione" style={{ alignItems: 'center' }}>
-        <h2 className="titolo-sezione">✦ Assistente Gemini</h2>
+    <details className="scheda tendina-gemini" open={Boolean(risultato || inCorso)}>
+      <summary className="titolo-sezione">✦ Assistente Gemini <span className="secondario piccolo">riassunti, schemi, domande, traduzioni</span></summary>
+      <div className="modulo">
+      <div className="riga-azioni" style={{ justifyContent: 'flex-end' }}>
         <button type="button" className="link piccolo" onClick={() => setModificaChiave(true)}>Chiave</button>
       </div>
       <textarea value={testo} onChange={(e) => setTesto(e.target.value)} rows={4} placeholder="Incolla qui un testo, oppure scegli un PDF…" />
@@ -355,7 +362,8 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
           </div>
         </div>
       )}
-    </section>
+      </div>
+    </details>
   )
 }
 
@@ -372,12 +380,12 @@ function ChiaveAI({ onSalva, onAnnulla }: { onSalva: (k: string) => void; onAnnu
 }
 
 /** Foglio per scegliere le risorse da cui Gemini crea quiz o flashcard. */
-function SceltaRisorse({ titolo, risorse, nomeArgomento, argomentoScelto, onConferma, onChiudi }: {
-  titolo: string; risorse: Risorsa[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string
+function SceltaRisorse({ titolo, risorse, iniziali, nomeArgomento, argomentoScelto, onConferma, onChiudi }: {
+  titolo: string; risorse: Risorsa[]; iniziali?: string[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string
   onConferma: (scelte: Risorsa[], quante: number) => Promise<void>; onChiudi: () => void
 }) {
   const allegati = useCollezione('allegati')
-  const [scelte, setScelte] = useState<Set<string>>(() => new Set(risorse.filter((r) => argomentoScelto && r.argomentoId === argomentoScelto).map((r) => r.id)))
+  const [scelte, setScelte] = useState<Set<string>>(() => new Set(iniziali ?? risorse.filter((r) => argomentoScelto && r.argomentoId === argomentoScelto).map((r) => r.id)))
   const [quante, setQuante] = useState(10)
   const [inCorso, setInCorso] = useState(false)
   const [errore, setErrore] = useState<string>()
@@ -429,9 +437,9 @@ function SceltaRisorse({ titolo, risorse, nomeArgomento, argomentoScelto, onConf
 const CHIAVE_ULTIMO_QUIZ = 'agenda.ultimoQuiz'
 type RispostaQuiz = { scelta: number; giusta: boolean }
 
-function Quiz({ risorse, nomeArgomento, argomentoScelto }: { risorse: Risorsa[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string }) {
+function Quiz({ risorse, preselezionate, nomeArgomento, argomentoScelto }: { risorse: Risorsa[]; preselezionate?: string[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string }) {
   const allegati = useCollezione('allegati')
-  const [scegli, setScegli] = useState(false)
+  const [scegli, setScegli] = useState(Boolean(preselezionate?.length))
   const [quiz, setQuiz] = useState<{ domande: DomandaQuiz[]; argomentoId?: string; risposte: RispostaQuiz[] }>()
   const [precedente] = useState<number | undefined>(() => { try { const v = localStorage.getItem(CHIAVE_ULTIMO_QUIZ); return v ? Number(v) : undefined } catch { return undefined } })
   const indice = quiz?.risposte.length ?? 0
@@ -517,7 +525,7 @@ function Quiz({ risorse, nomeArgomento, argomentoScelto }: { risorse: Risorsa[];
           </div>
         </div>
       )}
-      {scegli && <SceltaRisorse titolo="Crea un quiz" risorse={risorse} nomeArgomento={nomeArgomento} argomentoScelto={argomentoScelto} onConferma={crea} onChiudi={() => setScegli(false)} />}
+      {scegli && <SceltaRisorse titolo="Crea un quiz" risorse={risorse} iniziali={preselezionate} nomeArgomento={nomeArgomento} argomentoScelto={argomentoScelto} onConferma={crea} onChiudi={() => setScegli(false)} />}
     </>
   )
 }

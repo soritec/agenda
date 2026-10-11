@@ -185,6 +185,52 @@ export interface Flashcard extends Base {
   prossima: string
 }
 
+/** Piano di studio (es. per un esame): argomenti con fonti e pagine, divisi in sessioni nei giorni. */
+export interface PianoStudio extends Base {
+  nome: string
+  colore: string
+  /** Primo giorno di studio. */
+  inizio: string
+  /** Giorno dell'esame o della scadenza (non si studia quel giorno). */
+  fine: string
+  esameId?: string
+  /** Minuti di studio al giorno. */
+  minutiAlGiorno: number
+  /** Giorni della settimana in cui si studia (1 = lunedì … 7 = domenica). */
+  giorniSettimana: number[]
+  /** Ripassi automatici dopo 1, 7 e 30 giorni. */
+  ripassi?: boolean
+  syllabus?: string
+  argomenti: ArgomentoPiano[]
+}
+
+export interface ArgomentoPiano {
+  id: string
+  nome: string
+  /** Risorsa della libreria (facoltativa) oppure testo libero (es. "Williams cap. 40"). */
+  risorsaId?: string
+  fonte?: string
+  paginaDa?: number
+  paginaA?: number
+}
+
+/** Una sessione del piano in un giorno: studio di un argomento (pagine), ripasso o esame. */
+export interface SessionePiano extends Base {
+  pianoId: string
+  giorno: string
+  /** 'studio' | 'ripasso' | 'ripassoGenerale' */
+  tipo: string
+  argomentoId?: string
+  titolo: string
+  paginaDa?: number
+  paginaA?: number
+  minuti: number
+  fatta?: boolean
+  minutiFatti?: number
+  /** L'utente ha scelto di tenerla anche se quel giorno sembra occupato. */
+  tieni?: boolean
+}
+
 /** Tempo di studio registrato dal timer (o a mano). */
 export interface SessioneStudio extends Base {
   giorno: string
@@ -376,6 +422,8 @@ export interface Collezioni {
   appunti: Appunto
   flashcard: Flashcard
   sessioniStudio: SessioneStudio
+  pianiStudio: PianoStudio
+  sessioniPiano: SessionePiano
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano']
