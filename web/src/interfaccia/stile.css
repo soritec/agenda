@@ -582,7 +582,7 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .pillola.priorita-scelta[aria-pressed="true"].p-nessuna { background: var(--accento-tenue); border-color: var(--primario); font-weight: 700; }
 
 /* Budget */
-.tessere-budget { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tessere-budget { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .tessere-budget .valore { font-size: 24px; font-weight: 700; }
 .valore.positivo, .importo.entrata { color: #1C7A5C; }
 .valore.negativo, .importo.uscita { color: #A4472A; }
@@ -641,4 +641,31 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 @media (prefers-color-scheme: dark) {
   .colore-nota, .nota-oggi { background: #3A3320; color: #F2E2B0; box-shadow: none; border-color: #4E4428; }
   .cella.con-nota { background: #2F2A1C; }
+}
+
+/* Risparmi (azzurro) */
+.tessera-risparmi { background: #E3EEF9; border-color: #C7DCF1; color: #1F4E7A; }
+.tessera-risparmi .valore { color: #1F4E7A; }
+.tessera-risparmi svg { vertical-align: -3px; }
+.piu-meno { grid-template-columns: 1fr 1fr 1fr; }
+.grande-risparmio { min-height: 64px; border-radius: 16px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #DCEAF7; color: #1F4E7A; }
+.grande-risparmio:active { transform: scale(0.98); }
+.importo.risparmio, .importo.prelievo, .campo-importo.risparmio, .campo-importo.prelievo { color: #2D6AA6; }
+.scheda-risparmi { border-color: #C7DCF1; }
+.scheda-risparmi .titolo-sezione svg { color: #2D6AA6; }
+.sottotitolo-risparmi { font-size: 14px; font-weight: 700; margin: 8px 0 0; }
+.obiettivo { display: flex; flex-direction: column; gap: 4px; text-align: left; background: none; border: none; padding: 6px 0; cursor: pointer; color: inherit; width: 100%; }
+.obiettivo .intestazione-barra { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.obiettivo .barra { height: 8px; border-radius: 4px; background: var(--superficie-2); overflow: hidden; display: block; }
+.obiettivo .barra i { display: block; height: 100%; border-radius: 4px; background: #4A8FD0; }
+@media (prefers-color-scheme: dark) {
+  .tessera-risparmi { background: #22364A; border-color: #2F4A63; color: #CFE2F5; } .tessera-risparmi .valore { color: #CFE2F5; }
+  .grande-risparmio { background: #22364A; color: #CFE2F5; }
+  .importo.risparmio, .importo.prelievo, .campo-importo.risparmio, .campo-importo.prelievo { color: #8DBDEB; }
+}
+@media (max-width: 700px) {
+  .tessere-budget { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tessere-budget .tessera > .piccolo:last-child, .tessere-budget .tessera > .secondario:last-child { display: block; font-size: 11px; }
+  .grande-piu, .grande-meno, .grande-risparmio { min-height: 58px; font-size: 14px; flex-direction: column; gap: 0; }
+  .grande-piu span, .grande-meno span { font-size: 26px; }
 }

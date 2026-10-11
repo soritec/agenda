@@ -55,6 +55,9 @@ export const IconaJournaling = (p: P) => (
 export const IconaPin = (p: P) => (
   <Icona {...p}><path d="M12 17v5" /><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2v.8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></Icona>
 )
+export const IconaSalvadanaio = (p: P) => (
+  <Icona {...p}><path d="M5.5 9.6A6.5 6.5 0 0 1 11 7h3a6.5 6.5 0 0 1 6.5 6.5 5 5 0 0 1-2 4V20a.5.5 0 0 1-.5.5h-1.8l-.9-1.8h-4.6l-.9 1.8H7.5A.5.5 0 0 1 7 20v-2.4A6.4 6.4 0 0 1 5 16H3.5a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5h1.2a6 6 0 0 1 .8-2.4L4.5 7.2h2z" /><path d="M15.5 12.5v.01" /><path d="M10 4.5h4" /></Icona>
+)
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )

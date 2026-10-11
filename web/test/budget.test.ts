@@ -75,3 +75,25 @@ describe('Budget', () => {
     expect(s.map((x) => [x.giorno, x.titolo])).toEqual([['2026-10-31', 'Seconda rata'], ['2026-12-15', 'Assicurazione'], ['2027-01-31', 'Ordine dei medici']])
   })
 })
+
+describe('Risparmi', () => {
+  test('esclusi da "Ti restano", con totale e obiettivi', async () => {
+    const { statoRisparmi } = await import('../src/moduli/budget/logica')
+    const movimenti: Movimento[] = [
+      { ...b, id: 'e', tipo: 'entrata', importoCent: 200000, giorno: '2026-10-02', categoriaId: id('Stipendio') },
+      { ...b, id: 'u', tipo: 'uscita', importoCent: 50000, giorno: '2026-10-03', categoriaId: id('Casa') },
+      { ...b, id: 'p', tipo: 'prelievo', importoCent: 40000, giorno: '2026-09-20', categoriaId: 'risparmi' },
+      { ...b, id: 'v', tipo: 'risparmio', importoCent: 120000, giorno: '2026-08-01', categoriaId: 'risparmi', obiettivoId: 'o1' },
+    ]
+    const ricorrenti: Ricorrente[] = [{ ...b, id: 'r', tipo: 'risparmio', importoCent: 20000, categoriaId: 'risparmi', descrizione: '', frequenza: 'mese', inizio: '2026-09-01' }]
+    const d = { categorie, movimenti, ricorrenti, obiettivi: [{ ...b, id: 'o1', nome: 'Vacanza', importoCent: 200000, entro: '2027-06' }] }
+    const r = riepilogo(d, '2026-10', '2026-10-11')
+    expect(r.risparmiatoCent).toBe(20000)
+    expect(r.entrateCent - r.usciteCent).toBe(150000)
+    expect(r.restoCent).toBe(130000)
+    const s = statoRisparmi(d, '2026-10-11')
+    expect(s.totaleCent).toBe(120000 + 20000 + 20000 - 40000)
+    expect(s.obiettivi[0]).toMatchObject({ raccoltoCent: 120000, mancanoCent: 80000, alMeseCent: 8900 })
+    expect(vociDelMese(d, '2026-10').find((v) => v.id === 'r')?.titolo).toBe('Messo da parte')
+  })
+})

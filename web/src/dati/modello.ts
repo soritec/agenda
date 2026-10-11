@@ -214,7 +214,7 @@ export interface CategoriaBudget extends Base {
 }
 
 export interface Movimento extends Base {
-  /** 'entrata' | 'uscita' */
+  /** 'entrata' | 'uscita' | 'risparmio' (messo da parte) | 'prelievo' (ripreso dai risparmi) */
   tipo: string
   importoCent: number
   /** "2026-10-21" */
@@ -223,6 +223,16 @@ export interface Movimento extends Base {
   nota?: string
   /** Entrata non ancora ricevuta. */
   daIncassare?: boolean
+  /** Per risparmi e prelievi: l'obiettivo a cui vanno (assente = risparmi generici). */
+  obiettivoId?: string
+}
+
+/** Obiettivo di risparmio (es. "Vacanza estate", 2000 € entro giugno 2027). */
+export interface ObiettivoRisparmio extends Base {
+  nome: string
+  importoCent: number
+  /** Mese entro cui raggiungerlo ("2027-06"), facoltativo. */
+  entro?: string
 }
 
 /** Entrata o uscita che si ripete ogni mese o ogni anno: le singole volte si calcolano, non si salvano. */
@@ -239,6 +249,7 @@ export interface Ricorrente extends Base {
   fine?: string
   /** Mesi ("2026-11") in cui questa volta non vale. */
   saltati?: string[]
+  obiettivoId?: string
 }
 
 export interface Collegamento extends Base {
@@ -285,6 +296,7 @@ export interface Collezioni {
   movimenti: Movimento
   ricorrenti: Ricorrente
   noteGiorno: NotaGiorno
+  obiettiviRisparmio: ObiettivoRisparmio
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio']

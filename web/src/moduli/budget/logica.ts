@@ -1,8 +1,11 @@
-import type { CategoriaBudget, Movimento, Ricorrente, Tassa, Turno } from '../../dati/modello'
+import type { CategoriaBudget, Movimento, ObiettivoRisparmio, Ricorrente, Tassa, Turno } from '../../dati/modello'
 import { componenti, giornoDi } from '../../nucleo/calendario'
 import { chiaveGiorno, giornoDaChiave } from '../turni/supporto'
 
 export type TipoMovimento = 'entrata' | 'uscita'
+/** Anche i soldi messi da parte e quelli ripresi dai risparmi: non sono né entrate né uscite. */
+export type TipoVoce = TipoMovimento | 'risparmio' | 'prelievo'
+export const CATEGORIA_RISPARMI = 'risparmi'
 
 /** Categorie di partenza (id fissi, così due dispositivi non creano doppioni). L'utente può modificarle e aggiungerne. */
 export const CATEGORIE_PREDEFINITE: Omit<CategoriaBudget, 'id' | 'creatoIl' | 'modificatoIl' | 'ordine'>[] = [
@@ -73,12 +76,13 @@ export interface Voce {
   chiave: string
   origine: 'movimento' | 'ricorrente' | 'turno' | 'tassa'
   id: string
-  tipo: TipoMovimento
+  tipo: TipoVoce
   importoCent: number
   giorno: string
   categoriaId?: string
   titolo: string
   daIncassare?: boolean
+  obiettivoId?: string
 }
 
 export interface DatiBudget {
@@ -87,9 +91,11 @@ export interface DatiBudget {
   ricorrenti: Ricorrente[]
   turni?: Turno[]
   tasse?: Tassa[]
+  obiettivi?: ObiettivoRisparmio[]
 }
 
-const tipoDa = (t: string): TipoMovimento => (t === 'entrata' ? 'entrata' : 'uscita')
+const tipoDa = (t: string): TipoVoce => (t === 'entrata' || t === 'risparmio' || t === 'prelievo' ? t : 'uscita')
+const titoloRisparmio = (t: TipoVoce) => (t === 'risparmio' ? 'Messo da parte' : t === 'prelievo' ? 'Ripreso dai risparmi' : undefined)
 
 /** Categoria delle entrate da turni (compenso scritto nel turno): sostituzioni MMG o libera professione. */
 const categoriaTurno = (t: Turno) => idPredefinita(t.tipo === 'sostituzioneMMG' ? 'Sostituzioni MMG' : 'Libera professione')
@@ -100,12 +106,12 @@ export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
   const voci: Voce[] = []
   for (const m of d.movimenti) {
     if (meseDi(m.giorno) !== mese) continue
-    voci.push({ chiave: `m:${m.id}`, origine: 'movimento', id: m.id, tipo: tipoDa(m.tipo), importoCent: m.importoCent, giorno: m.giorno, categoriaId: m.categoriaId, titolo: m.nota || nomi.get(m.categoriaId) || 'Movimento', daIncassare: m.daIncassare })
+    voci.push({ chiave: `m:${m.id}`, origine: 'movimento', id: m.id, tipo: tipoDa(m.tipo), importoCent: m.importoCent, giorno: m.giorno, categoriaId: m.categoriaId, titolo: m.nota || titoloRisparmio(tipoDa(m.tipo)) || nomi.get(m.categoriaId) || 'Movimento', daIncassare: m.daIncassare, obiettivoId: m.obiettivoId })
   }
   for (const r of d.ricorrenti) {
     const giorno = giornoNelMese(r, mese)
     if (!giorno) continue
-    voci.push({ chiave: `r:${r.id}:${mese}`, origine: 'ricorrente', id: r.id, tipo: tipoDa(r.tipo), importoCent: r.importoCent, giorno, categoriaId: r.categoriaId, titolo: r.descrizione || nomi.get(r.categoriaId) || 'Fisso' })
+    voci.push({ chiave: `r:${r.id}:${mese}`, origine: 'ricorrente', id: r.id, tipo: tipoDa(r.tipo), importoCent: r.importoCent, giorno, categoriaId: r.categoriaId, titolo: r.descrizione || titoloRisparmio(tipoDa(r.tipo)) || nomi.get(r.categoriaId) || 'Fisso', obiettivoId: r.obiettivoId })
   }
   for (const t of d.turni ?? []) {
     if (!t.compensoCent) continue
@@ -123,6 +129,8 @@ export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
 }
 
 export interface Riepilogo {
+  /** Messo da parte meno ripreso, nel mese (fino a oggi). Non entra in "Ti restano". */
+  risparmiatoCent: number
   entrateCent: number
   extraCent: number
   usciteCent: number
@@ -150,7 +158,8 @@ export function riepilogo(d: DatiBudget, mese: string, oggi: string): Riepilogo 
     entrateCent: somma(entrate),
     extraCent: somma(entrate.filter((v) => categorie.get(v.categoriaId ?? '')?.extra)),
     usciteCent: somma(uscite),
-    restoCent: somma(entrate) - somma(uscite),
+    risparmiatoCent: somma(contano.filter((v) => v.tipo === 'risparmio')) - somma(contano.filter((v) => v.tipo === 'prelievo')),
+    restoCent: somma(entrate) - somma(uscite) - (somma(contano.filter((v) => v.tipo === 'risparmio')) - somma(contano.filter((v) => v.tipo === 'prelievo'))),
     daIncassare: voci.filter((v) => v.daIncassare),
     perCategoria: [
       ...[...perCat].map(([id, cent]) => ({ categoria: categorie.get(id) ?? { id, nome: 'Senza categoria', tipo: 'uscita', colore: '#D3D1C7', ordine: 999, creatoIl: 0, modificatoIl: 0 }, cent, tettoCent: categorie.get(id)?.tettoCent })),
@@ -185,3 +194,33 @@ export function prossimeScadenze(d: DatiBudget, oggi: string, giorni = 120): { c
 
 /** Giorno di oggi in ora italiana. */
 export const oggiChiave = () => { const c = componenti(Date.now()); return chiaveGiorno(c) }
+
+/** Primo mese con dati (movimenti o ricorrenti), per sommare i risparmi da sempre. */
+function primoMese(d: DatiBudget, oggi: string): string {
+  const mesi = [...d.movimenti.map((m) => m.giorno.slice(0, 7)), ...d.ricorrenti.map((r) => r.inizio.slice(0, 7))]
+  return mesi.length ? mesi.reduce((a, b) => (a < b ? a : b)) : oggi.slice(0, 7)
+}
+
+/**
+ * Risparmi accumulati fino a oggi: totale e per obiettivo (messo da parte − ripreso).
+ * Per ogni obiettivo con una data: quanto mettere da parte al mese per arrivarci.
+ */
+export function statoRisparmi(d: DatiBudget, oggi: string) {
+  let totale = 0
+  const perObiettivo = new Map<string, number>()
+  for (let mese = primoMese(d, oggi); mese <= oggi.slice(0, 7); mese = spostaMese(mese, 1)) {
+    for (const v of vociDelMese({ ...d, turni: [], tasse: [] }, mese)) {
+      if ((v.tipo !== 'risparmio' && v.tipo !== 'prelievo') || v.giorno > oggi) continue
+      const segno = v.tipo === 'risparmio' ? 1 : -1
+      totale += segno * v.importoCent
+      if (v.obiettivoId) perObiettivo.set(v.obiettivoId, (perObiettivo.get(v.obiettivoId) ?? 0) + segno * v.importoCent)
+    }
+  }
+  const obiettivi = (d.obiettivi ?? []).map((o) => {
+    const raccolto = perObiettivo.get(o.id) ?? 0
+    const mancano = Math.max(0, o.importoCent - raccolto)
+    const mesiRimasti = o.entro ? Math.max(1, (Number(o.entro.slice(0, 4)) - Number(oggi.slice(0, 4))) * 12 + Number(o.entro.slice(5, 7)) - Number(oggi.slice(5, 7)) + 1) : undefined
+    return { obiettivo: o, raccoltoCent: raccolto, mancanoCent: mancano, alMeseCent: mesiRimasti && mancano ? Math.ceil(mancano / mesiRimasti / 100) * 100 : undefined }
+  })
+  return { totaleCent: totale, obiettivi }
+}

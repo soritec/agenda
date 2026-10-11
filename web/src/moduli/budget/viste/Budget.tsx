@@ -3,19 +3,21 @@ import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
-import type { CategoriaBudget, Movimento, Ricorrente } from '../../../dati/modello'
+import type { CategoriaBudget, Movimento, ObiettivoRisparmio, Ricorrente } from '../../../dati/modello'
 import { blobCSV, type TabellaExport } from '../../../export/csv'
 import { condividiOScarica, creaPdf, scarica } from '../../../export/pdf'
 import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
-import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
+import { IconaAvanti, IconaIndietro, IconaSalvadanaio } from '../../../interfaccia/icone'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import {
-  centesimiDa, leggiMovimentoVeloce, prossimeScadenze, riepilogo, spostaMese, vociDelMese, type DatiBudget, type TipoMovimento, type Voce,
+  CATEGORIA_RISPARMI, centesimiDa, leggiMovimentoVeloce, statoRisparmi, type TipoVoce, prossimeScadenze, riepilogo, spostaMese, vociDelMese, type DatiBudget, type TipoMovimento, type Voce,
 } from '../logica'
 
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 const dataBreve = (g: string) => F.dataBreve(msGiorno(g))
 const euro = (cent: number) => F.importo(cent)
+const COLORE_RISPARMI = '#4A8FD0'
+const segno = (t: TipoVoce) => (t === 'entrata' ? '+' : t === 'uscita' ? '−' : t === 'risparmio' ? '→ ' : '← ')
 const testoImporto = (cent: number) => (cent / 100).toFixed(2).replace('.', ',').replace(/,00$/, '')
 
 /** Dati del budget dalle collezioni, e un indicatore "pronto". */
@@ -25,15 +27,17 @@ function useDatiBudget() {
   const ricorrenti = useCollezione('ricorrenti')
   const turni = useCollezione('turni')
   const tasse = useCollezione('tasse')
+  const obiettivi = useCollezione('obiettiviRisparmio')
   const dati: DatiBudget = useMemo(() => ({
     categorie: [...(categorie ?? [])].sort((a, b) => a.ordine - b.ordine), movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [], turni: turni ?? [], tasse: tasse ?? [],
-  }), [categorie, movimenti, ricorrenti, turni, tasse])
+    obiettivi: [...(obiettivi ?? [])].sort((a, b) => a.creatoIl - b.creatoIl),
+  }), [categorie, movimenti, ricorrenti, turni, tasse, obiettivi])
   return { dati, pronto: Boolean(categorie && movimenti && ricorrenti) }
 }
 
 /** Che cosa si sta modificando nel foglio. */
 type Modifica =
-  | { tipo: TipoMovimento; movimento?: Movimento; ricorrente?: Ricorrente; iniziale?: { importoCent?: number; categoriaId?: string; nota?: string } }
+  | { tipo: TipoVoce; movimento?: Movimento; ricorrente?: Ricorrente; iniziale?: { importoCent?: number; categoriaId?: string; nota?: string } }
 
 export function Budget({ meseParam }: { meseParam?: string | null }) {
   const { dati, pronto } = useDatiBudget()
@@ -43,6 +47,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
   const [modifica, setModifica] = useState<Modifica>()
   const [esporta, setEsporta] = useState(false)
   const [tutti, setTutti] = useState(false)
+  const [obiettivoAperto, setObiettivoAperto] = useState<{ o?: ObiettivoRisparmio }>()
 
   const r = riepilogo(dati, mese, oggiChiave)
   const precedente = riepilogo(dati, spostaMese(mese, -1), oggiChiave)
@@ -52,6 +57,8 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
   const categorie = new Map(dati.categorie.map((c) => [c.id, c]))
   const scadenze = prossimeScadenze(dati, oggiChiave).slice(0, 6)
   const variazione = precedente.usciteCent ? Math.round(((r.usciteCent - precedente.usciteCent) / precedente.usciteCent) * 100) : undefined
+  const risparmi = statoRisparmi(dati, oggiChiave)
+  const vociRisparmio = voci.filter((v) => v.tipo === 'risparmio' || v.tipo === 'prelievo')
   const massimo = Math.max(1, ...r.perCategoria.map((c) => Math.max(c.cent, c.tettoCent ?? 0)))
 
   function aggiungiVeloce() {
@@ -119,12 +126,15 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
         <div className="tessera"><span className="secondario piccolo">Uscite</span><span className="valore negativo">{euro(r.usciteCent)}</span>
           <span className="secondario piccolo">{variazione !== undefined ? `${variazione > 0 ? '+' : variazione < 0 ? '−' : ''}${Math.abs(variazione)}% rispetto al mese prima` : ' '}</span></div>
         <div className="tessera"><span className="secondario piccolo">Ti restano</span><span className="valore">{euro(r.restoCent)}</span>
-          <span className="secondario piccolo">nell'anno: {euro(anno)}</span></div>
+          <span className="secondario piccolo">{r.risparmiatoCent > 0 ? `esclusi i ${euro(r.risparmiatoCent)} messi da parte` : r.risparmiatoCent < 0 ? `con ${euro(-r.risparmiatoCent)} ripresi dai risparmi` : `nell'anno: ${euro(anno)}`}</span></div>
+        <div className="tessera tessera-risparmi"><span className="piccolo"><IconaSalvadanaio dimensione={15} /> Risparmi</span><span className="valore">{euro(risparmi.totaleCent)}</span>
+          <span className="piccolo">{r.risparmiatoCent ? `${r.risparmiatoCent > 0 ? '+' : '−'}${euro(Math.abs(r.risparmiatoCent))} questo mese` : 'non contano in "Ti restano"'}</span></div>
       </div>
 
       <div className="piu-meno">
         <button type="button" className="grande-piu" onClick={() => setModifica({ tipo: 'entrata' })} aria-label="Nuova entrata"><span>+</span>Entrata</button>
         <button type="button" className="grande-meno" onClick={() => setModifica({ tipo: 'uscita' })} aria-label="Nuova uscita"><span>−</span>Uscita</button>
+        <button type="button" className="grande-risparmio" onClick={() => setModifica({ tipo: 'risparmio' })} aria-label="Metti da parte"><IconaSalvadanaio dimensione={26} />Metti da parte</button>
       </div>
       <div className="aggiunta-veloce">
         <input value={testo} onChange={(e) => setTesto(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') aggiungiVeloce() }}
@@ -166,7 +176,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                 const futuro = v.giorno > oggiChiave
                 return (
                   <div key={v.chiave} className={`riga riga-movimento${futuro || v.daIncassare ? ' conclusa' : ''}`}>
-                    <span className="pallino-fonte" style={{ background: c?.colore ?? '#D3D1C7', width: 10, height: 10, borderRadius: 5 }} />
+                    <span className="pallino-fonte" style={{ background: v.tipo === 'risparmio' || v.tipo === 'prelievo' ? COLORE_RISPARMI : c?.colore ?? '#D3D1C7', width: 10, height: 10, borderRadius: 5 }} />
                     <button type="button" className="crescente" onClick={() => apri(v)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
                       <span style={{ fontWeight: 600 }}>
                         {v.titolo}
@@ -177,7 +187,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                           v.daIncassare ? 'da incassare' : '', futuro ? 'in programma' : ''].filter(Boolean).join(' · ')}
                       </span>
                     </button>
-                    <span className={`numeri importo ${v.tipo}`}>{v.tipo === 'entrata' ? '+' : '−'}{euro(v.importoCent)}</span>
+                    <span className={`numeri importo ${v.tipo}`}>{segno(v.tipo)}{euro(v.importoCent)}</span>
                     {(v.origine === 'movimento' || v.origine === 'ricorrente') && (
                       <button type="button" className="elimina-task" aria-label={`Elimina ${v.titolo}`} onClick={() => void eliminaVoce(v)}>×</button>
                     )}
@@ -190,6 +200,33 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
         </div>
 
         <aside className="laterale-destra">
+          <section className="scheda scheda-risparmi" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <h2 className="titolo-sezione" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconaSalvadanaio dimensione={20} /> Risparmi</h2>
+            <span className="secondario piccolo">Soldi messi da parte: non contano in "Ti restano".</span>
+            {vociRisparmio.map((v) => (
+              <div key={v.chiave} className="riga-semplice">
+                <button type="button" className="crescente" onClick={() => apri(v)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
+                  <span style={{ fontWeight: 600 }}>{v.titolo}</span>
+                  <span className="secondario piccolo">{[dataBreve(v.giorno), v.origine === 'ricorrente' ? '↻ ogni mese' : '', dati.obiettivi?.find((o) => o.id === v.obiettivoId)?.nome].filter(Boolean).join(' · ')}</span>
+                </button>
+                <span className={`numeri importo ${v.tipo}`}>{segno(v.tipo)}{euro(v.importoCent)}</span>
+              </div>
+            ))}
+            <div className="riga-azioni">
+              <button type="button" className="pillola" onClick={() => setModifica({ tipo: 'prelievo' })}>Riprendi dai risparmi</button>
+            </div>
+            <h3 className="sottotitolo-risparmi">Obiettivi</h3>
+            {risparmi.obiettivi.map(({ obiettivo: o, raccoltoCent, alMeseCent }) => (
+              <button key={o.id} type="button" className="obiettivo" onClick={() => setObiettivoAperto({ o })}>
+                <span className="intestazione-barra"><span style={{ fontWeight: 600 }}>{o.nome}</span><span className="numeri">{euro(raccoltoCent)} / {euro(o.importoCent)}</span></span>
+                <span className="barra"><i style={{ width: `${Math.min(100, Math.max(0, (raccoltoCent / o.importoCent) * 100))}%` }} /></span>
+                <span className="secondario piccolo">
+                  {raccoltoCent >= o.importoCent ? 'Raggiunto!' : [o.entro ? `entro ${F.mese(msGiorno(`${o.entro}-01`))}` : '', alMeseCent ? `${euro(alMeseCent)} al mese` : ''].filter(Boolean).join(' · ')}
+                </span>
+              </button>
+            ))}
+            <div className="riga-azioni"><button type="button" className="pillola" onClick={() => setObiettivoAperto({})}>+ Obiettivo</button></div>
+          </section>
           <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <h2 className="titolo-sezione">Da incassare</h2>
             {r.daIncassare.length === 0 && <span className="secondario piccolo">Niente in attesa questo mese.</span>}
@@ -221,7 +258,10 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
         </aside>
       </div>
 
-      {modifica && pronto && <FormMovimento key={modifica.movimento?.id ?? modifica.ricorrente?.id ?? modifica.tipo} m={modifica} categorie={dati.categorie} onChiudi={() => setModifica(undefined)} />}
+      {modifica && pronto && (modifica.tipo === 'risparmio' || modifica.tipo === 'prelievo'
+        ? <FormRisparmio key={modifica.movimento?.id ?? modifica.ricorrente?.id ?? modifica.tipo} m={modifica} obiettivi={dati.obiettivi ?? []} onChiudi={() => setModifica(undefined)} onNuovoObiettivo={() => { setModifica(undefined); setObiettivoAperto({}) }} />
+        : <FormMovimento key={modifica.movimento?.id ?? modifica.ricorrente?.id ?? modifica.tipo} m={{ ...modifica, tipo: modifica.tipo as TipoMovimento }} categorie={dati.categorie} onChiudi={() => setModifica(undefined)} />)}
+      {obiettivoAperto && <FormObiettivo key={obiettivoAperto.o?.id ?? 'nuovo'} o={obiettivoAperto.o} onChiudi={() => setObiettivoAperto(undefined)} />}
       {esporta && <EsportaAnno anno={mese.slice(0, 4)} dati={dati} onChiudi={() => setEsporta(false)} />}
     </div>
   )
@@ -229,7 +269,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
 
 /* Foglio per una entrata o uscita (anche fissa, che si ripete) */
 
-function FormMovimento({ m, categorie, onChiudi }: { m: Modifica; categorie: CategoriaBudget[]; onChiudi: () => void }) {
+function FormMovimento({ m, categorie, onChiudi }: { m: Modifica & { tipo: TipoMovimento }; categorie: CategoriaBudget[]; onChiudi: () => void }) {
   const r = m.ricorrente, mov = m.movimento
   const [tipo, setTipo] = useState<TipoMovimento>(m.tipo)
   const delTipo = categorie.filter((c) => c.tipo === tipo)
@@ -338,9 +378,9 @@ function EsportaAnno({ anno, dati, onChiudi }: { anno: string; dati: DatiBudget;
       titolo: `Budget ${anno}`,
       intestazioni: ['Data', 'Tipo', 'Categoria', 'Descrizione', 'Importo'],
       righe: voci.map((v) => [
-        { tipo: 'data', istante: msGiorno(v.giorno) }, { tipo: 'testo', valore: v.tipo === 'entrata' ? 'Entrata' : 'Uscita' },
+        { tipo: 'data', istante: msGiorno(v.giorno) }, { tipo: 'testo', valore: { entrata: 'Entrata', uscita: 'Uscita', risparmio: 'Messo da parte', prelievo: 'Ripreso dai risparmi' }[v.tipo] },
         { tipo: 'testo', valore: categorie.get(v.categoriaId ?? '') ?? '' }, { tipo: 'testo', valore: v.titolo },
-        { tipo: 'importo', centesimi: v.tipo === 'entrata' ? v.importoCent : -v.importoCent },
+        { tipo: 'importo', centesimi: v.tipo === 'entrata' || v.tipo === 'prelievo' ? v.importoCent : -v.importoCent },
       ]),
     }
     scarica(blobCSV(tabella), `Budget ${anno}.csv`)
@@ -352,7 +392,7 @@ function EsportaAnno({ anno, dati, onChiudi }: { anno: string; dati: DatiBudget;
       titolo: `Budget ${anno}`, sottotitolo: 'Entrate e uscite registrate',
       riepilogo: [{ etichetta: 'entrate', valore: euro(entrate) }, { etichetta: 'uscite', valore: euro(uscite) }, { etichetta: 'saldo', valore: euro(entrate - uscite) }],
       intestazioni: ['Data', 'Categoria', 'Descrizione', 'Importo'],
-      righe: voci.map((v) => ({ celle: [dataBreve(v.giorno), categorie.get(v.categoriaId ?? '') ?? '', v.titolo, `${v.tipo === 'entrata' ? '+' : '−'}${euro(v.importoCent)}`] })),
+      righe: voci.map((v) => ({ celle: [dataBreve(v.giorno), categorie.get(v.categoriaId ?? '') ?? '', v.titolo, `${segno(v.tipo)}${euro(v.importoCent)}`] })),
       colonneDestra: [3], colonneGrassetto: [3],
       totaleTabella: ['Saldo', '', '', euro(entrate - uscite)],
       piede: `Agenda · creato ${F.dataEstesa(Date.now())}`,
@@ -450,3 +490,113 @@ export function CategorieBudget() {
   )
 }
 
+
+/* Risparmi: metti da parte o riprendi */
+
+function FormRisparmio({ m, obiettivi, onChiudi, onNuovoObiettivo }: { m: Modifica; obiettivi: ObiettivoRisparmio[]; onChiudi: () => void; onNuovoObiettivo: () => void }) {
+  const r = m.ricorrente, mov = m.movimento
+  const [tipo, setTipo] = useState<'risparmio' | 'prelievo'>(m.tipo === 'prelievo' ? 'prelievo' : 'risparmio')
+  const [b, setB] = useState({
+    importo: testoImporto(mov?.importoCent ?? r?.importoCent ?? 0).replace(/^0$/, ''),
+    obiettivoId: mov?.obiettivoId ?? r?.obiettivoId ?? '',
+    giorno: mov?.giorno ?? r?.inizio ?? chiaveGiorno(oggi()),
+    nota: mov?.nota ?? r?.descrizione ?? '',
+    ripeti: (r?.frequenza ?? 'no') as 'no' | 'mese' | 'anno',
+  })
+  const importoCent = centesimiDa(b.importo)
+  const valido = !!importoCent && !!giornoDaChiave(b.giorno)
+  async function conferma() {
+    if (!valido) return
+    const comuni = { tipo, importoCent: importoCent!, categoriaId: CATEGORIA_RISPARMI, obiettivoId: b.obiettivoId || undefined }
+    if (b.ripeti !== 'no' && tipo === 'risparmio') {
+      await salva('ricorrenti', { ...r, ...comuni, descrizione: b.nota.trim(), frequenza: b.ripeti, inizio: b.giorno })
+      if (mov) await elimina('movimenti', mov.id)
+    } else {
+      await salva('movimenti', { ...mov, ...comuni, giorno: b.giorno, nota: b.nota.trim() || undefined })
+      if (r) await elimina('ricorrenti', r.id)
+    }
+    onChiudi()
+  }
+  return (
+    <Foglio aperto titolo={tipo === 'risparmio' ? 'Metti da parte' : 'Riprendi dai risparmi'} onChiudi={onChiudi}
+      azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
+      <div className="modulo">
+        <div className="segmenti" role="radiogroup" aria-label="Tipo">
+          {(['risparmio', 'prelievo'] as const).map((t) => (
+            <button key={t} type="button" role="radio" aria-checked={tipo === t} className={tipo === t ? 'attivo' : ''} onClick={() => setTipo(t)}>
+              {t === 'risparmio' ? 'Metti da parte' : 'Riprendi'}
+            </button>
+          ))}
+        </div>
+        <label className={`campo-importo ${tipo}`}>
+          <IconaSalvadanaio dimensione={30} />
+          <input inputMode="decimal" autoFocus={!mov && !r} value={b.importo} placeholder="0" aria-label="Importo in euro" onChange={(e) => setB({ ...b, importo: e.target.value })}
+            onKeyDown={(e) => { if (e.key === 'Enter') void conferma() }} />
+          <span>€</span>
+        </label>
+        <div className="campo">
+          <span>{tipo === 'risparmio' ? 'Per un obiettivo (facoltativo)' : 'Da quale obiettivo (facoltativo)'}</span>
+          <div className="riga-azioni" role="group" aria-label="Obiettivo">
+            <button type="button" className="pillola" aria-pressed={!b.obiettivoId} onClick={() => setB({ ...b, obiettivoId: '' })}
+              style={!b.obiettivoId ? { background: '#DCEAF7', borderColor: COLORE_RISPARMI, fontWeight: 700 } : undefined}>Nessuno</button>
+            {obiettivi.map((o) => (
+              <button key={o.id} type="button" className="pillola" aria-pressed={b.obiettivoId === o.id} onClick={() => setB({ ...b, obiettivoId: o.id })}
+                style={b.obiettivoId === o.id ? { background: '#DCEAF7', borderColor: COLORE_RISPARMI, fontWeight: 700 } : undefined}>{o.nome}</button>
+            ))}
+            <button type="button" className="pillola" onClick={onNuovoObiettivo}>+ Nuovo obiettivo</button>
+          </div>
+        </div>
+        <div className="campi-affiancati">
+          <Campo etichetta={b.ripeti === 'no' ? 'Giorno' : 'Dal giorno'}><input type="date" value={b.giorno} onChange={(e) => setB({ ...b, giorno: e.target.value })} /></Campo>
+          {tipo === 'risparmio' && (
+            <Campo etichetta="Si ripete">
+              <select value={b.ripeti} onChange={(e) => setB({ ...b, ripeti: e.target.value as 'no' | 'mese' | 'anno' })}>
+                <option value="no">No</option><option value="mese">Ogni mese</option><option value="anno">Ogni anno</option>
+              </select>
+            </Campo>
+          )}
+        </div>
+        <Campo etichetta="Nota (facoltativa)"><input value={b.nota} placeholder={tipo === 'prelievo' ? 'es. per l\'auto' : ''} onChange={(e) => setB({ ...b, nota: e.target.value })} /></Campo>
+        {(mov || r) && (
+          <button type="button" className="pulsante pericolo" onClick={() => void (async () => {
+            if (mov) { await elimina('movimenti', mov.id); mostraAvviso('Eliminato', () => void ripristina('movimenti', mov.id)) }
+            if (r) { await elimina('ricorrenti', r.id); mostraAvviso('Eliminato in tutti i mesi', () => void ripristina('ricorrenti', r.id)) }
+            onChiudi()
+          })()}>{r ? 'Elimina in tutti i mesi' : 'Elimina'}</button>
+        )}
+      </div>
+    </Foglio>
+  )
+}
+
+function FormObiettivo({ o, onChiudi }: { o?: ObiettivoRisparmio; onChiudi: () => void }) {
+  const [nome, setNome] = useState(o?.nome ?? '')
+  const [importo, setImporto] = useState(o ? testoImporto(o.importoCent) : '')
+  const [entro, setEntro] = useState(o?.entro ?? '')
+  const importoCent = centesimiDa(importo)
+  const valido = nome.trim() !== '' && !!importoCent
+  async function conferma() {
+    if (!valido) return
+    await salva('obiettiviRisparmio', { ...o, nome: nome.trim(), importoCent: importoCent!, entro: /^\d{4}-\d{2}$/.test(entro) ? entro : undefined })
+    onChiudi()
+  }
+  return (
+    <Foglio aperto titolo={o ? 'Obiettivo' : 'Nuovo obiettivo'} onChiudi={onChiudi}
+      azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
+      <div className="modulo">
+        <Campo etichetta="Nome"><input value={nome} autoFocus={!o} placeholder="es. Vacanza estate, Fondo emergenze" onChange={(e) => setNome(e.target.value)} /></Campo>
+        <div className="campi-affiancati">
+          <Campo etichetta="Quanto (€)"><input inputMode="decimal" value={importo} placeholder="es. 2000" onChange={(e) => setImporto(e.target.value)} /></Campo>
+          <Campo etichetta="Entro (facoltativo)"><input type="month" value={entro} onChange={(e) => setEntro(e.target.value)} /></Campo>
+        </div>
+        <span className="secondario piccolo">Quando metti da parte dei soldi, scegli questo obiettivo: la barra mostra a che punto sei e quanto serve al mese.</span>
+        {o && (
+          <button type="button" className="pulsante pericolo"
+            onClick={() => void elimina('obiettiviRisparmio', o.id).then(() => { onChiudi(); mostraAvviso(`Eliminato: ${o.nome}`, () => void ripristina('obiettiviRisparmio', o.id)) })}>
+            Elimina l'obiettivo (i soldi restano nei risparmi)
+          </button>
+        )}
+      </div>
+    </Foglio>
+  )
+}
