@@ -6,11 +6,13 @@ export type Area = (typeof AREE)[number]
 export const TITOLI_AREA: Record<Area, string> = { personale: 'Personale', lavoro: 'Lavoro', specializzazione: 'Specializzazione', studio: 'Studio', altro: 'Altro' }
 export const areaDa = (grezzo: string): Area => ((AREE as readonly string[]).includes(grezzo) ? (grezzo as Area) : 'altro')
 
-export const PRIORITA = ['alta', 'media', 'bassa'] as const
+/** In ordine di importanza; 'nessuna' è quella di partenza (anche per i vecchi 'normale'). */
+export const PRIORITA = ['alta', 'media', 'bassa', 'nessuna'] as const
 export type Priorita = (typeof PRIORITA)[number]
-export const TITOLI_PRIORITA: Record<Priorita, string> = { alta: 'Alta', media: 'Media', bassa: 'Bassa' }
-/** I task salvati prima avevano 'normale': vale come media. */
-export const prioritaDa = (grezzo: string | undefined): Priorita => ((PRIORITA as readonly string[]).includes(grezzo ?? '') ? (grezzo as Priorita) : 'media')
+export const TITOLI_PRIORITA: Record<Priorita, string> = { alta: 'Alta', media: 'Media', bassa: 'Bassa', nessuna: 'Nessuna' }
+/** Punti esclamativi mostrati accanto al titolo. */
+export const SEGNI_PRIORITA: Record<Priorita, string> = { alta: '!!!', media: '!!', bassa: '!', nessuna: '' }
+export const prioritaDa = (grezzo: string | undefined): Priorita => ((PRIORITA as readonly string[]).includes(grezzo ?? '') ? (grezzo as Priorita) : 'nessuna')
 
 export const RIPETIZIONI = ['mai', 'giorno', 'settimana', 'mese', 'anno'] as const
 export type Ripetizione = (typeof RIPETIZIONI)[number]

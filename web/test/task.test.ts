@@ -32,7 +32,7 @@ describe('Task', () => {
       base('poi', { scadenza: '2026-11-01' }), base('libero'), base('fatto', { completataIl: 5 }),
     ], '2026-10-11')
     expect(g.inRitardo.map((t) => t.id)).toEqual(['vecchio'])
-    expect(g.oggi.map((t) => t.id)).toEqual(['oggi-alta', 'oggi-normale', 'oggi-bassa'])
+    expect(g.oggi.map((t) => t.id)).toEqual(['oggi-alta', 'oggi-bassa', 'oggi-normale'])
     expect(g.domani.map((t) => t.id)).toEqual(['domani'])
     expect(g.prossimi.map((t) => t.id)).toEqual(['poi'])
     expect(g.senzaData.map((t) => t.id)).toEqual(['libero'])
@@ -46,7 +46,7 @@ describe('Task', () => {
     expect(leggiTestoVeloce('Riunione domenica', '2026-10-11', 7).scadenza).toBe('2026-10-18')
     expect(leggiTestoVeloce('Ricetta alle 18', '2026-10-11', 7)).toMatchObject({ titolo: 'Ricetta', scadenza: undefined, minuto: 1080 })
     expect(leggiTestoVeloce('Leggere linee guida', '2026-10-11', 7)).toEqual({ titolo: 'Leggere linee guida', priorita: undefined, scadenza: undefined, minuto: undefined })
-    expect(prioritaDa('normale')).toBe('media')
+    expect(prioritaDa('normale')).toBe('nessuna')
   })
 })
 

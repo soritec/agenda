@@ -6,11 +6,10 @@ import { useCollezione } from '../../../dati/hooks'
 import type { Attivita } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { vai } from '../../../interfaccia/navigazione'
-import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti } from '../../turni/supporto'
 import {
   AREE, areaDa, completa, leggiTestoVeloce, perScheda, piuGiorni, PRIORITA, prioritaDa, RIPETIZIONI, ripetizioneDa, SCHEDE, TITOLI_AREA,
-  TITOLI_PRIORITA, TITOLI_RIPETIZIONE, TITOLI_SCHEDA, type Area, type Priorita, type Ripetizione, type Scheda,
+  SEGNI_PRIORITA, TITOLI_PRIORITA, TITOLI_RIPETIZIONE, TITOLI_SCHEDA, type Area, type Priorita, type Ripetizione, type Scheda,
 } from '../logica'
 
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
@@ -50,31 +49,42 @@ const SPOSTAMENTI: Spostamento[] = [
   { titolo: 'Dopodomani', giorno: (o) => piuGiorni(o, 2) },
 ]
 
-/** Una riga: cerchio da spuntare, titolo, eventuale barra rossa della priorità alta. */
-function RigaTask({ t, oggiChiave, mostraGiorno, gestori, eraPressione }: {
-  t: Attivita; oggiChiave: string; mostraGiorno?: boolean
-  gestori?: ReturnType<typeof usePressioneLunga>['gestori']; eraPressione?: () => boolean
-}) {
+/** Punti esclamativi rossi della priorità (niente se non c'è). */
+export function SegnoPriorita({ t }: { t: Attivita }) {
+  const segno = SEGNI_PRIORITA[prioritaDa(t.priorita)]
+  return segno && !t.completataIl ? <span className="bandierina" aria-label={`Priorità ${TITOLI_PRIORITA[prioritaDa(t.priorita)].toLowerCase()}`}>{segno}</span> : null
+}
+
+async function eliminaTask(t: Attivita) {
+  await elimina('attivita', t.id)
+  mostraAvviso(`Eliminato: ${t.titolo}`, () => void ripristina('attivita', t.id))
+}
+
+/** Una riga: cerchio da spuntare, titolo con i punti esclamativi, × per eliminare. Tenendo premuto si apre la scheda. */
+function RigaTask({ t, oggiChiave, mostraGiorno }: { t: Attivita; oggiChiave: string; mostraGiorno?: boolean }) {
   const ritardo = !t.completataIl && t.scadenza && t.scadenza < oggiChiave
-  const passiFatti = t.passi?.filter((p) => p.fatto).length ?? 0
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const apri = () => vai(`#/task/${t.id}`)
   const dettagli = [
     ritardo ? `in ritardo · era per ${quando(t, oggiChiave)}` : mostraGiorno ? quando(t, oggiChiave) : t.minuto !== undefined ? orario(t.minuto) : '',
     ripetizioneDa(t.ripeti) !== 'mai' ? `↻ ${TITOLI_RIPETIZIONE[ripetizioneDa(t.ripeti)].toLowerCase()}` : '',
-    t.passi?.length ? `${passiFatti}/${t.passi.length} passi` : '',
   ].filter(Boolean)
   return (
-    <div className={`riga riga-task${t.completataIl ? ' conclusa' : ''}`} {...(gestori ? gestori(t.id) : {})}>
-      {prioritaDa(t.priorita) === 'alta' && !t.completataIl && <span className="barra-priorita" aria-label="Priorità alta" />}
-      <button type="button" className={`spunta${t.completataIl ? ' fatta' : ''}`}
+    <div className={`riga riga-task${t.completataIl ? ' conclusa' : ''}`}
+      onPointerDown={() => { clearTimeout(timer.current); timer.current = setTimeout(apri, 450) }}
+      onPointerUp={() => clearTimeout(timer.current)} onPointerLeave={() => clearTimeout(timer.current)} onPointerCancel={() => clearTimeout(timer.current)}
+      onContextMenu={(e) => { e.preventDefault(); apri() }}>
+      <button type="button" className={`spunta${t.completataIl ? ' fatta' : ''}`} onPointerDown={(e) => e.stopPropagation()}
         aria-label={t.completataIl ? `Riapri ${t.titolo}` : `Segna fatto ${t.titolo}`} onClick={() => void segnaFatto(t)}>
         {t.completataIl ? '✓' : ''}
       </button>
-      <a className="crescente" href={`#/task/${t.id}`} style={{ color: 'inherit' }} onClick={(e) => { if (eraPressione?.()) e.preventDefault() }}>
-        <span style={{ fontWeight: 600, textDecoration: t.completataIl ? 'line-through' : undefined }}>{t.titolo}</span>
+      <a className="crescente" href={`#/task/${t.id}`} style={{ color: 'inherit' }}>
+        <span style={{ fontWeight: 600, textDecoration: t.completataIl ? 'line-through' : undefined }}><SegnoPriorita t={t} />{t.titolo}</span>
         {dettagli.length > 0 && (
           <span className="secondario piccolo" style={ritardo ? { color: 'var(--pericolo)', fontWeight: 600 } : undefined}>{dettagli.join(' · ')}</span>
         )}
       </a>
+      <button type="button" className="elimina-task" aria-label={`Elimina ${t.titolo}`} onPointerDown={(e) => e.stopPropagation()} onClick={() => void eliminaTask(t)}>×</button>
     </div>
   )
 }
@@ -95,7 +105,7 @@ function NuovoTask({ giornoPredefinito, oggiChiave }: { giornoPredefinito: strin
     setTesto('')
     setGiorno(null)
     setMenu(false)
-    await salva('attivita', { titolo: letto.titolo, scadenza, minuto: scadenza ? letto.minuto : undefined, priorita: letto.priorita ?? 'media', area: 'personale' })
+    await salva('attivita', { titolo: letto.titolo, scadenza, minuto: scadenza ? letto.minuto : undefined, priorita: letto.priorita ?? 'nessuna', area: 'personale' })
     if (scadenza !== giornoPredefinito) mostraAvviso(scadenza ? `Programmato per ${titoloGiorno(scadenza, oggiChiave).toLowerCase()}` : 'Aggiunto ai task senza data')
   }
   /** Con il testo già scritto aggiunge subito; altrimenti ricorda il giorno per il prossimo Invio. */
@@ -131,75 +141,14 @@ function NuovoTask({ giornoPredefinito, oggiChiave }: { giornoPredefinito: strin
   )
 }
 
-/** Menu che si apre tenendo premuto un task (o con il clic destro): priorità, sposta, apri, elimina. */
-function MenuRapido({ t, oggiChiave, onChiudi }: { t: Attivita; oggiChiave: string; onChiudi: () => void }) {
-  const [scegli, setScegli] = useState(t.scadenza && t.scadenza > oggiChiave ? t.scadenza : piuGiorni(oggiChiave, 3))
-  async function sposta(giorno: string | undefined) {
-    await salva('attivita', { ...t, scadenza: giorno, minuto: giorno ? t.minuto : undefined, ripeti: giorno ? t.ripeti : undefined })
-    onChiudi()
-    mostraAvviso(giorno ? `Spostato a ${titoloGiorno(giorno, oggiChiave).toLowerCase()}` : 'Spostato in Senza data', () => void salva('attivita', t))
-  }
-  return (
-    <Foglio aperto titolo="Task" onChiudi={onChiudi}>
-      <div className="modulo">
-        <strong style={{ fontSize: 17 }}>{t.titolo}</strong>
-        <div className="campo">
-          <span>Priorità</span>
-          <div className="riga-azioni" role="group" aria-label="Priorità">
-            {PRIORITA.map((p) => (
-              <button key={p} type="button" className={`pillola priorita-scelta p-${p}`} aria-pressed={prioritaDa(t.priorita) === p}
-                onClick={() => void salva('attivita', { ...t, priorita: p }).then(onChiudi)}>{TITOLI_PRIORITA[p]}</button>
-            ))}
-          </div>
-        </div>
-        <div className="lista menu-azioni">
-          {t.scadenza !== oggiChiave && <button type="button" className="riga" onClick={() => void sposta(oggiChiave)}>Sposta a oggi</button>}
-          {SPOSTAMENTI.map((s) => s.giorno(oggiChiave) !== t.scadenza && (
-            <button key={s.titolo} type="button" className="riga" onClick={() => void sposta(s.giorno(oggiChiave))}>Sposta a {s.titolo.toLowerCase()}</button>
-          ))}
-          <div className="riga" style={{ cursor: 'default' }}>
-            <span className="crescente">Altro giorno</span>
-            <input type="date" value={scegli} aria-label="Giorno" onChange={(e) => setScegli(e.target.value)} className="data-piccola" />
-            <button type="button" className="pulsante piccolo" disabled={!giornoDaChiave(scegli)} onClick={() => void sposta(scegli)}>Sposta</button>
-          </div>
-          {t.scadenza && <button type="button" className="riga" onClick={() => void sposta(undefined)}>Togli la data</button>}
-          <a className="riga" href={`#/task/${t.id}`} onClick={onChiudi}>Apri la scheda</a>
-          <button type="button" className="riga" style={{ color: 'var(--pericolo)' }}
-            onClick={() => void elimina('attivita', t.id).then(() => { onChiudi(); mostraAvviso(`Eliminato: ${t.titolo}`, () => void ripristina('attivita', t.id)) })}>
-            Elimina
-          </button>
-        </div>
-      </div>
-    </Foglio>
-  )
-}
-
 export function Task({ apertoId, giorno, minuto, scheda: schedaParam }: { apertoId?: string; giorno?: string | null; minuto?: string | null; scheda?: string | null }) {
   const tutti = useCollezione('attivita')
   const oggiChiave = chiaveGiorno(oggi())
   const scheda: Scheda = (SCHEDE as readonly string[]).includes(schedaParam ?? '') ? (schedaParam as Scheda) : 'oggi'
-  const pressione = usePressioneLunga()
-  const [menuPer, setMenuPer] = useState<string>()
 
   const s = perScheda(tutti ?? [], oggiChiave, inizioDi(oggiChiave))
   const inModifica = apertoId && apertoId !== 'nuovo' ? tutti?.find((t) => t.id === apertoId) : undefined
-  const perMenu = tutti?.find((t) => t.id === menuPer)
-  // La pressione prolungata apre il menu rapido (al posto della ×).
-  const gestori = (id: string) => {
-    const g = pressione.gestori(id)
-    return {
-      ...g,
-      onPointerDown: () => { g.onPointerDown(); clearTimeout(attesa.current); attesa.current = setTimeout(() => setMenuPer(id), 460) },
-      onPointerUp: () => { g.onPointerUp(); clearTimeout(attesa.current) },
-      onPointerLeave: () => { g.onPointerLeave(); clearTimeout(attesa.current) },
-      onPointerCancel: () => { g.onPointerCancel(); clearTimeout(attesa.current) },
-      onContextMenu: (e: { preventDefault: () => void }) => { e.preventDefault(); setMenuPer(id) },
-    }
-  }
-  const attesa = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const riga = (t: Attivita, mostraGiorno = false) => (
-    <RigaTask key={t.id} t={t} oggiChiave={oggiChiave} mostraGiorno={mostraGiorno} gestori={gestori} eraPressione={pressione.eraPressione} />
-  )
+  const riga = (t: Attivita) => <RigaTask key={t.id} t={t} oggiChiave={oggiChiave} />
   const predefinito = scheda === 'oggi' ? oggiChiave : scheda === 'programmati' ? piuGiorni(oggiChiave, 1) : undefined
 
   return (
@@ -243,10 +192,9 @@ export function Task({ apertoId, giorno, minuto, scheda: schedaParam }: { aperto
       )}
       <span className="secondario piccolo">
         Scrivi e premi Invio: il task va {scheda === 'oggi' ? 'su oggi' : scheda === 'programmati' ? 'su domani' : 'senza data'}. "Più tardi" per un altro giorno.
-        Tieni premuto un task (sul Mac clic destro) per priorità, spostarlo o eliminarlo.
+        Tocca o tieni premuto un task per aprire la scheda (priorità, giorno, ora); × per eliminarlo.
       </span>
 
-      {perMenu && <MenuRapido key={perMenu.id} t={perMenu} oggiChiave={oggiChiave} onChiudi={() => { setMenuPer(undefined); pressione.setAttivo(undefined) }} />}
       {(apertoId === 'nuovo' || inModifica) && (
         <FormTask key={apertoId} record={inModifica} giorno={giorno ?? undefined} minuto={minuto ? Number(minuto) : undefined}
           onChiudi={() => (history.length > 1 ? history.back() : vai('#/task'))} />
@@ -262,18 +210,17 @@ function FormTask({ record, giorno, minuto, area, onChiudi }: { record?: Attivit
     area: record ? areaDa(record.area) : area ?? (parametroArea ? areaDa(parametroArea) : 'personale'),
     scadenza: record?.scadenza ?? giorno ?? '',
     ora: record?.minuto !== undefined ? orarioDaMinuti(record.minuto) : minuto !== undefined ? orarioDaMinuti(minuto) : '',
-    priorita: record ? prioritaDa(record.priorita) : ('media' as Priorita),
+    priorita: record ? prioritaDa(record.priorita) : ('nessuna' as Priorita),
     ripeti: ripetizioneDa(record?.ripeti),
     passi: record?.passi ?? [],
     note: record?.note ?? '',
   })
-  const [nuovoPasso, setNuovoPasso] = useState('')
   const oraValida = b.ora === '' || minutiDaOrario(b.ora) !== undefined
   const valido = b.titolo.trim() !== '' && (b.scadenza === '' || !!giornoDaChiave(b.scadenza)) && oraValida
 
   async function conferma() {
     if (!valido) return
-    const passi = [...b.passi, ...(nuovoPasso.trim() ? [{ testo: nuovoPasso.trim() }] : [])]
+    const passi = b.passi
     await salva('attivita', {
       ...record, titolo: b.titolo.trim(), area: b.area, priorita: b.priorita,
       scadenza: b.scadenza || undefined, minuto: b.scadenza && b.ora ? minutiDaOrario(b.ora) : undefined,
@@ -290,6 +237,16 @@ function FormTask({ record, giorno, minuto, area, onChiudi }: { record?: Attivit
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
       <div className="modulo">
         <Campo etichetta="Cosa devi fare"><input value={b.titolo} autoFocus={!record} placeholder="es. Preparare le slide per il journal club" onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>
+        <div className="campo">
+          <span>Priorità</span>
+          <div className="riga-azioni" role="group" aria-label="Priorità">
+            {[...PRIORITA].reverse().map((p) => (
+              <button key={p} type="button" className={`pillola priorita-scelta p-${p}`} aria-pressed={b.priorita === p} onClick={() => setB({ ...b, priorita: p })}>
+                {SEGNI_PRIORITA[p] && <span className="bandierina">{SEGNI_PRIORITA[p]}</span>}{TITOLI_PRIORITA[p]}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="campo">
           <span>Area</span>
           <div className="riga-azioni" role="group" aria-label="Area">
@@ -319,33 +276,6 @@ function FormTask({ record, giorno, minuto, area, onChiudi }: { record?: Attivit
             </select>
           </Campo>
         )}
-        <div className="campo">
-          <span>Priorità</span>
-          <div className="riga-azioni" role="group" aria-label="Priorità">
-            {PRIORITA.map((p) => (
-              <button key={p} type="button" className={`pillola priorita-scelta p-${p}`} aria-pressed={b.priorita === p} onClick={() => setB({ ...b, priorita: p })}>{TITOLI_PRIORITA[p]}</button>
-            ))}
-          </div>
-        </div>
-        <div className="campo">
-          <span>Passi (facoltativi)</span>
-          {b.passi.length > 0 && (
-            <div className="lista">
-              {b.passi.map((p, i) => (
-                <div key={i} className="riga" style={{ cursor: 'default', padding: '8px 0' }}>
-                  <input type="checkbox" checked={Boolean(p.fatto)} aria-label="Fatto"
-                    onChange={(e) => setB({ ...b, passi: b.passi.map((x, j) => (j === i ? { ...x, fatto: e.target.checked || undefined } : x)) })}
-                    style={{ width: 20, height: 20, accentColor: 'var(--primario)' }} />
-                  <span className="crescente" style={{ textDecoration: p.fatto ? 'line-through' : undefined }}>{p.testo}</span>
-                  <button type="button" className="elimina-riga" aria-label={`Togli ${p.testo}`} onClick={() => setB({ ...b, passi: b.passi.filter((_, j) => j !== i) })}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
-          <input value={nuovoPasso} placeholder="Aggiungi un passo e premi Invio" enterKeyHint="enter"
-            onChange={(e) => setNuovoPasso(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && nuovoPasso.trim()) { e.preventDefault(); setB({ ...b, passi: [...b.passi, { testo: nuovoPasso.trim() }] }); setNuovoPasso('') } }} />
-        </div>
         <Campo etichetta="Note"><textarea value={b.note} onChange={(e) => setB({ ...b, note: e.target.value })} /></Campo>
         <NotaPrivacy />
         {record && (
@@ -384,7 +314,7 @@ export function TaskDiOggi() {
     const letto = leggiTestoVeloce(testo, oggiChiave, componenti(Date.now()).giornoSettimana)
     if (!letto.titolo) return
     setTesto('')
-    await salva('attivita', { titolo: letto.titolo, scadenza: letto.scadenza ?? oggiChiave, minuto: letto.minuto, priorita: letto.priorita ?? 'media', area: 'personale' })
+    await salva('attivita', { titolo: letto.titolo, scadenza: letto.scadenza ?? oggiChiave, minuto: letto.minuto, priorita: letto.priorita ?? 'nessuna', area: 'personale' })
   }
 
   if (!tutti) return null
@@ -397,12 +327,11 @@ export function TaskDiOggi() {
       <div className="lista">
         {elenco.map((t) => (
           <div key={t.id} className={`riga riga-task${t.completataIl ? ' conclusa' : ''}`}>
-            {prioritaDa(t.priorita) === 'alta' && !t.completataIl && <span className="barra-priorita" aria-label="Priorità alta" />}
             <button type="button" className={`spunta${t.completataIl ? ' fatta' : ''}`}
               aria-label={t.completataIl ? `Riapri ${t.titolo}` : `Segna fatto ${t.titolo}`} onClick={() => void segnaFatto(t)}>{t.completataIl ? '✓' : ''}</button>
             <a className="crescente" href={`#/task/${t.id}`} style={{ color: 'inherit' }}>
               <span style={{ fontWeight: 600, textDecoration: t.completataIl ? 'line-through' : undefined }}>
-                {t.titolo}
+                <SegnoPriorita t={t} />{t.titolo}
               </span>
               {(t.minuto !== undefined || (t.scadenza! < oggiChiave && !t.completataIl)) && (
                 <span className="secondario piccolo" style={t.scadenza! < oggiChiave && !t.completataIl ? { color: 'var(--pericolo)', fontWeight: 600 } : undefined}>

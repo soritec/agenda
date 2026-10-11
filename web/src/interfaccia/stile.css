@@ -575,3 +575,8 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .menu-piu-tardi .scegli-giorno input { flex: 1; min-height: 36px; padding: 4px 8px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); }
 .menu-azioni .riga { font-size: 15px; }
 .segmenti a[role="tab"] { flex: 1 1 0; }
+.bandierina { color: #C0392B; font-weight: 800; margin-right: 6px; letter-spacing: -0.04em; }
+.elimina-task { width: 28px; height: 28px; border-radius: 14px; border: none; background: none; color: var(--testo-2); font-size: 18px; line-height: 1; cursor: pointer; flex-shrink: 0; padding: 0; align-self: center; }
+.elimina-task:hover { background: #F6DADA; color: var(--pericolo); }
+.riga-task { -webkit-user-select: none; user-select: none; }
+.pillola.priorita-scelta[aria-pressed="true"].p-nessuna { background: var(--accento-tenue); border-color: var(--primario); font-weight: 700; }
