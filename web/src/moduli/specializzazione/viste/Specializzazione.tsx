@@ -79,29 +79,29 @@ export function Specializzazione() {
 
       <div className="sezioni-spec">
         <a className="riquadro-sezione" href="#/specializzazione/logbook">
-          <span className="titolo"><span className="icona-sezione" style={{ color: '#1C7A5C' }}><IconaLogbook dimensione={19} /></span>Logbook</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#1C7A5C', background: '#E1F2EA' }}><IconaLogbook dimensione={18} /></span>Logbook</span>
           <span className="valore">{c.totale}</span>
           <span className="dettaglio">{c.perRuolo.primo} da 1° operatore{anno && c.perAnno.get(anno) ? ` · ${c.perAnno.get(anno)} quest'anno` : ''}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/esami">
-          <span className="titolo"><span className="icona-sezione" style={{ color: '#A4472A' }}><IconaCappello dimensione={19} /></span>Esami</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#A4472A', background: '#F8E6DF' }}><IconaCappello dimensione={18} /></span>Esami</span>
           <span className="dettaglio">{prossimoEsame ? <><strong style={{ color: 'var(--testo)' }}>{prossimoEsame.titolo}</strong><br />{dataBreve(prossimoEsame.giorno)}</> : 'Nessun esame in programma'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/lezioni">
-          <span className="titolo"><span className="icona-sezione" style={{ color: '#2D6AA6' }}><IconaLavagna dimensione={19} /></span>Lezioni</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#2D6AA6', background: '#E3EEF9' }}><IconaLavagna dimensione={18} /></span>Lezioni</span>
           <span className="dettaglio">{prossimaLezione ? <><strong style={{ color: 'var(--testo)' }}>{prossimaLezione.titolo}</strong><br />{dataBreve(prossimaLezione.giorno)}</> : 'Nessuna lezione in programma'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/tasse">
-          <span className="titolo"><span className="icona-sezione" style={{ color: '#8A6516' }}><IconaEuro dimensione={19} /></span>Tasse {statoPeggiore && statoPeggiore !== 'daPagare' && <span className={`etichetta-tipo colore-${statoPeggiore}`}>{statoPeggiore === 'scaduta' ? 'scaduta' : 'in scadenza'}</span>}</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#8A6516', background: '#F7EEDB' }}><IconaEuro dimensione={18} /></span>Tasse {statoPeggiore && statoPeggiore !== 'daPagare' && <span className={`etichetta-tipo colore-${statoPeggiore}`}>{statoPeggiore === 'scaduta' ? 'scaduta' : 'in scadenza'}</span>}</span>
           <span className="valore">{daPagare.length ? F.importo(totaleDaPagare) : '—'}</span>
           <span className="dettaglio">{daPagare.length ? `${daPagare.length} da pagare` : 'Niente da pagare'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/calcolatori">
-          <span className="titolo"><span className="icona-sezione" style={{ color: '#534AB7' }}><IconaCalcolatrice dimensione={19} /></span>Calcolatori</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#534AB7', background: '#ECEAFB' }}><IconaCalcolatrice dimensione={18} /></span>Calcolatori</span>
           <span className="dettaglio">EG e DPP, peso fetale, Bishop, Robson, rischio TEV, β-hCG e altri</span>
         </a>
         <a className="riquadro-sezione in-arrivo" href="#/specializzazione/ricerca">
-          <span className="titolo"><span className="icona-sezione" style={{ color: '#6B6862' }}><IconaMicroscopio dimensione={19} /></span>Ricerca</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#6B6862', background: '#EEECE8' }}><IconaMicroscopio dimensione={18} /></span>Ricerca</span>
           <span className="dettaglio">Da sviluppare più avanti</span>
         </a>
       </div>

@@ -679,3 +679,6 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .icona-task-ore { color: #8C6BB0; }
 .riga-task-giorno { min-height: 26px; }
 @media (hover: hover) { .riga-giornata:hover .piu-nota { display: block; } }
+.icona-sezione.quadratino { width: 32px; height: 32px; border-radius: 9px; align-items: center; justify-content: center; }
+.riquadro-sezione .titolo:has(.quadratino) { gap: 10px; }
+@media (prefers-color-scheme: dark) { .icona-sezione.quadratino { filter: brightness(0.9); background: rgba(255,255,255,0.08) !important; } }
