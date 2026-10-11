@@ -16,6 +16,8 @@ describe('Journaling', () => {
       p('c', '2026-09-30', { umore: 'cosi' }), p('d', '2025-10-11', { titolo: 'Primo giorno', testo: '<p>Specializzazione iniziata</p>', etichette: ['università'] }),
     ]
     expect([...umoriDelMese(pagine, '2026-10')]).toEqual([['2026-10-03', 'pesante']])
+    expect([...umoriDelMese(pagine, '2026-10', [{ giorno: '2026-10-03', umore: 'bene', modificatoIl: 9 }, { giorno: '2026-10-04', umore: 'cosi', modificatoIl: 1 }])])
+      .toEqual([['2026-10-03', 'bene'], ['2026-10-04', 'cosi']])
     expect(unAnnoFa(pagine, '2026-10-11').map((x) => x.id)).toEqual(['d'])
     expect(cerca(pagine, 'specializzazione UNIVERSITA').map((x) => x.id)).toEqual(['d'])
     expect(cerca(pagine, '   ')).toEqual([])

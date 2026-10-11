@@ -45,10 +45,10 @@ export function testoSemplice(html: string): string {
   return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
-/** Umore di ogni giorno del mese: quello dell'ultima pagina scritta quel giorno. */
-export function umoriDelMese(pagine: PaginaDiario[], mese: string): Map<string, Umore> {
+/** Umore di ogni giorno del mese: quello segnato per ultimo (dal calendario o in una pagina scritta quel giorno). */
+export function umoriDelMese(pagine: Pick<PaginaDiario, 'giorno' | 'umore' | 'modificatoIl'>[], mese: string, segnati: Pick<PaginaDiario, 'giorno' | 'umore' | 'modificatoIl'>[] = []): Map<string, Umore> {
   const m = new Map<string, { u: Umore; t: number }>()
-  for (const p of pagine) {
+  for (const p of [...pagine, ...segnati]) {
     const u = umoreDa(p.umore)
     if (!u || !p.giorno.startsWith(mese)) continue
     const prima = m.get(p.giorno)

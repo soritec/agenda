@@ -245,6 +245,13 @@ export interface Taccuino extends Base {
   ordine: number
 }
 
+/** Umore di un giorno segnato direttamente dal calendario (senza scrivere una pagina). Id = giorno. */
+export interface UmoreGiorno extends Base {
+  giorno: string
+  /** 'bene' | 'cosi' | 'pesante' */
+  umore: string
+}
+
 /** Pagina di un taccuino (foto come allegati "pagina:<id>"). */
 export interface PaginaDiario extends Base {
   taccuinoId: string
@@ -452,6 +459,7 @@ export interface Collezioni {
   sessioniPiano: SessionePiano
   taccuini: Taccuino
   pagineDiario: PaginaDiario
+  umoriGiorno: UmoreGiorno
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno']

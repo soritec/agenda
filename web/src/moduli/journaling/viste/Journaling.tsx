@@ -76,6 +76,8 @@ export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; pagi
   const taccuini = useCollezione('taccuini')
   const pagine = useCollezione('pagineDiario')
   const allegati = useCollezione('allegati')
+  const umoriSegnati = useCollezione('umoriGiorno')
+  const [giornoUmore, setGiornoUmore] = useState<string>()
   const foto = useFotoCopertine(taccuini, allegati)
   const [q, setQ] = useState('')
   const [modifica, setModifica] = useState<{ t?: Taccuino }>()
@@ -100,7 +102,7 @@ export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; pagi
   }
 
   const risultati = cerca(visibili, q)
-  const umori = umoriDelMese(visibili, mese)
+  const umori = umoriDelMese(visibili, mese, umoriSegnati ?? [])
   const ricordi = unAnnoFa(visibili, oggiChiave)
   const [anno, m] = mese.split('-').map(Number) as [number, number]
 
@@ -159,10 +161,28 @@ export function Journaling({ taccuinoId, paginaId }: { taccuinoId?: string; pagi
                 {celleMese(anno, m).map((g, i) => {
                   if (!g) return <span key={i} />
                   const k = chiaveGiorno(g), u = umori.get(k)
-                  return <span key={k} className={`giorno-umore${k === oggiChiave ? ' oggi' : ''}`} style={u ? { background: COLORI_UMORE[u] } : undefined} title={u ? TITOLI_UMORE[u] : undefined}>{g.giorno}</span>
+                  const futuro = k > oggiChiave
+                  return (
+                    <button key={k} type="button" disabled={futuro} className={`giorno-umore${k === oggiChiave ? ' oggi' : ''}${giornoUmore === k ? ' scelto' : ''}`}
+                      style={u ? { background: COLORI_UMORE[u] } : undefined} title={u ? TITOLI_UMORE[u] : futuro ? undefined : 'Segna l’umore'}
+                      onClick={() => setGiornoUmore(giornoUmore === k ? undefined : k)}>{g.giorno}</button>
+                  )
                 })}
               </div>
-              <div className="legenda">{UMORI.map((u) => <span key={u}><span className="pallino-fonte" style={{ background: COLORI_UMORE[u] }} />{TITOLI_UMORE[u]}</span>)}</div>
+              {giornoUmore ? (
+                <div className="scegli-umore">
+                  <span className="secondario piccolo">{giornoUmore === oggiChiave ? 'Oggi' : F.dataBreve(ms(giornoUmore))}:</span>
+                  {UMORI.map((u) => (
+                    <button key={u} type="button" className="pillola piccola" style={{ background: COLORI_UMORE[u], borderColor: COLORI_UMORE[u], color: '#2A2622', fontWeight: umori.get(giornoUmore) === u ? 800 : 500 }}
+                      onClick={() => { void salva('umoriGiorno', { id: giornoUmore, giorno: giornoUmore, umore: u }); setGiornoUmore(undefined) }}>{TITOLI_UMORE[u]}</button>
+                  ))}
+                  {(umoriSegnati ?? []).some((x) => x.id === giornoUmore) && (
+                    <button type="button" className="link piccolo" onClick={() => { void elimina('umoriGiorno', giornoUmore); setGiornoUmore(undefined) }}>Togli</button>
+                  )}
+                </div>
+              ) : (
+                <div className="legenda">{UMORI.map((u) => <span key={u}><span className="pallino-fonte" style={{ background: COLORI_UMORE[u] }} />{TITOLI_UMORE[u]}</span>)}<span className="secondario">· tocca un giorno per segnarlo</span></div>
+              )}
             </section>
             <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <h2 className="titolo-sezione titolo-con-icona"><IconaStoria dimensione={18} /> Un anno fa</h2>
