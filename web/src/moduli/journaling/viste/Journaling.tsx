@@ -143,14 +143,32 @@ export function Journaling({ taccuinoId, paginaId, scheda: schedaParam, meseHabi
         </section>
       ) : (
         <>
+          {scheda !== 'tutto' && (
           <section className="sezione-taccuini">
-            {scheda === 'tutto' && (
-              <div className="testa-scheda-compatta">
-                <h2 className="titolo-sezione">I miei taccuini</h2>
-                <a href="#/journaling?scheda=taccuini" className="piccolo">Vedi tutti ›</a>
-              </div>
-            )}
-            <div className={`scaffale${scheda === 'tutto' ? ' in-riga' : ''}`}>
+            <div className="scaffale">
+              {elenco.map((t) => (
+                <button key={t.id} type="button" className="libro" onClick={() => apri(t)} aria-label={`Apri ${t.nome}`}>
+                  <Copertina t={t} foto={foto.get(t.id)}>
+                    <span className="icona-copertina"><Icona nome={t.icona} dimensione={20} /></span>
+                    <span className="nome-copertina">{t.nome}</span>
+                    <span className="info-copertina">{t.lucchetto && <IconaLucchetto dimensione={13} />} {(() => { const n = (pagine ?? []).filter((p) => p.taccuinoId === t.id).length; return `${n} ${n === 1 ? 'pagina' : 'pagine'}` })()}</span>
+                  </Copertina>
+                </button>
+              ))}
+              <button type="button" className="libro nuovo" onClick={() => setModifica({})}>+ Nuovo<br />taccuino</button>
+            </div>
+          </section>
+          )}
+
+          {scheda === 'tutto' ? (
+            <>
+              <div className="journal-alto">
+          <section className="scheda sezione-taccuini">
+            <div className="testa-scheda-compatta">
+              <h2 className="titolo-sezione">I miei taccuini</h2>
+              <a href="#/journaling?scheda=taccuini" className="piccolo">Vedi tutti ›</a>
+            </div>
+            <div className="scaffale in-riga">
               {elenco.map((t) => (
                 <button key={t.id} type="button" className="libro" onClick={() => apri(t)} aria-label={`Apri ${t.nome}`}>
                   <Copertina t={t} foto={foto.get(t.id)}>
@@ -164,13 +182,9 @@ export function Journaling({ taccuinoId, paginaId, scheda: schedaParam, meseHabi
             </div>
           </section>
 
-          {scheda === 'tutto' ? (
-            <div className="journal-griglia">
-              <section className="scheda colonna-habit"><HabitTracker meseParam={meseHabit} base="#/journaling?scheda=tutto" /></section>
-              <div className="colonna-diario">
             <section className="scheda scheda-umore">
               <div className="testa-scheda-compatta">
-                <h2 className="titolo-sezione">Umore di {F.mese(istante(anno, m, 1))}</h2>
+                <h2 className="titolo-sezione">Umore <span className="secondario piccolo" style={{ fontWeight: 400 }}>{F.mese(istante(anno, m, 1))}</span></h2>
                 <span className="riga-azioni">
                   <button type="button" className="freccia-piccola" aria-label="Mese precedente" onClick={() => setMese(new Date(Date.UTC(anno, m - 2, 1)).toISOString().slice(0, 7))}>‹</button>
                   <button type="button" className="freccia-piccola" aria-label="Mese successivo" onClick={() => setMese(new Date(Date.UTC(anno, m, 1)).toISOString().slice(0, 7))}>›</button>
@@ -216,12 +230,13 @@ export function Journaling({ taccuinoId, paginaId, scheda: schedaParam, meseHabi
               ))}
             </section>
               </div>
-            </div>
+              <section className="scheda colonna-habit"><HabitTracker meseParam={meseHabit} base="#/journaling?scheda=tutto" /></section>
+            </>
           ) : (
             <div className="riga-diario">
             <section className="scheda scheda-umore">
               <div className="testa-scheda-compatta">
-                <h2 className="titolo-sezione">Umore di {F.mese(istante(anno, m, 1))}</h2>
+                <h2 className="titolo-sezione">Umore <span className="secondario piccolo" style={{ fontWeight: 400 }}>{F.mese(istante(anno, m, 1))}</span></h2>
                 <span className="riga-azioni">
                   <button type="button" className="freccia-piccola" aria-label="Mese precedente" onClick={() => setMese(new Date(Date.UTC(anno, m - 2, 1)).toISOString().slice(0, 7))}>‹</button>
                   <button type="button" className="freccia-piccola" aria-label="Mese successivo" onClick={() => setMese(new Date(Date.UTC(anno, m, 1)).toISOString().slice(0, 7))}>›</button>

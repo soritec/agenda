@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { giornoDi, istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva } from '../../../dati/archivio'
@@ -25,6 +25,18 @@ function useGiorniProtetti(): Set<string> {
     for (const g of giornate ?? []) if (tipoGiornataDa(g.tipo) === 'smontoNotte') s.add(g.giorno)
     return s
   }, [turni, giornate])
+}
+
+function useStretto() {
+  const query = '(max-width: 700px)'
+  const [stretto, setStretto] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const cambia = () => setStretto(m.matches)
+    m.addEventListener('change', cambia)
+    return () => m.removeEventListener('change', cambia)
+  }, [])
+  return stretto
 }
 
 function useDati() {
@@ -88,8 +100,14 @@ export function HabitTracker({ meseParam, base = '#/journaling?scheda=habit', so
   const oggiChiave = chiaveGiorno(oggi())
   const mese = meseParam && /^\d{4}-\d{2}$/.test(meseParam) ? meseParam : oggiChiave.slice(0, 7)
   const [modifica, setModifica] = useState<{ a?: Abitudine }>()
-  const giorni: string[] = []
-  for (let g = `${mese}-01`; g.startsWith(mese); g = piuGiorni(g, 1)) giorni.push(g)
+  const tuttiGiorni: string[] = []
+  for (let g = `${mese}-01`; g.startsWith(mese); g = piuGiorni(g, 1)) tuttiGiorni.push(g)
+  // Su iPhone il mese intero non entra: si vedono due settimane alla volta, che finiscono oggi.
+  const stretto = useStretto()
+  const ultimoUtile = tuttiGiorni.includes(oggiChiave) ? tuttiGiorni.indexOf(oggiChiave) : tuttiGiorni.length - 1
+  const [fineFinestra, setFineFinestra] = useState<number>()
+  const fine = Math.min(tuttiGiorni.length - 1, Math.max(13, fineFinestra ?? ultimoUtile))
+  const giorni = stretto ? tuttiGiorni.slice(Math.max(0, fine - 13), fine + 1) : tuttiGiorni
   const [anno, m] = mese.split('-').map(Number) as [number, number]
   const precedente = new Date(Date.UTC(anno, m - 2, 1)).toISOString().slice(0, 7)
   const successivo = new Date(Date.UTC(anno, m, 1)).toISOString().slice(0, 7)
@@ -127,6 +145,13 @@ export function HabitTracker({ meseParam, base = '#/journaling?scheda=habit', so
 
       {elenco.length > 0 && (
         <section className="scheda griglia-abitudini-scorri">
+          {stretto && (
+            <div className="riga-azioni centrata">
+              <button type="button" className="freccia-piccola" aria-label="Giorni prima" disabled={fine <= 13} onClick={() => setFineFinestra(Math.max(13, fine - 7))}>‹</button>
+              <span className="secondario piccolo">{Number(giorni[0]!.slice(8, 10))}–{Number(giorni.at(-1)!.slice(8, 10))} {F.mese(istante(anno, m, 1)).split(' ')[0]}</span>
+              <button type="button" className="freccia-piccola" aria-label="Giorni dopo" disabled={fine >= tuttiGiorni.length - 1} onClick={() => setFineFinestra(Math.min(tuttiGiorni.length - 1, fine + 7))}>›</button>
+            </div>
+          )}
           <table className="griglia-abitudini">
             <thead>
               <tr>
