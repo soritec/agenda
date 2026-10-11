@@ -12,7 +12,7 @@ import {
   IconaLucchetto, IconaLuna, IconaMusica, IconaScarica, IconaSole, IconaSpecializzazione, IconaSpunta, IconaStella, IconaStoria, IconaTazza,
 } from '../../../interfaccia/icone'
 import { mostraAllegato } from '../../../interfaccia/Visualizzatore'
-import { AbitudiniDiOggi, HabitTracker } from '../../abitudini/viste/HabitTracker'
+import { HabitTracker } from '../../abitudini/viste/HabitTracker'
 import { vai } from '../../../interfaccia/navigazione'
 import { celleMese, chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import {
@@ -143,26 +143,37 @@ export function Journaling({ taccuinoId, paginaId, scheda: schedaParam, meseHabi
         </section>
       ) : (
         <>
-          <div className="scaffale">
-            {elenco.map((t) => (
-              <button key={t.id} type="button" className="libro" onClick={() => apri(t)} aria-label={`Apri ${t.nome}`}>
-                <Copertina t={t} foto={foto.get(t.id)}>
-                  <span className="icona-copertina"><Icona nome={t.icona} dimensione={22} /></span>
-                  <span className="nome-copertina">{t.nome}</span>
-                  <span className="info-copertina">{t.lucchetto && <IconaLucchetto dimensione={13} />} {(() => { const n = (pagine ?? []).filter((p) => p.taccuinoId === t.id).length; return `${n} ${n === 1 ? 'pagina' : 'pagine'}` })()}</span>
-                </Copertina>
-              </button>
-            ))}
-            <button type="button" className="libro nuovo" onClick={() => setModifica({})}>+ Nuovo taccuino</button>
-          </div>
+          <section className="sezione-taccuini">
+            {scheda === 'tutto' && (
+              <div className="testa-scheda-compatta">
+                <h2 className="titolo-sezione">I miei taccuini</h2>
+                <a href="#/journaling?scheda=taccuini" className="piccolo">Vedi tutti ›</a>
+              </div>
+            )}
+            <div className={`scaffale${scheda === 'tutto' ? ' in-riga' : ''}`}>
+              {elenco.map((t) => (
+                <button key={t.id} type="button" className="libro" onClick={() => apri(t)} aria-label={`Apri ${t.nome}`}>
+                  <Copertina t={t} foto={foto.get(t.id)}>
+                    <span className="icona-copertina"><Icona nome={t.icona} dimensione={20} /></span>
+                    <span className="nome-copertina">{t.nome}</span>
+                    <span className="info-copertina">{t.lucchetto && <IconaLucchetto dimensione={13} />} {(() => { const n = (pagine ?? []).filter((p) => p.taccuinoId === t.id).length; return `${n} ${n === 1 ? 'pagina' : 'pagine'}` })()}</span>
+                  </Copertina>
+                </button>
+              ))}
+              <button type="button" className="libro nuovo" onClick={() => setModifica({})}>+ Nuovo<br />taccuino</button>
+            </div>
+          </section>
 
-          <div className={`riga-diario${scheda === 'tutto' ? ' tre' : ''}`}>
-            <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div className="intestazione" style={{ alignItems: 'center' }}>
+          {scheda === 'tutto' ? (
+            <div className="journal-griglia">
+              <section className="scheda colonna-habit"><HabitTracker meseParam={meseHabit} base="#/journaling?scheda=tutto" /></section>
+              <div className="colonna-diario">
+            <section className="scheda scheda-umore">
+              <div className="testa-scheda-compatta">
                 <h2 className="titolo-sezione">Umore di {F.mese(istante(anno, m, 1))}</h2>
                 <span className="riga-azioni">
-                  <button type="button" className="pulsante tondo piccolo" aria-label="Mese precedente" onClick={() => setMese(new Date(Date.UTC(anno, m - 2, 1)).toISOString().slice(0, 7))}>‹</button>
-                  <button type="button" className="pulsante tondo piccolo" aria-label="Mese successivo" onClick={() => setMese(new Date(Date.UTC(anno, m, 1)).toISOString().slice(0, 7))}>›</button>
+                  <button type="button" className="freccia-piccola" aria-label="Mese precedente" onClick={() => setMese(new Date(Date.UTC(anno, m - 2, 1)).toISOString().slice(0, 7))}>‹</button>
+                  <button type="button" className="freccia-piccola" aria-label="Mese successivo" onClick={() => setMese(new Date(Date.UTC(anno, m, 1)).toISOString().slice(0, 7))}>›</button>
                 </span>
               </div>
               <div className="calendario-umore">
@@ -204,9 +215,59 @@ export function Journaling({ taccuinoId, paginaId, scheda: schedaParam, meseHabi
                 </a>
               ))}
             </section>
-            {scheda === 'tutto' && <AbitudiniDiOggi titolo />}
-          </div>
-          {scheda === 'tutto' && <HabitTracker meseParam={meseHabit} base="#/journaling?scheda=tutto" soloGriglia />}
+              </div>
+            </div>
+          ) : (
+            <div className="riga-diario">
+            <section className="scheda scheda-umore">
+              <div className="testa-scheda-compatta">
+                <h2 className="titolo-sezione">Umore di {F.mese(istante(anno, m, 1))}</h2>
+                <span className="riga-azioni">
+                  <button type="button" className="freccia-piccola" aria-label="Mese precedente" onClick={() => setMese(new Date(Date.UTC(anno, m - 2, 1)).toISOString().slice(0, 7))}>‹</button>
+                  <button type="button" className="freccia-piccola" aria-label="Mese successivo" onClick={() => setMese(new Date(Date.UTC(anno, m, 1)).toISOString().slice(0, 7))}>›</button>
+                </span>
+              </div>
+              <div className="calendario-umore">
+                {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((g, i) => <span key={i} className="secondario piccolo">{g}</span>)}
+                {celleMese(anno, m).map((g, i) => {
+                  if (!g) return <span key={i} />
+                  const k = chiaveGiorno(g), u = umori.get(k)
+                  const futuro = k > oggiChiave
+                  return (
+                    <button key={k} type="button" disabled={futuro} className={`giorno-umore${k === oggiChiave ? ' oggi' : ''}${giornoUmore === k ? ' scelto' : ''}`}
+                      style={u ? { background: COLORI_UMORE[u] } : undefined} title={u ? TITOLI_UMORE[u] : futuro ? undefined : 'Segna l’umore'}
+                      onClick={() => setGiornoUmore(giornoUmore === k ? undefined : k)}>{g.giorno}</button>
+                  )
+                })}
+              </div>
+              {giornoUmore ? (
+                <div className="scegli-umore">
+                  <span className="secondario piccolo">{giornoUmore === oggiChiave ? 'Oggi' : F.dataBreve(ms(giornoUmore))}:</span>
+                  {UMORI.map((u) => (
+                    <button key={u} type="button" className="pillola piccola" style={{ background: COLORI_UMORE[u], borderColor: COLORI_UMORE[u], color: '#2A2622', fontWeight: umori.get(giornoUmore) === u ? 800 : 500 }}
+                      onClick={() => { void salva('umoriGiorno', { id: giornoUmore, giorno: giornoUmore, umore: u }); setGiornoUmore(undefined) }}>{TITOLI_UMORE[u]}</button>
+                  ))}
+                  {(umoriSegnati ?? []).some((x) => x.id === giornoUmore) && (
+                    <button type="button" className="link piccolo" onClick={() => { void elimina('umoriGiorno', giornoUmore); setGiornoUmore(undefined) }}>Togli</button>
+                  )}
+                </div>
+              ) : (
+                <div className="legenda">{UMORI.map((u) => <span key={u}><span className="pallino-fonte" style={{ background: COLORI_UMORE[u] }} />{TITOLI_UMORE[u]}</span>)}<span className="secondario">· tocca un giorno per segnarlo</span></div>
+              )}
+            </section>
+            <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <h2 className="titolo-sezione titolo-con-icona"><IconaStoria dimensione={18} /> Un anno fa</h2>
+              {ricordi.length === 0 && <span className="secondario piccolo">Il {F.dataEstesa(ms(`${Number(oggiChiave.slice(0, 4)) - 1}${oggiChiave.slice(4)}`))} non avevi scritto niente. Quando succederà, lo ritroverai qui.</span>}
+              {ricordi.map((p) => (
+                <a key={p.id} href={`#/journaling/${p.taccuinoId}?pagina=${p.id}`} className="ricordo">
+                  <span className="secondario piccolo">{elenco.find((t) => t.id === p.taccuinoId)?.nome}</span>
+                  <strong>{p.titolo || 'Senza titolo'}</strong>
+                  <span className="testo-diario-anteprima">{testoSemplice(p.testo).slice(0, 180)}</span>
+                </a>
+              ))}
+            </section>
+            </div>
+          )}
         </>
       )}
 
