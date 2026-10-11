@@ -134,7 +134,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
       <div className="piu-meno">
         <button type="button" className="grande-piu" onClick={() => setModifica({ tipo: 'entrata' })} aria-label="Nuova entrata"><span>+</span>Entrata</button>
         <button type="button" className="grande-meno" onClick={() => setModifica({ tipo: 'uscita' })} aria-label="Nuova uscita"><span>−</span>Uscita</button>
-        <button type="button" className="grande-risparmio" onClick={() => setModifica({ tipo: 'risparmio' })} aria-label="Metti da parte"><IconaSalvadanaio dimensione={26} />Metti da parte</button>
+        <button type="button" className="grande-risparmio" onClick={() => setModifica({ tipo: 'risparmio' })} aria-label="Metti da parte"><IconaSalvadanaio dimensione={18} />Metti da parte</button>
       </div>
       <div className="aggiunta-veloce">
         <input value={testo} onChange={(e) => setTesto(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') aggiungiVeloce() }}

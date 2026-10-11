@@ -7,6 +7,7 @@ import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Allegato, ArgomentoStudio, Flashcard, Risorsa } from '../../../dati/modello'
 import { condividiOScarica, creaPdfTesto } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
+import { IconaArticolo, IconaClip, IconaLibro, IconaLink, IconaLogbook, IconaMusica, IconaPlay } from '../../../interfaccia/icone'
 import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
@@ -24,7 +25,7 @@ const TITOLI_SCHEDA: Record<Scheda, string> = { libreria: 'Libreria', quiz: 'Qui
 const COLORI_TIPO: Record<TipoRisorsa, [string, string]> = {
   lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
 }
-const ICONE_TIPO: Record<TipoRisorsa, string> = { lineaGuida: '§', articolo: '¶', libro: '📖', video: '▶', sito: '🔗' }
+const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
 const durataTesto = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`)
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 
@@ -206,7 +207,7 @@ function Timer({ argomenti }: { argomenti: ArgomentoStudio[] }) {
 function Musica() {
   return (
     <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <h2 className="titolo-sezione">♪ Musica per studiare</h2>
+      <h2 className="titolo-sezione titolo-con-icona"><IconaMusica dimensione={18} /> Musica per studiare</h2>
       <div className="collegamenti-rapidi musica">
         <a href="https://open.spotify.com" target="_blank" rel="noreferrer"><span style={{ color: '#1DB954', fontWeight: 800 }}>●</span> Spotify</a>
         <a href="https://music.youtube.com" target="_blank" rel="noreferrer"><span style={{ color: '#E62117', fontWeight: 800 }}>▶</span> YouTube</a>
@@ -324,7 +325,7 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
       </div>
       <textarea value={testo} onChange={(e) => setTesto(e.target.value)} rows={4} placeholder="Incolla qui un testo, oppure scegli un PDF…" />
       <div className="riga-azioni">
-        <button type="button" className="pillola" onClick={() => file.current?.click()}>📎 PDF dal dispositivo</button>
+        <button type="button" className="pillola" onClick={() => file.current?.click()}><IconaClip dimensione={14} /> PDF dal dispositivo</button>
         {pdfLibreria.length > 0 && (
           <select className="data-piccola" value={pdf?.allegatoId ?? ''} aria-label="PDF della libreria"
             onChange={(e) => { const a = pdfLibreria.find((x) => x.id === e.target.value); setPdf(a ? { nome: a.nome, allegatoId: a.id } : undefined) }}>
@@ -558,7 +559,7 @@ function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { riso
           const tipo = tipoRisorsaDa(r.tipo), stato = statoLetturaDa(r.stato)
           return (
             <div key={r.id} className="riga riga-risorsa" style={{ cursor: 'default' }}>
-              <span className="icona-sezione quadratino" style={{ background: COLORI_TIPO[tipo][0], color: COLORI_TIPO[tipo][1], fontWeight: 800 }}>{ICONE_TIPO[tipo]}</span>
+              <span className="icona-sezione quadratino" style={{ background: COLORI_TIPO[tipo][0], color: COLORI_TIPO[tipo][1], fontWeight: 800 }}>{(() => { const I = ICONE_TIPO[tipo]; return <I dimensione={16} /> })()}</span>
               <button type="button" className="crescente" onClick={() => setModifica({ r })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
                 <span style={{ fontWeight: 600 }}>{r.preferito && <span style={{ color: '#E0A030' }}>★ </span>}{r.titolo}</span>
                 <span className="secondario piccolo">{[TITOLI_TIPO_RISORSA[tipo], nomeArgomento(r.argomentoId)].filter(Boolean).join(' · ')}</span>

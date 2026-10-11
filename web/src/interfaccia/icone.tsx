@@ -83,6 +83,24 @@ export const IconaAttestato = (p: P) => (
 export const IconaArticolo = (p: P) => (
   <Icona {...p}><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4" /><path d="M9 11h7M9 14h7M9 17h4" /></Icona>
 )
+export const IconaClip = (p: P) => (
+  <Icona {...p}><path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-2.9-2.9l7.8-7.8" /></Icona>
+)
+export const IconaLibro = (p: P) => (
+  <Icona {...p}><path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z" /><path d="M4 20a2 2 0 0 0 2 2h13v-4" /><path d="M8 7h7" /></Icona>
+)
+export const IconaPlay = (p: P) => (
+  <Icona {...p}><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></Icona>
+)
+export const IconaLink = (p: P) => (
+  <Icona {...p}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></Icona>
+)
+export const IconaMusica = (p: P) => (
+  <Icona {...p}><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></Icona>
+)
+export const IconaCalendario = (p: P) => (
+  <Icona {...p}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /><path d="M8 14h3v3H8z" /></Icona>
+)
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )

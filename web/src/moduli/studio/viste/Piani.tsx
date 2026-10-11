@@ -9,6 +9,7 @@ import { creaIcs } from '../../../export/ics'
 import { condividiOScarica, creaPdf, scarica } from '../../../export/pdf'
 import { Avviso, Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { useTrascinamento } from '../../../interfaccia/trascina'
+import { IconaCalendario, IconaClip } from '../../../interfaccia/icone'
 import { impegniTra } from '../../agenda/impegni'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
 import { estraiArgomenti, generaFlashcard, leggiChiave, organizzaConAI } from '../ai'
@@ -54,6 +55,7 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
   const [settimana, setSettimana] = useState(lunedi(oggiChiave))
   const [aperta, setAperta] = useState<string>()
   const [esporta, setEsporta] = useState(false)
+  const [nuovaSessione, setNuovaSessione] = useState<string>()
   const elenco = [...(piani ?? [])].sort((a, b) => a.fine.localeCompare(b.fine))
   const piano = elenco.find((p) => p.id === scelto) ?? elenco.find((p) => p.fine >= oggiChiave) ?? elenco[0]
   const delPiano = (sessioni ?? []).filter((s) => s.pianoId === piano?.id)
@@ -89,7 +91,7 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
 
   return (
     <section className="scheda sezione-piani">
-      <h2 className="titolo-sezione">🗓️ Piani di studio</h2>
+      <h2 className="titolo-sezione titolo-con-icona"><span className="icona-sezione quadratino" style={{ color: '#1C7A5C', background: '#E1F2EA' }}><IconaCalendario dimensione={18} /></span>Piani di studio</h2>
       <div className="schede-piani">
         {elenco.map((p) => {
           const r = riepilogoSessioni((sessioni ?? []).filter((s) => s.pianoId === p.id))
@@ -106,7 +108,7 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
         <button type="button" className="scheda-piano nuovo" onClick={() => setModifica({})}>+ Nuovo piano</button>
       </div>
 
-      {!piano && <span className="secondario piccolo">Crea un piano: scegli le date, gli argomenti con le pagine, e l'app li divide nei giorni (oppure lo fa Gemini).</span>}
+      {!piano && <span className="secondario piccolo">Crea un piano: scegli le date e i giorni in cui studi. Poi aggiungi le sessioni giorno per giorno, oppure inserisci gli argomenti con le pagine e l'app li divide nei giorni (o lo fa Gemini).</span>}
       {piano && (
         <>
           <div className="riepilogo-piano">
@@ -141,6 +143,9 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
                     <div key={g} data-giorno={g} className={`giorno-piano${g === oggiChiave ? ' oggi' : ''}${fuori ? ' fuori' : ''}`}>
                       <span className="secondario piccolo nome-giorno-piano">{GIORNI[i]} {Number(g.slice(8, 10))}</span>
                       {g === piano.fine && <span className="blocco-piano esame">{piano.nome}: esame/scadenza</span>}
+                      {!fuori && g < piano.fine && piano.giorniSettimana.includes(giornoSettimana(g)) && (
+                        <button type="button" className="piu-sessione" onClick={() => setNuovaSessione(g)}>+ sessione</button>
+                      )}
                       {delGiorno.map((s) => (
                         <div key={s.id} className="rimovibile" {...pressione.gestori(s.id, s)}>
                           <button type="button" className={`blocco-piano ${s.tipo}${s.fatta ? ' fatta' : ''}`}
@@ -171,6 +176,7 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
       {sessioneAperta && piano && <SchedaSessione s={sessioneAperta} piano={piano} sessioni={delPiano} risorse={risorse} onChiudi={() => setAperta(undefined)} />}
       {modifica && <FormPiano p={modifica.p} risorse={risorse} sessioni={(sessioni ?? []).filter((s) => s.pianoId === modifica.p?.id)} occupati={occupati}
         onChiudi={(id) => { setModifica(undefined); if (id) setScelto(id) }} />}
+      {nuovaSessione && piano && <FormSessione piano={piano} giorno={nuovaSessione} onChiudi={() => setNuovaSessione(undefined)} />}
       {esporta && piano && <EsportaPiano piano={piano} sessioni={delPiano} onChiudi={() => setEsporta(false)} />}
     </section>
   )
@@ -194,6 +200,54 @@ function ElencoArgomenti({ piano, sessioni, risorse }: { piano: PianoStudio; ses
         )
       })}
     </div>
+  )
+}
+
+/* Sessione aggiunta a mano in un giorno */
+
+function FormSessione({ piano, giorno, onChiudi }: { piano: PianoStudio; giorno: string; onChiudi: () => void }) {
+  const [b, setB] = useState({ argomentoId: '', titolo: '', tipo: 'studio' as 'studio' | 'ripasso', da: '', a: '', minuti: Math.min(piano.minutiAlGiorno, 60) })
+  const argomento = piano.argomenti.find((x) => x.id === b.argomentoId)
+  const titolo = argomento?.nome ?? b.titolo.trim()
+  const n = (t: string) => (t.trim() === '' || !Number.isFinite(Number(t)) ? undefined : Math.round(Number(t)))
+  const valido = titolo !== ''
+  async function conferma() {
+    if (!valido) return
+    await salva('sessioniPiano', {
+      pianoId: piano.id, giorno, tipo: b.tipo, argomentoId: argomento?.id, titolo: b.tipo === 'ripasso' ? `Ripasso: ${titolo}` : titolo,
+      paginaDa: n(b.da), paginaA: n(b.a) ?? n(b.da), minuti: b.minuti,
+    })
+    onChiudi()
+  }
+  return (
+    <Foglio aperto titolo="Nuova sessione" onChiudi={onChiudi}
+      azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
+      <div className="modulo">
+        <span className="secondario">{F.dataEstesa(ms(giorno))} · {piano.nome}</span>
+        <div className="segmenti">
+          <button type="button" className={b.tipo === 'studio' ? 'attivo' : ''} onClick={() => setB({ ...b, tipo: 'studio' })}>Studio</button>
+          <button type="button" className={b.tipo === 'ripasso' ? 'attivo' : ''} onClick={() => setB({ ...b, tipo: 'ripasso' })}>Ripasso</button>
+        </div>
+        {piano.argomenti.length > 0 && (
+          <Campo etichetta="Argomento del piano">
+            <select value={b.argomentoId} onChange={(e) => setB({ ...b, argomentoId: e.target.value })}>
+              <option value="">— scrivo io —</option>
+              {piano.argomenti.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+            </select>
+          </Campo>
+        )}
+        {!argomento && <Campo etichetta="Cosa studi"><input value={b.titolo} autoFocus placeholder="es. Preeclampsia (Williams cap. 40)" onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>}
+        <div className="campi-affiancati">
+          <Campo etichetta="Da pagina"><input inputMode="numeric" value={b.da} onChange={(e) => setB({ ...b, da: e.target.value })} /></Campo>
+          <Campo etichetta="A pagina"><input inputMode="numeric" value={b.a} onChange={(e) => setB({ ...b, a: e.target.value })} /></Campo>
+          <Campo etichetta="Tempo">
+            <select value={b.minuti} onChange={(e) => setB({ ...b, minuti: Number(e.target.value) })}>
+              {[15, 30, 45, 60, 90, 120, 180, 240].map((m) => <option key={m} value={m}>{durata(m)}</option>)}
+            </select>
+          </Campo>
+        </div>
+      </div>
+    </Foglio>
   )
 }
 
@@ -243,7 +297,7 @@ function SchedaSessione({ s, piano, sessioni, risorse, onChiudi }: { s: Sessione
         <button type="button" className="pulsante" onClick={() => void fatta(!s.fatta)}>{s.fatta ? 'Segna come da fare' : '✓ Fatto'}</button>
         {(finito || (s.fatta && s.argomentoId && argomentoFinito(sessioni, s.argomentoId))) && risorsa && (
           <div className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <strong>Argomento finito 🎉</strong>
+            <strong>Argomento finito</strong>
             <span className="secondario piccolo">Ripassalo con le domande create da Gemini sulla sua fonte ({risorsa.titolo}).</span>
             <div className="riga-azioni">
               <a className="pulsante" href={`#/studio?scheda=quiz&risorse=${risorsa.id}`} onClick={onChiudi}>✦ Crea quiz</a>
@@ -276,7 +330,9 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
   const [inCorso, setInCorso] = useState<string>()
   const [errore, setErrore] = useState<string>()
   const [pdfSyllabus, setPdfSyllabus] = useState<File>()
-  const valido = b.nome.trim() !== '' && !!giornoDaChiave(b.inizio) && !!giornoDaChiave(b.fine) && b.fine > b.inizio && b.giorni.length > 0 && argomenti.length > 0
+  // Gli argomenti servono solo per dividere le pagine: il calendario si può creare anche vuoto.
+  const valido = b.nome.trim() !== '' && !!giornoDaChiave(b.inizio) && !!giornoDaChiave(b.fine) && b.fine > b.inizio && b.giorni.length > 0
+  const conArgomenti = valido && argomenti.length > 0
   const pianoCorrente = (): PianoStudio => ({
     ...(p ?? { creatoIl: 0, modificatoIl: 0 }), id, nome: b.nome.trim(), colore: b.colore, inizio: b.inizio, fine: b.fine, esameId: b.esameId || undefined,
     minutiAlGiorno: b.minuti, giorniSettimana: [...b.giorni].sort(), ripassi: b.ripassi || undefined, syllabus: b.syllabus.trim() || undefined, argomenti,
@@ -365,7 +421,7 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
           <span>Syllabus (facoltativo)</span>
           <textarea rows={3} value={b.syllabus} placeholder="Incolla il programma, oppure allega il PDF" onChange={(e) => setB({ ...b, syllabus: e.target.value })} />
           <div className="riga-azioni">
-            <label className="pillola" style={{ position: 'relative', cursor: 'pointer' }}>📎 {pdfSyllabus ? pdfSyllabus.name : 'PDF del syllabus'}
+            <label className="pillola" style={{ position: 'relative', cursor: 'pointer' }}><IconaClip dimensione={14} /> {pdfSyllabus ? pdfSyllabus.name : 'PDF del syllabus'}
               <input type="file" accept="application/pdf" className="file-nascosto" onChange={(e) => setPdfSyllabus(e.target.files?.[0])} />
             </label>
             <button type="button" className="pillola" disabled={!leggiChiave() || (!b.syllabus.trim() && !pdfSyllabus) || !!inCorso} onClick={() => void estrai()}>
@@ -397,13 +453,21 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
 
         {errore && <Avviso>{errore}</Avviso>}
         {p && <span className="secondario piccolo">Rifacendo il calendario, le sessioni già fatte restano; le altre vengono ridistribuite da oggi.</span>}
+        {!p && (
+          <button type="button" className="pulsante primario" disabled={!valido || !!inCorso} onClick={() => void soloSalva()}>
+            Crea il calendario{argomenti.length ? ' (sessioni a mano)' : ''}
+          </button>
+        )}
+        <span className="secondario piccolo">
+          {argomenti.length ? 'Oppure fai riempire il calendario con gli argomenti:' : 'Puoi aggiungere le sessioni giorno per giorno. Se inserisci gli argomenti con le pagine, l’app può anche dividerle nei giorni:'}
+        </span>
         <div className="due-pulsanti">
-          <button type="button" className="pulsante" disabled={!valido || !!inCorso} onClick={() => void crea('dividi')}>{inCorso === 'dividi' ? '…' : p ? 'Rifai: dividi le pagine' : 'Dividi le pagine'}</button>
-          <button type="button" className="pulsante pulsante-gemini" disabled={!valido || !!inCorso || !leggiChiave()} title={leggiChiave() ? '' : 'Inserisci prima la chiave Gemini'} onClick={() => void crea('ai')}>
+          <button type="button" className="pulsante" disabled={!conArgomenti || !!inCorso} onClick={() => void crea('dividi')}>{inCorso === 'dividi' ? '…' : p ? 'Rifai: dividi le pagine' : 'Dividi le pagine'}</button>
+          <button type="button" className="pulsante pulsante-gemini" disabled={!conArgomenti || !!inCorso || !leggiChiave()} title={leggiChiave() ? '' : 'Inserisci prima la chiave Gemini'} onClick={() => void crea('ai')}>
             {inCorso === 'ai' ? 'Gemini sta organizzando…' : '✦ Organizza con Gemini'}
           </button>
         </div>
-        {!valido && <span className="secondario piccolo">Servono nome, date, almeno un giorno e un argomento.</span>}
+        {!valido && <span className="secondario piccolo">Servono nome, date e almeno un giorno della settimana.</span>}
         {p && (
           <button type="button" className="pulsante pericolo" onClick={() => void (async () => {
             await elimina('pianiStudio', p.id)
