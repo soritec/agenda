@@ -13,6 +13,7 @@ import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { Impostazioni } from './interfaccia/Impostazioni'
 import { SezioneInArrivo, Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
 import { Agenda, ElencoImpegni } from './moduli/agenda/viste/Agenda'
+import { Task } from './moduli/task/viste/Task'
 import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
@@ -51,7 +52,7 @@ export function App() {
     else if (sotto === 'ricerca') pagina = <SezioneInArrivo titolo="Ricerca" testo="Questa sezione la sviluppiamo più avanti: dimmi tu cosa ti serve (progetti, articoli, scadenze, dati raccolti…)." />
     else if (sotto === 'impostazioni') pagina = <ImpostazioniSpecializzazione />
     else pagina = <Specializzazione />
-  } else if (sezione === 'task') pagina = <InArrivo titolo="Task" />
+  } else if (sezione === 'task') pagina = <Task apertoId={sotto} giorno={parametri.get('giorno')} minuto={parametri.get('minuto')} />
   else if (sezione === 'studio') pagina = <InArrivo titolo="Studio e risorse" />
   else if (sezione === 'budget') pagina = <InArrivo titolo="Budget" />
   else if (sezione === 'journaling') pagina = <InArrivo titolo="Journaling" />
@@ -73,13 +74,15 @@ function Oggi() {
   const eventi = useCollezione('eventi')
   const esami = useCollezione('esami')
   const tasse = useCollezione('tasse')
+  const attivita = useCollezione('attivita')
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
   // Gli altri impegni dell'agenda (i turni hanno le loro schede qui sotto).
-  const altri = impegniTra({ giornate, eventi, esami, tasse }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
+  const altri = impegniTra({ giornate, eventi, esami, tasse, attivita }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
   const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0))
   const altriDomani = altri.filter((i) => i.giorno !== chiaveGiorno(g0))
+  const inRitardo = (attivita ?? []).filter((t) => !t.completataIl && t.scadenza && t.scadenza < chiaveGiorno(g0)).length
   const inizioOggi = inizioGiorno(g0), inizioDomani = inizioGiorno(aggiungiGiorni(g0, 1)), inizioDopodomani = inizioGiorno(aggiungiGiorni(g0, 2))
   const ordinati = [...(turni ?? [])].sort((x, y) => x.inizio - y.inizio)
   // Oggi: turni che iniziano oggi o sono ancora in corso (es. la notte iniziata ieri sera).
@@ -97,6 +100,7 @@ function Oggi() {
       </header>
 
       {diOggi.length === 0 && altriOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/agenda">Vai all'agenda</a></div>}
+      {inRitardo > 0 && <a className="avviso" href="#/task" style={{ color: 'var(--avviso-testo)' }}>{inRitardo === 1 ? '1 task in ritardo' : `${inRitardo} task in ritardo`} ›</a>}
       {altriOggi.length > 0 && <ElencoImpegni voci={altriOggi} />}
       {diOggi.map((t) => {
         const sede = mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')

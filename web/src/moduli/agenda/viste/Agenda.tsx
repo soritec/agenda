@@ -61,6 +61,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   const eventi = useCollezione('eventi')
   const esami = useCollezione('esami')
   const tasse = useCollezione('tasse')
+  const attivita = useCollezione('attivita')
   const impostazioni = useImpostazioni()
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
@@ -88,11 +89,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     : da.slice(0, 7) === a.slice(0, 7) ? `${numeroGiorno(da)} – ${numeroGiorno(a)} ${nomeMese(a)}`
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse }
+  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -117,7 +118,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     let annulla: () => Promise<void>
     if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
     else {
-      const collezione = i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : 'esami'
+      const collezione = i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
       await elimina(collezione, i.id)
       annulla = () => ripristina(collezione, i.id)
     }
@@ -244,6 +245,7 @@ function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; 
         {voce('Impegno', 'visita, riunione, appuntamento…', () => onScegli('evento'), 'f-evento')}
         {voce('Turno', 'guardia, reparto, sala…', () => vai(`#/turni/nuovi?mese=${aggiunta.giorno.slice(0, 7)}&giorni=${aggiunta.giorno}`), 'f-turno')}
         {voce('Ferie o riposo', 'dal calendario dei turni', () => vai(`#/turni?mese=${aggiunta.giorno.slice(0, 7)}`), 'f-giornata')}
+        {voce('Task', 'cosa fare entro quel giorno', () => vai(`#/task/nuovo?giorno=${aggiunta.giorno}${aggiunta.minuto !== undefined ? `&minuto=${aggiunta.minuto}` : ''}`), 'f-task')}
         {voce('Esame', 'della specializzazione', () => onScegli('esame'), 'f-esame')}
         {voce('Lezione', 'della specializzazione', () => onScegli('lezione'), 'f-lezione')}
       </div>
@@ -408,7 +410,7 @@ function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, rimozio
               const v = b.impegno
               return (
                 <a key={`${v.chiave}-${b.da}`} href={v.link} onClick={(e) => apri(v, e)}
-                  {...rimovibile(v, rimozione)} className={`blocco rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}
+                  {...rimovibile(v, rimozione)} className={`blocco rimovibile${alto < 34 ? ' corto' : ''} ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}
                   style={{ top: y(b.da), height: alto - 2, left: `calc(${(b.corsia / b.corsie) * 100}% + 2px)`, width: `calc(${100 / b.corsie}% - 4px)` }}>
                   <span className="titolo">{v.titolo}</span>
                   {alto > 30 && (

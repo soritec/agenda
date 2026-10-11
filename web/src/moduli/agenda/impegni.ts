@@ -1,5 +1,5 @@
 import { componenti, giornoDi, istante } from '../../nucleo/calendario'
-import type { Assegnazione, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
+import type { Assegnazione, Attivita, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
 import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
 
@@ -7,14 +7,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['turno', 'giornata', 'evento', 'esame', 'lezione', 'tassa'] as const
+export const FONTI = ['turno', 'giornata', 'evento', 'task', 'esame', 'lezione', 'tassa'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze tasse',
+  turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze tasse',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', esame: 'Esame', lezione: 'Lezione', tassa: 'Tassa' }
+export const TITOLO_VOCE: Record<Fonte, string> = { turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', tassa: 'Tassa' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -54,6 +54,7 @@ export interface DatiAgenda {
   eventi?: Evento[]
   esami?: EsameOLezione[]
   tasse?: Tassa[]
+  attivita?: Attivita[]
 }
 
 const minutoDi = (ms: number) => { const c = componenti(ms); return c.ora * 60 + c.minuto }
@@ -120,6 +121,17 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       dettaglio: [e.materia, e.esito].filter(Boolean).join(' · ') || undefined,
       colore: `colore-${fonte}`, link: `#/specializzazione/${fonte === 'esame' ? 'esami' : 'lezioni'}`,
       concluso: Boolean(e.completato) || e.giorno < oggi, modificatoIl: e.modificatoIl,
+    })
+  }
+  for (const t of d.attivita ?? []) {
+    if (!t.scadenza || !dentro(t.scadenza)) continue
+    const minuto = t.minuto !== undefined && t.minuto >= 0 && t.minuto < 1440 ? t.minuto : undefined
+    out.push({
+      chiave: `task:${t.id}`, fonte: 'task', id: t.id, giorno: t.scadenza, titolo: t.titolo,
+      dettaglio: [t.priorita === 'alta' ? 'priorità alta' : '', t.completataIl ? 'fatto' : ''].filter(Boolean).join(' · ') || undefined,
+      minutoInizio: minuto, minutoFine: minuto !== undefined ? Math.min(minuto + 30, 1439) : undefined,
+      colore: t.completataIl ? 'colore-task fatto' : 'colore-task', link: `#/task/${t.id}`,
+      concluso: Boolean(t.completataIl), modificatoIl: t.modificatoIl,
     })
   }
   for (const t of d.tasse ?? []) {

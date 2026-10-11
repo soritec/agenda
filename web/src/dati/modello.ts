@@ -167,6 +167,27 @@ export interface Evento extends Base {
   note?: string
 }
 
+/* Task (nel codice "Attivita": "Task" è già un nome riservato in altri linguaggi) */
+
+export interface Attivita extends Base {
+  titolo: string
+  note?: string
+  /** "2026-10-21": giorno entro cui farla (facoltativo). */
+  scadenza?: string
+  /** Minuti dalla mezzanotte, solo se c'è una scadenza. */
+  minuto?: number
+  /** 'alta' | 'normale' */
+  priorita: string
+  /** 'personale' | 'lavoro' | 'specializzazione' | 'studio' | 'altro' */
+  area: string
+  /** 'mai' | 'giorno' | 'settimana' | 'mese' | 'anno': completandola si crea la successiva. */
+  ripeti?: string
+  /** Piccola lista di passi da spuntare. */
+  passi?: { testo: string; fatto?: boolean }[]
+  /** Istante in cui è stata completata. */
+  completataIl?: number
+}
+
 export interface Collegamento extends Base {
   titolo: string
   url: string
@@ -206,6 +227,7 @@ export interface Collezioni {
   tasse: Tassa
   allegati: Allegato
   eventi: Evento
+  attivita: Attivita
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita']
