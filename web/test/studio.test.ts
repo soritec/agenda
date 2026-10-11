@@ -1,0 +1,52 @@
+import 'fake-indexeddb/auto'
+import { describe, expect, test } from 'vitest'
+import { creditiAnno, daRipassare, idArgomento, leggiFlashcardDaTesto, lunedi, minutiSettimana, rispondi } from '../src/moduli/studio/logica'
+
+const b = { creatoIl: 0, modificatoIl: 0 }
+
+describe('Studio', () => {
+  test('flashcard a scatole', () => {
+    expect(rispondi({ scatola: 1 }, true, '2026-10-11')).toEqual({ scatola: 2, prossima: '2026-10-13' })
+    expect(rispondi({ scatola: 5 }, true, '2026-10-11')).toEqual({ scatola: 5, prossima: '2026-10-27' })
+    expect(rispondi({ scatola: 4 }, false, '2026-10-11')).toEqual({ scatola: 1, prossima: '2026-10-12' })
+    const cards = [{ ...b, id: '1', domanda: 'a', risposta: 'b', scatola: 1, prossima: '2026-10-11' }, { ...b, id: '2', domanda: 'c', risposta: 'd', scatola: 2, prossima: '2026-10-12' }]
+    expect(daRipassare(cards, '2026-10-11').map((c) => c.id)).toEqual(['1'])
+  })
+
+  test('tempo della settimana (da lunedì)', () => {
+    expect(lunedi('2026-10-11')).toBe('2026-10-05')
+    expect(lunedi('2026-10-12')).toBe('2026-10-12')
+    const s = [{ ...b, id: '1', giorno: '2026-10-04', minuti: 60 }, { ...b, id: '2', giorno: '2026-10-05', minuti: 30 }, { ...b, id: '3', giorno: '2026-10-11', minuti: 45 }]
+    expect(minutiSettimana(s, '2026-10-11')).toBe(75)
+  })
+
+  test('crediti ECM dell’anno, id argomenti, flashcard dal testo', () => {
+    expect(creditiAnno([{ giorno: '2026-03-01', crediti: 12 }, { giorno: '2025-12-01', crediti: 8 }, { giorno: '2026-09-01' }], '2026')).toBe(12)
+    expect(idArgomento('PMA e infertilità')).toBe('argomento-pma-e-infertilita')
+    expect(leggiFlashcardDaTesto('1. D: Cos’è la PPROM?\nR: Rottura prematura pretermine delle membrane\n\nD: Soglia AFI oligoidramnios?\nR: < 5 cm')).toEqual([
+      { domanda: 'Cos’è la PPROM?', risposta: 'Rottura prematura pretermine delle membrane' },
+      { domanda: 'Soglia AFI oligoidramnios?', risposta: '< 5 cm' },
+    ])
+  })
+})
+
+describe('Timer di studio', () => {
+  test('passa da studio a pausa e registra il tempo', async () => {
+    const T = await import('../src/moduli/studio/timer')
+    const { elenca } = await import('../src/dati/archivio')
+    T.scegliDurate(30, 10)
+    T.avvia()
+    const inizio = T.leggiTimer().fineIl! - 30 * 60_000
+    expect(T.rimanente(T.leggiTimer(), inizio + 15 * 60_000).frazione).toBeCloseTo(0.5)
+    await T.controlla(inizio + 31 * 60_000)
+    expect(T.leggiTimer()).toMatchObject({ fase: 'pausa', ciclo: 1 })
+    await T.controlla(inizio + 41 * 60_000)
+    expect(T.leggiTimer()).toMatchObject({ fase: 'studio', ciclo: 2 })
+    T.metti_in_pausa()
+    await T.ferma()
+    const sessioni = await elenca('sessioniStudio')
+    // Il secondo ciclo è stato fermato subito (nel tempo reale): niente minuti in più.
+    expect(sessioni.map((s) => s.minuti)).toEqual([30])
+    expect(T.leggiTimer().fase).toBe('fermo')
+  })
+})

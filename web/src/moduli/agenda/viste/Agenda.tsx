@@ -83,6 +83,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   const [eventoInModifica, setEventoInModifica] = useState<string | undefined>(eventoAperto)
   const [notaInModifica, setNotaInModifica] = useState<string | undefined>(notaAperta)
   const note = useCollezione('noteGiorno')
+  const journal = useCollezione('journalClub')
   const [esporta, setEsporta] = useState(false)
 
   // Periodo mostrato
@@ -98,11 +99,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note }
+  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -157,20 +158,25 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       if (!x) return
       await salva('esami', { ...x, giorno: dove.giorno })
       annulla = () => salva('esami', x)
+    } else if (i.fonte === 'journal') {
+      const j = journal?.find((y) => y.id === i.id)
+      if (!j) return
+      await salva('journalClub', { ...j, giorno: dove.giorno })
+      annulla = () => salva('journalClub', j)
     } else if (i.fonte === 'giornata') {
       const g = giornate?.find((y) => y.id === i.id)
       if (!g) return
       await salva('ferie', { ...g, giorno: dove.giorno })
       annulla = () => salva('ferie', g)
     }
-    if (annulla) mostraAvviso(`Spostato a ${dataEstesa(dove.giorno)}${dove.minuto !== undefined && i.fonte !== 'giornata' && i.fonte !== 'nota' && i.fonte !== 'esame' && i.fonte !== 'lezione' ? ` alle ${orarioBreve(dove.minuto)}` : ''}`, () => void annulla!())
+    if (annulla) mostraAvviso(`Spostato a ${dataEstesa(dove.giorno)}${dove.minuto !== undefined && i.fonte !== 'giornata' && i.fonte !== 'nota' && i.fonte !== 'esame' && i.fonte !== 'lezione' && i.fonte !== 'journal' ? ` alle ${orarioBreve(dove.minuto)}` : ''}`, () => void annulla!())
   }
   async function eliminaImpegno(i: Impegno) {
     pressione.setAttivo(undefined)
     let annulla: () => Promise<void>
     if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
     else {
-      const collezione = i.fonte === 'nota' ? 'noteGiorno' : i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
+      const collezione = i.fonte === 'journal' ? 'journalClub' : i.fonte === 'nota' ? 'noteGiorno' : i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
       await elimina(collezione, i.id)
       annulla = () => ripristina(collezione, i.id)
     }

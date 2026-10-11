@@ -2,6 +2,7 @@ import { correzioniCatalogoV1 } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
 import { CATEGORIE_PREDEFINITE, idPredefinita } from '../moduli/budget/logica'
+import { ARGOMENTI_PREDEFINITI, idArgomento } from '../moduli/studio/logica'
 import { elenca, elencaTutti, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
 
 /**
@@ -51,6 +52,13 @@ export async function eseguiManutenzione(): Promise<void> {
     const mancanti = CATEGORIE_PREDEFINITE.map((c, ordine) => ({ ...c, id: idPredefinita(c.nome), ordine })).filter((c) => !esistenti.has(c.id))
     if (mancanti.length) await salvaTanti('categorieBudget', mancanti)
     nuove.push('categorie-budget-v1')
+  }
+
+  if (!fatte.has('argomenti-studio-v1')) {
+    const esistenti = new Set((await elencaTutti('argomentiStudio')).map((a) => a.id))
+    const mancanti = ARGOMENTI_PREDEFINITI.map((nome, ordine) => ({ id: idArgomento(nome), nome, ordine })).filter((a) => !esistenti.has(a.id))
+    if (mancanti.length) await salvaTanti('argomentiStudio', mancanti)
+    nuove.push('argomenti-studio-v1')
   }
 
   if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })

@@ -5,10 +5,11 @@ import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Collegamento, EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
-import { IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLogbook, IconaMicroscopio } from '../../../interfaccia/icone'
+import { IconaArticolo, IconaAttestato, IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLogbook, IconaMicroscopio } from '../../../interfaccia/icone'
 import { assegnazioneDelMese } from '../../turni/assegnazioni'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../../turni/rotazione'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
+import { creditiAnno } from '../../studio/logica'
 import { ANNI_PREDEFINITI, annoDiCorso, conteggi, eConcluso, statoTassa } from '../logica'
 
 const dataBreve = (giorno: string) => {
@@ -21,6 +22,9 @@ export function Specializzazione() {
   const impostazioni = useImpostazioni()
   const procedure = useCollezione('procedure')
   const esami = useCollezione('esami')
+  const corsi = useCollezione('corsi')
+  const journal = useCollezione('journalClub')
+  const prossimoJournal = (journal ?? []).filter((j) => !j.presentato && j.giorno >= chiaveGiorno(oggi())).sort((a, b) => a.giorno.localeCompare(b.giorno))[0]
   const tasse = useCollezione('tasse')
   const periodi = useCollezione('periodiRotazione')
   const assegnazioni = useCollezione('assegnazioni')
@@ -99,6 +103,15 @@ export function Specializzazione() {
         <a className="riquadro-sezione" href="#/specializzazione/calcolatori">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#534AB7', background: '#ECEAFB' }}><IconaCalcolatrice dimensione={18} /></span>Calcolatori</span>
           <span className="dettaglio">EG e DPP, peso fetale, Bishop, Robson, rischio TEV, β-hCG e altri</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/ecm">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#1F6E8C', background: '#DDEFF5' }}><IconaAttestato dimensione={18} /></span>Corsi ed ECM</span>
+          <span className="valore">{creditiAnno(corsi ?? [], chiaveGiorno(oggi()).slice(0, 4)) || '—'}</span>
+          <span className="dettaglio">crediti ECM nel {chiaveGiorno(oggi()).slice(0, 4)}</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/journal">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#8C4F7A', background: '#F3E3EE' }}><IconaArticolo dimensione={18} /></span>Journal club</span>
+          <span className="dettaglio">{prossimoJournal ? <><strong style={{ color: 'var(--testo)' }}>{prossimoJournal.titolo}</strong><br />{dataBreve(prossimoJournal.giorno)}</> : 'Nessun articolo in programma'}</span>
         </a>
         <a className="riquadro-sezione in-arrivo" href="#/specializzazione/ricerca">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#6B6862', background: '#EEECE8' }}><IconaMicroscopio dimensione={18} /></span>Ricerca</span>

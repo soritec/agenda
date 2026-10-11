@@ -145,3 +145,31 @@ export function scarica(blob: Blob, nomeFile: string) {
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
+
+/** PDF di solo testo (es. appunti di un argomento): titolo e sezioni con titolo e paragrafi, a capo automatico. */
+export async function creaPdfTesto(titolo: string, sottotitolo: string, sezioni: { titolo: string; testo: string }[]): Promise<Blob> {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const margine = 18, larghezza = 210 - 2 * margine, fondo = 297 - 18
+  doc.setFillColor(...ACCENTO)
+  doc.rect(0, 0, 210, 4, 'F')
+  doc.setFont('helvetica', 'bold').setFontSize(20).setTextColor(...TESTO)
+  doc.text(titolo, margine, 20)
+  doc.setFont('helvetica', 'normal').setFontSize(10.5).setTextColor(...SECONDARIO)
+  doc.text(sottotitolo, margine, 27)
+  let y = 38
+  const aCapo = (altezza: number) => { if (y + altezza > fondo) { doc.addPage(); y = 20 } }
+  for (const s of sezioni) {
+    aCapo(14)
+    doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(...TESTO)
+    for (const riga of doc.splitTextToSize(s.titolo, larghezza) as string[]) { aCapo(7); doc.text(riga, margine, y); y += 6.5 }
+    y += 1
+    doc.setFont('helvetica', 'normal').setFontSize(10.5)
+    for (const paragrafo of s.testo.split(/\n/)) {
+      const righe = doc.splitTextToSize(paragrafo || ' ', larghezza) as string[]
+      for (const riga of righe) { aCapo(5.5); doc.text(riga, margine, y); y += 5.2 }
+    }
+    y += 6
+  }
+  return doc.output('blob')
+}

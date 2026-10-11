@@ -120,6 +120,74 @@ export interface EsameOLezione extends Base {
   note?: string
   /** Segnato come completato (anche prima della data). */
   completato?: boolean
+  /** Argomenti da ripassare per questo esame (sezione Studio). */
+  argomenti?: { testo: string; fatto?: boolean }[]
+}
+
+/** Corso o congresso con crediti ECM (attestati come allegati "corso:<id>"). */
+export interface Corso extends Base {
+  titolo: string
+  giorno: string
+  ente?: string
+  crediti?: number
+  ore?: number
+  note?: string
+}
+
+/** Articolo da presentare al journal club (compare anche in Agenda). */
+export interface JournalClub extends Base {
+  titolo: string
+  giorno: string
+  rivista?: string
+  link?: string
+  presentato?: boolean
+  note?: string
+}
+
+/* Studio e risorse */
+
+export interface ArgomentoStudio extends Base {
+  nome: string
+  ordine: number
+}
+
+/** Linea guida, articolo, libro, video, corso o sito (allegati "risorsa:<id>"). */
+export interface Risorsa extends Base {
+  titolo: string
+  /** 'lineaGuida' | 'articolo' | 'libro' | 'video' | 'sito' */
+  tipo: string
+  url?: string
+  argomentoId?: string
+  /** 'daLeggere' | 'inLettura' | 'letto' */
+  stato: string
+  /** 0–100, per i libri in lettura. */
+  progresso?: number
+  preferito?: boolean
+  note?: string
+}
+
+export interface Appunto extends Base {
+  titolo: string
+  testo: string
+  argomentoId?: string
+}
+
+/** Flashcard con ripetizione a scatole: più la sai, più tardi ritorna. */
+export interface Flashcard extends Base {
+  domanda: string
+  risposta: string
+  argomentoId?: string
+  /** 1–5 */
+  scatola: number
+  /** Giorno del prossimo ripasso ("2026-10-12"). */
+  prossima: string
+}
+
+/** Tempo di studio registrato dal timer (o a mano). */
+export interface SessioneStudio extends Base {
+  giorno: string
+  minuti: number
+  argomentoId?: string
 }
 
 export interface Tassa extends Base {
@@ -269,6 +337,8 @@ export interface Impostazioni {
   inizioSpecializzazione?: string
   /** Durata della scuola in anni. */
   anniSpecializzazione?: number
+  /** Obiettivo di studio settimanale, in minuti. */
+  obiettivoStudioMinuti?: number
   /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */
   modificatoIl?: number
 }
@@ -297,6 +367,13 @@ export interface Collezioni {
   ricorrenti: Ricorrente
   noteGiorno: NotaGiorno
   obiettiviRisparmio: ObiettivoRisparmio
+  corsi: Corso
+  journalClub: JournalClub
+  argomentiStudio: ArgomentoStudio
+  risorse: Risorsa
+  appunti: Appunto
+  flashcard: Flashcard
+  sessioniStudio: SessioneStudio
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio']

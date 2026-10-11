@@ -1,5 +1,5 @@
 import { componenti, giornoDi, istante } from '../../nucleo/calendario'
-import type { Assegnazione, Attivita, NotaGiorno, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
+import type { Assegnazione, Attivita, JournalClub, NotaGiorno, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
 import { vociDelMese, spostaMese, type DatiBudget } from '../budget/logica'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
 import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
@@ -8,14 +8,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'esame', 'lezione', 'tassa'] as const
+export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'esame', 'lezione', 'journal', 'tassa'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', tassa: 'Scadenze',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', tassa: 'Scadenza' }
+export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', tassa: 'Scadenza' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -57,6 +57,7 @@ export interface DatiAgenda {
   tasse?: Tassa[]
   attivita?: Attivita[]
   note?: NotaGiorno[]
+  journal?: JournalClub[]
   /** Uscite fisse e in programma del budget, mostrate come scadenze. */
   budget?: DatiBudget
 }
@@ -136,6 +137,13 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       dettaglio: [e.materia, e.esito].filter(Boolean).join(' · ') || undefined,
       colore: `colore-${fonte}`, link: `#/specializzazione/${fonte === 'esame' ? 'esami' : 'lezioni'}`,
       concluso: Boolean(e.completato) || e.giorno < oggi, modificatoIl: e.modificatoIl,
+    })
+  }
+  for (const j of d.journal ?? []) {
+    if (!dentro(j.giorno)) continue
+    out.push({
+      chiave: `journal:${j.id}`, fonte: 'journal', id: j.id, giorno: j.giorno, titolo: `Journal club: ${j.titolo}`, dettaglio: j.rivista,
+      colore: 'colore-journal', link: '#/specializzazione/journal', concluso: Boolean(j.presentato) || j.giorno < oggi, modificatoIl: j.modificatoIl,
     })
   }
   for (const t of d.attivita ?? []) {

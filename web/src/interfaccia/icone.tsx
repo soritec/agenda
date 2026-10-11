@@ -77,6 +77,12 @@ export const IconaCalcolatrice = (p: P) => (
 export const IconaMicroscopio = (p: P) => (
   <Icona {...p}><path d="M6 21h12" /><path d="M8 18h8" /><path d="M14 18a5 5 0 0 0 1-9.9" /><path d="M9.5 3.5l3 1.5-3 6-3-1.5z" /><path d="M8 11.5L7 13.5" /><path d="M10.5 9.5l2 1" /></Icona>
 )
+export const IconaAttestato = (p: P) => (
+  <Icona {...p}><rect x="3" y="4" width="18" height="13" rx="1.5" /><path d="M7 8h10M7 11h6" /><circle cx="16" cy="16" r="2.5" /><path d="M14.8 18.2L14 22l2-1 2 1-.8-3.8" /></Icona>
+)
+export const IconaArticolo = (p: P) => (
+  <Icona {...p}><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4" /><path d="M9 11h7M9 14h7M9 17h4" /></Icona>
+)
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )
