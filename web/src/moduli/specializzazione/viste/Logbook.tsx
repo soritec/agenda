@@ -8,6 +8,7 @@ import { blobCSV, type TabellaExport } from '../../../export/csv'
 import { condividiOScarica, creaPdf, scarica, type RigaPdf } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
 import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
+import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
 import {
@@ -35,6 +36,20 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   const [modifica, setModifica] = useState<{ record?: Procedura } | undefined>(apriNuova ? {} : undefined)
   const [esporta, setEsporta] = useState(false)
   const [mostrate, setMostrate] = useState(30)
+  const pressione = usePressioneLunga()
+
+  /** Toglie una procedura dal logbook: il nome dall'elenco e tutte le volte che è stata registrata (con "Annulla"). */
+  async function eliminaTipo(id: string, nome: string) {
+    pressione.setAttivo(undefined)
+    const registrate = (procedure ?? []).filter((p) => p.tipoId === id)
+    if (registrate.length && !window.confirm(`Eliminare "${nome}" e le ${registrate.length === 1 ? 'sue registrazioni (1)' : `sue ${registrate.length} registrazioni`}?`)) return
+    for (const p of registrate) await elimina('procedure', p.id)
+    await elimina('tipiProcedura', id)
+    mostraAvviso(`Eliminata: ${nome}`, () => void (async () => {
+      await ripristina('tipiProcedura', id)
+      for (const p of registrate) await ripristina('procedure', p.id)
+    })())
+  }
 
   const anni = impostazioni?.anniSpecializzazione ?? ANNI_PREDEFINITI
   const mappaTipi = useMemo(() => perId(tipi), [tipi])
@@ -148,9 +163,12 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
               ),
               ...g.righe.map((r) => (
                 <tr key={r.id}>
-                  <td>
-                    <a href={`#/specializzazione/procedura/${r.id}`} style={{ fontWeight: 600, color: 'var(--testo)' }}>{r.nome}</a>
+                  <td className="rimovibile cella-procedura" {...pressione.gestori(r.id)}>
+                    <a href={`#/specializzazione/procedura/${r.id}`} style={{ fontWeight: 600, color: 'var(--testo)' }}
+                      onClick={(e) => { if (pressione.eraPressione() || pressione.attivo === r.id) e.preventDefault() }}>{r.nome}</a>
                     <EtichetteAllegati collegatoA={`tipoProcedura:${r.id}`} />
+                    <button type="button" className="x-elimina" aria-label={`Elimina ${r.nome}`} onPointerDown={(e) => e.stopPropagation()}
+                      onClick={() => void eliminaTipo(r.id, r.nome)}>×</button>
                   </td>
                   <td className="num">{r.primo || ''}</td>
                   <td className="num">{r.secondo || ''}</td>
@@ -161,7 +179,7 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
             ])}
           </tbody>
         </table>
-        <span className="secondario piccolo">Tocca il nome di una procedura per link, appunti e allegati.</span>
+        <span className="secondario piccolo">Tocca il nome di una procedura per link, appunti e allegati. Tienilo premuto per eliminarla.</span>
       </section>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

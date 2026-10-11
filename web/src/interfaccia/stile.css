@@ -488,3 +488,21 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
   .voce-estesa { font-size: 13px !important; padding: 6px 8px !important; }
   .voce-estesa .ora { font-size: 12px; }
 }
+
+/* × che compare con la pressione prolungata (o passando con il mouse) */
+.rimovibile { position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.x-elimina { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 11px; border: 2px solid var(--superficie); background: var(--pericolo); color: #fff; font-size: 13px; font-weight: 700; line-height: 1; padding: 0; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
+.rimovibile[data-premuto="si"] > .x-elimina { display: flex; }
+@media (hover: hover) { .rimovibile:hover > .x-elimina { display: flex; } }
+.x-elimina.in-riga { position: static; flex-shrink: 0; border: none; }
+.blocco > .x-elimina, .voce-estesa > .x-elimina, .riga-giornata .voce > .x-elimina { top: 2px; right: 2px; }
+.voce .ora-mini { font-weight: 500; opacity: 0.8; margin-right: 3px; font-variant-numeric: tabular-nums; }
+.giorno-esteso { cursor: copy; }
+.giorno-esteso a { cursor: pointer; }
+.transizione.da-destra { animation: entra-da-destra 0.28s ease-out; }
+.transizione.da-sinistra { animation: entra-da-sinistra 0.28s ease-out; }
+@keyframes entra-da-destra { from { transform: translateX(48px); opacity: 0.2; } to { transform: none; opacity: 1; } }
+@keyframes entra-da-sinistra { from { transform: translateX(-48px); opacity: 0.2; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .transizione.da-destra, .transizione.da-sinistra { animation: none; } }
+.transizione { overflow-x: clip; }
+.cella-procedura { padding-right: 30px !important; } .cella-procedura > .x-elimina { top: 50%; right: 4px; transform: translateY(-50%); }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react'
 import { aggiungiGiorni, componenti, giornoDi, istante } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
@@ -10,6 +10,8 @@ import { condividiOScarica } from '../../../export/pdf'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro, IconaPiu } from '../../../interfaccia/icone'
 import { vai } from '../../../interfaccia/navigazione'
+import { usePressioneLunga } from '../../../interfaccia/pressione'
+import { eliminaTurno } from '../../turni/smonto'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
 import { celleMese, chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti, perId } from '../../turni/supporto'
 import {
@@ -20,7 +22,7 @@ import {
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const CHIAVE_FILTRI = 'agenda.fontiNascoste'
 const CHIAVE_VISTA = 'agenda.vista'
-export const VISTE = ['mese', 'dueSettimane', 'settimana'] as const
+export const VISTE = ['settimana', 'dueSettimane', 'mese'] as const
 export type Vista = (typeof VISTE)[number]
 const TITOLI_VISTA: Record<Vista, string> = { mese: 'Mese', dueSettimane: '2 settimane', settimana: 'Settimana' }
 
@@ -41,6 +43,7 @@ const dataEstesa = (g: string) => F.dataEstesa(msGiorno(g))
 const dataBreve = (g: string) => F.dataBreve(msGiorno(g))
 const nomeMese = (g: string) => F.mese(msGiorno(g))
 const numeroGiorno = (g: string) => Number(g.slice(8, 10))
+const orarioBreve = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`
 
 /** Indirizzo dell'agenda con vista e periodo. */
 export const linkAgenda = (vista: Vista, giorno: string) => `#/agenda?vista=${vista}&giorno=${giorno}`
@@ -63,7 +66,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
 
   const oggiChiave = chiaveGiorno(oggi())
-  const vista: Vista = (VISTE as readonly string[]).includes(vistaParam ?? '') ? (vistaParam as Vista) : leggi<Vista>(CHIAVE_VISTA, 'mese')
+  const vista: Vista = (VISTE as readonly string[]).includes(vistaParam ?? '') ? (vistaParam as Vista) : leggi<Vista>(CHIAVE_VISTA, 'settimana')
   const riferimento = giornoParam && giornoDaChiave(giornoParam) ? giornoParam : oggiChiave
   useEffect(() => scrivi(CHIAVE_VISTA, vista), [vista])
 
@@ -102,16 +105,55 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   }
   /** Gli impegni dell'agenda si aprono qui; il resto porta alla sua sezione. */
   function apri(i: Impegno, e?: MouseEvent) {
+    // Il clic che chiude una pressione prolungata (o con la × visibile) non apre niente.
+    if (pressione.eraPressione() || pressione.attivo === i.chiave) { e?.preventDefault(); return }
     if (i.fonte !== 'evento') return
     e?.preventDefault()
     setEventoInModifica(i.id)
+  }
+  const pressione = usePressioneLunga()
+  async function eliminaImpegno(i: Impegno) {
+    pressione.setAttivo(undefined)
+    let annulla: () => Promise<void>
+    if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
+    else {
+      const collezione = i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : 'esami'
+      await elimina(collezione, i.id)
+      annulla = () => ripristina(collezione, i.id)
+    }
+    mostraAvviso(`Eliminato: ${i.titolo}`, () => void annulla())
+  }
+  const rimozione: Rimozione = { gestori: pressione.gestori, elimina: (i) => void eliminaImpegno(i) }
+
+  // Passaggio fluido: la nuova settimana (o mese) entra scorrendo dal lato giusto; su iPhone basta trascinare.
+  const precedenteDa = useRef(da)
+  const verso = da > precedenteDa.current ? 'da-destra' : da < precedenteDa.current ? 'da-sinistra' : ''
+  useEffect(() => { precedenteDa.current = da }, [da])
+  const tocco = useRef<{ x: number; y: number; bordoSinistro: boolean; bordoDestro: boolean } | undefined>(undefined)
+  function inizioTocco(e: TouchEvent) {
+    const t = e.touches[0]!
+    const scorri = (e.target as HTMLElement).closest('.settimana-scorri')
+    tocco.current = {
+      x: t.clientX, y: t.clientY,
+      bordoSinistro: !scorri || scorri.scrollLeft <= 1,
+      bordoDestro: !scorri || scorri.scrollLeft + scorri.clientWidth >= scorri.scrollWidth - 1,
+    }
+  }
+  function fineTocco(e: TouchEvent) {
+    const t0 = tocco.current, t = e.changedTouches[0]
+    tocco.current = undefined
+    if (!t0 || !t || pressione.attivo) return
+    const dx = t.clientX - t0.x, dy = t.clientY - t0.y
+    if (Math.abs(dx) < 70 || Math.abs(dx) < 2 * Math.abs(dy)) return
+    if (dx < 0 && t0.bordoDestro) vai(linkAgenda(vista, passo(1)))
+    if (dx > 0 && t0.bordoSinistro) vai(linkAgenda(vista, passo(-1)))
   }
   const evento = eventi?.find((e) => e.id === eventoInModifica)
   const chiudiEvento = () => {
     setEventoInModifica(undefined)
     if (eventoAperto) vai(linkAgenda(vista, riferimento))
   }
-  const comuni = { visibili, oggiChiave, festivo, apri, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }) }
+  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }) }
 
   return (
     <div className="schermata">
@@ -142,9 +184,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
         ))}
       </div>
 
-      {vista === 'mese' && <VistaMese {...comuni} meseInizio={meseInizio} scelto={scelto.startsWith(meseInizio.slice(0, 7)) ? scelto : meseInizio} onScegli={setScelto} />}
-      {vista === 'dueSettimane' && <VistaDueSettimane {...comuni} giorni={giorniTra(da, a)} />}
-      {vista === 'settimana' && <VistaSettimana {...comuni} giorni={giorniTra(da, a)} />}
+      <div key={`${vista}-${da}`} className={`transizione ${verso}`} onTouchStart={inizioTocco} onTouchEnd={fineTocco}>
+        {vista === 'mese' && <VistaMese {...comuni} meseInizio={meseInizio} scelto={scelto.startsWith(meseInizio.slice(0, 7)) ? scelto : meseInizio} onScegli={setScelto} />}
+        {vista === 'dueSettimane' && <VistaDueSettimane {...comuni} giorni={giorniTra(da, a)} />}
+        {vista === 'settimana' && <VistaSettimana {...comuni} giorni={giorniTra(da, a)} />}
+      </div>
 
       {aggiunta && !aggiunta.cosa && <SceltaAggiunta aggiunta={aggiunta} onScegli={(cosa) => setAggiunta({ ...aggiunta, cosa })} onChiudi={() => setAggiunta(undefined)} />}
       {aggiunta?.cosa === 'evento' && <FormEvento giorno={aggiunta.giorno} minuto={aggiunta.minuto} onChiudi={() => setAggiunta(undefined)} />}
@@ -155,7 +199,27 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   )
 }
 
+/** Eliminazione con la × (pressione prolungata, clic destro o passaggio del mouse). */
+interface Rimozione {
+  gestori: ReturnType<typeof usePressioneLunga>['gestori']
+  elimina: (i: Impegno) => void
+}
+/** Le scadenze delle tasse si tolgono dalla loro sezione. */
+const eliminabile = (i: Impegno) => i.fonte !== 'tassa'
+
+function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; inRiga?: boolean }) {
+  if (!eliminabile(i)) return null
+  return (
+    <button type="button" className={`x-elimina${inRiga ? ' in-riga' : ''}`} aria-label={`Elimina ${i.titolo}`}
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); rimozione.elimina(i) }}>×</button>
+  )
+}
+/** Proprietà da aggiungere a un elemento che si può eliminare. */
+const rimovibile = (i: Impegno, r: Rimozione) => (eliminabile(i) ? r.gestori(i.chiave) : {})
+
 interface PropsVista {
+  rimozione: Rimozione
   visibili: Impegno[]
   oggiChiave: string
   festivo: (g: string) => boolean
@@ -189,7 +253,7 @@ function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; 
 
 /* Vista mese: griglia con i nomi (pallini su iPhone) e l'elenco del giorno scelto. */
 
-function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, meseInizio, scelto, onScegli }: PropsVista & { meseInizio: string; scelto: string; onScegli: (g: string) => void }) {
+function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, meseInizio, scelto, onScegli }: PropsVista & { meseInizio: string; scelto: string; onScegli: (g: string) => void }) {
   const c = giornoDaChiave(meseInizio)!
   const mappa = perGiorno(visibili)
   const delGiorno = mappa.get(scelto) ?? []
@@ -210,9 +274,8 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, meseInizio, 
                   <button type="button" className="aggiungi" onClick={() => onScegli(k)} onDoubleClick={() => aggiungi(k)}
                     aria-label={`${dataEstesa(k)}: ${voci.length ? `${voci.length} impegni` : 'nessun impegno'}`} />
                   <span className="numero">{g.giorno}</span>
-                  <button type="button" className="piu-giorno" aria-label={`Aggiungi il ${dataEstesa(k)}`} onClick={() => aggiungi(k)}>+</button>
                   <span className="voci">
-                    {voci.slice(0, 3).map((v) => <span key={v.chiave} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>{v.titolo}</span>)}
+                    {voci.slice(0, 3).map((v) => <span key={v.chiave} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>{v.minutoInizio !== undefined && <span className="ora-mini">{orarioBreve(v.minutoInizio)}</span>}{v.titolo}</span>)}
                     {voci.length > 3 && <span className="altre">+{voci.length - 3}</span>}
                   </span>
                   <span className="puntini" aria-hidden="true">{voci.slice(0, 4).map((v) => <span key={v.chiave} className={`pallino-fonte f-${v.fonte}`} />)}</span>
@@ -221,7 +284,7 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, meseInizio, 
             })}
           </div>
         </section>
-        <span className="secondario piccolo">Tocca un giorno per vedere i suoi impegni. Con il + aggiungi impegni, turni, esami e lezioni.</span>
+        <span className="secondario piccolo">Tocca un giorno per vedere i suoi impegni. Con il + in alto aggiungi impegni, turni, esami e lezioni; tieni premuto un impegno per eliminarlo.</span>
       </div>
       <aside className="laterale-destra">
         <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -229,12 +292,12 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, meseInizio, 
             <h2 className="titolo-sezione" style={{ textTransform: 'capitalize' }}>{scelto === oggiChiave ? 'Oggi' : dataEstesa(scelto)}</h2>
             <button type="button" className="pulsante piccolo" onClick={() => aggiungi(scelto)}>+ Aggiungi</button>
           </div>
-          <ElencoImpegni voci={delGiorno} vuoto="Niente in programma" onApri={apri} />
+          <ElencoImpegni voci={delGiorno} vuoto="Niente in programma" onApri={apri} rimozione={rimozione} />
         </section>
         {prossimi.length > 0 && (
           <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <h2 className="titolo-sezione">Nei giorni dopo</h2>
-            <ElencoImpegni voci={prossimi} conData onApri={apri} />
+            <ElencoImpegni voci={prossimi} conData onApri={apri} rimozione={rimozione} />
           </section>
         )}
       </aside>
@@ -244,7 +307,7 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, meseInizio, 
 
 /* Vista due settimane: ogni giorno con tutti gli impegni scritti per esteso (su iPhone diventa un elenco). */
 
-function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, giorni }: PropsVista & { giorni: string[] }) {
+function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, giorni }: PropsVista & { giorni: string[] }) {
   const mappa = perGiorno(visibili)
   return (
     <section className="due-settimane" aria-label="Due settimane">
@@ -253,17 +316,18 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, gior
         {giorni.map((g) => {
           const voci = mappa.get(g) ?? []
           return (
-            <div key={g} className={['giorno-esteso', festivo(g) && 'festivo', g === oggiChiave && 'oggi'].filter(Boolean).join(' ')}>
+            <div key={g} className={['giorno-esteso', festivo(g) && 'festivo', g === oggiChiave && 'oggi'].filter(Boolean).join(' ')}
+              onClick={(e) => { if (!(e.target as HTMLElement).closest('a')) aggiungi(g) }} title="Tocca uno spazio libero per aggiungere">
               <div className="testa-giorno">
                 <span className="numero">{numeroGiorno(g)}</span>
                 <span className="nome-giorno">{F.dataEstesa(msGiorno(g)).split(' ')[0]}{numeroGiorno(g) === 1 ? ` · ${nomeMese(g).split(' ')[0]}` : ''}</span>
-                <button type="button" className="piu-giorno" aria-label={`Aggiungi il ${dataEstesa(g)}`} onClick={() => aggiungi(g)}>+</button>
               </div>
               {voci.map((v) => (
-                <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} className={`voce-estesa ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>
+                <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`voce-estesa rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>
                   {v.minutoInizio !== undefined && <span className="ora numeri">{testoOrario(v)}</span>}
                   <span className="titolo">{v.titolo}</span>
                   {v.dettaglio && <span className="dettaglio">{v.dettaglio}</span>}
+                  <XElimina i={v} rimozione={rimozione} />
                 </a>
               ))}
             </div>
@@ -278,7 +342,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, gior
 
 const ALTEZZA_ORA = 48
 
-function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, giorni }: PropsVista & { giorni: string[] }) {
+function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, giorni }: PropsVista & { giorni: string[] }) {
   const blocchi = blocchiPerGiorno(visibili, giorni)
   const tuttoIlGiorno = perGiorno(visibili.filter((i) => i.minutoInizio === undefined))
   // Fascia oraria: almeno 7–22, allargata se serve (le notti che continuano dal giorno prima non la allargano).
@@ -315,14 +379,15 @@ function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, giorni 
           <div key={g} className={`testa-colonna${g === oggiChiave ? ' oggi' : ''}${festivo(g) ? ' festivo' : ''}`}>
             <span className="secondario piccolo">{GIORNI[componenti(msGiorno(g)).giornoSettimana - 1]}</span>
             <span className="numero">{numeroGiorno(g)}</span>
-            <button type="button" className="piu-giorno" aria-label={`Aggiungi il ${dataEstesa(g)}`} onClick={() => aggiungi(g)}>+</button>
           </div>
         ))}
         <div className="etichetta-ore secondario piccolo">giorno</div>
         {giorni.map((g) => (
           <div key={g} className="riga-giornata">
             {(tuttoIlGiorno.get(g) ?? []).map((v) => (
-              <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>{v.titolo}</a>
+              <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>
+                {v.titolo}<XElimina i={v} rimozione={rimozione} />
+              </a>
             ))}
             {(blocchi.get(g) ?? []).filter((b) => b.continuaPrima && b.a <= oraDa * 60).map((b) => (
               <a key={`c${b.impegno.chiave}`} href={b.impegno.link} onClick={(e) => apri(b.impegno, e)} className={classeVoce(b.impegno)}>
@@ -343,7 +408,7 @@ function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, giorni 
               const v = b.impegno
               return (
                 <a key={`${v.chiave}-${b.da}`} href={v.link} onClick={(e) => apri(v, e)}
-                  className={`blocco ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}
+                  {...rimovibile(v, rimozione)} className={`blocco rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}
                   style={{ top: y(b.da), height: alto - 2, left: `calc(${(b.corsia / b.corsie) * 100}% + 2px)`, width: `calc(${100 / b.corsie}% - 4px)` }}>
                   <span className="titolo">{v.titolo}</span>
                   {alto > 30 && (
@@ -352,6 +417,7 @@ function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, giorni 
                     </span>
                   )}
                   {alto > 54 && v.dettaglio && <span className="dettaglio">{v.dettaglio}</span>}
+                  <XElimina i={v} rimozione={rimozione} />
                 </a>
               )
             })}
@@ -366,12 +432,12 @@ function VistaSettimana({ visibili, oggiChiave, festivo, apri, aggiungi, giorni 
 const classeVoce = (i: Impegno) => (i.fonte === 'turno' ? `voce sigla ${i.colore}` : `voce ${i.colore}`)
 
 /** Elenco di impegni (usato anche nella pagina Oggi). */
-export function ElencoImpegni({ voci, conData, vuoto, onApri }: { voci: Impegno[]; conData?: boolean; vuoto?: string; onApri?: (i: Impegno, e: MouseEvent) => void }) {
+export function ElencoImpegni({ voci, conData, vuoto, onApri, rimozione }: { voci: Impegno[]; conData?: boolean; vuoto?: string; onApri?: (i: Impegno, e: MouseEvent) => void; rimozione?: Rimozione }) {
   return (
     <div className="lista">
       {voci.length === 0 && vuoto && <div className="vuoto piccolo">{vuoto}</div>}
       {voci.map((v) => (
-        <a key={v.chiave} className={`riga riga-impegno${v.concluso ? ' conclusa' : ''}`} href={v.link} onClick={(e) => onApri?.(v, e)}>
+        <a key={v.chiave} className={`riga riga-impegno${rimozione ? ' rimovibile' : ''}${v.concluso ? ' conclusa' : ''}`} href={v.link} onClick={(e) => onApri?.(v, e)} {...(rimozione ? rimovibile(v, rimozione) : {})}>
           <span className="orario-impegno numeri">
             {conData && <span style={{ display: 'block', fontWeight: 600, color: 'var(--testo)' }}>{dataBreve(v.giorno)}</span>}
             {v.minutoInizio === undefined ? (conData ? '' : 'giornata') : testoOrario(v).replace('–', '\n')}
@@ -381,6 +447,7 @@ export function ElencoImpegni({ voci, conData, vuoto, onApri }: { voci: Impegno[
             <span style={{ fontWeight: 600 }}>{v.titolo}</span>
             <span className="secondario piccolo">{[v.fonte === 'evento' ? '' : TITOLO_VOCE[v.fonte], v.dettaglio].filter(Boolean).join(' · ')}</span>
           </span>
+          {rimozione && <XElimina i={v} rimozione={rimozione} inRiga />}
         </a>
       ))}
     </div>
