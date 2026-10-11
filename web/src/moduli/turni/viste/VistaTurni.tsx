@@ -115,7 +115,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           )}
         </div>
         <div className="riga-azioni azioni">
-          <a className="pulsante con-icona" href={`#/turni/stampa?mese=${qui}`} aria-label="Stampa e PDF"><IconaStampa dimensione={18} /><span className="solo-largo">Stampa · PDF</span></a>
+          <a className="pulsante con-icona" href={`#/turni/stampa?mese=${qui}`} aria-label="Stampa, PDF e Calendario Apple"><IconaStampa dimensione={18} /><span className="solo-largo">Stampa ed esporta</span></a>
           {delMese.length + giornateMese.reduce((n, g) => n + g.numero, 0) > 0 && (
             <button type="button" className="pulsante tondo pericolo" onClick={() => setSvuota(true)} aria-label="Svuota il mese" title="Svuota il mese"><IconaCestino dimensione={18} /></button>
           )}

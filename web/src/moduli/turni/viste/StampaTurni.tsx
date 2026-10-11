@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { intervalloMese, istante } from '../../../nucleo/calendario'
+import { aggiungiGiorni, intervalloMese, istante } from '../../../nucleo/calendario'
+import { creaIcs, type EventoIcs } from '../../../export/ics'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
@@ -10,7 +11,7 @@ import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
 import { ETICHETTE_GIORNATA, minuti, TIPI_GIORNATA, tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA, type TipoGiornata, type TipoTurno } from '../tipi'
-import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, larghezzaTurno, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, giornoDaChiave, larghezzaTurno, oggi, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const INTESTAZIONI = ['Data', 'Turno', 'Orario', 'Ore', 'Sede', 'Note']
@@ -114,6 +115,30 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       .map((x) => ({ etichetta: TITOLI_GIORNATA[x.tipo].toLowerCase(), valore: String(x.n) })),
   ]
   const nomeFile = `Turni ${nomeMese}.pdf`
+
+  async function calendario(periodo: 'mese' | 'futuro') {
+    const g0 = oggi()
+    const { inizio: inizioMese, fine: fineMese } = intervalloMese(anno, mese)
+    const daOggi = istante(g0.anno, g0.mese, g0.giorno)
+    const dentro = (ms: number) => (periodo === 'mese' ? ms >= inizioMese && ms < fineMese : ms >= daOggi)
+    const eventi: EventoIcs[] = (turni ?? []).filter((t) => dentro(t.inizio)).map((t) => ({
+      uid: `turno-${t.id}@agenda`,
+      titolo: `${siglaTurno(t, mappaModelli)} · ${titoloTurno(t, mappaModelli)}`,
+      inizio: t.inizio, fine: t.fine, tuttoIlGiorno: t.tuttoIlGiorno,
+      luogo: mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')?.nome, note: t.note, modificatoIl: t.modificatoIl,
+    }))
+    for (const g of ferie ?? []) {
+      const gg = giornoDaChiave(g.giorno)
+      if (!gg) continue
+      const inizio = istante(gg.anno, gg.mese, gg.giorno)
+      if (!dentro(inizio)) continue
+      const dopo = aggiungiGiorni(gg, 1)
+      eventi.push({ uid: `giornata-${g.id}@agenda`, titolo: TITOLI_GIORNATA[tipoGiornataDa(g.tipo)], inizio, fine: istante(dopo.anno, dopo.mese, dopo.giorno), tuttoIlGiorno: true, modificatoIl: g.modificatoIl })
+    }
+    const blob = new Blob([creaIcs(eventi, 'Turni')], { type: 'text/calendar' })
+    const nome = periodo === 'mese' ? `Turni ${nomeMese}.ics` : 'Turni da oggi.ics'
+    await condividiOScarica(blob, nome, 'Turni')
+  }
 
   async function pdf(azione: 'condividi' | 'scarica') {
     setStato('Preparo il PDF…')
@@ -220,6 +245,18 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       <p className="secondario piccolo non-stampare">
         Su iPhone, "Condividi" apre il foglio di condivisione (Mail, WhatsApp, File…). "Stampa" permette anche di salvare come PDF.
       </p>
+
+      <section className="scheda modulo non-stampare">
+        <h2 className="titolo-sezione">Calendario Apple</h2>
+        <p className="secondario" style={{ margin: 0 }}>
+          Crea un file con i turni e le giornate (ferie, riposo…): su iPhone scegli <strong>Calendario</strong> dal foglio di condivisione,
+          su Mac si apre da solo. Ti conviene creare nel Calendario un calendario chiamato "Turni" e aggiungerli lì.
+        </p>
+        <div className="riga-azioni">
+          <button type="button" className="pulsante primario" onClick={() => void calendario('mese')}>Turni di {nomeMese}</button>
+          <button type="button" className="pulsante" onClick={() => void calendario('futuro')}>Tutti da oggi in poi</button>
+        </div>
+      </section>
       <span className="solo-stampa secondario piccolo">Agenda · stampato {F.dataEstesa(Date.now())}</span>
     </div>
   )
