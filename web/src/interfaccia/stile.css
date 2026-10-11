@@ -731,6 +731,6 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .valore-grande { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
 @media (prefers-color-scheme: dark) { .opzione-quiz.giusta { background: #2C3F2A; color: #CFE6C9; } .opzione-quiz.sbagliata { background: #4A2626; color: #F3C3C3; } }
 .collegamenti-rapidi.musica { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.colore-corso { background: #DDEFF5; color: #1F5A70; }
-.colore-congresso { background: #F3E3EE; color: #6A3A5C; }
-@media (prefers-color-scheme: dark) { .colore-corso { background: #23404A; color: #C8E6F0; } .colore-congresso { background: #46304A; color: #EBD3E7; } }
+.colore-corso { background: #D6E4F7; color: #1E4A85; }
+.colore-congresso { background: #FBE1C6; color: #8A4510; }
+@media (prefers-color-scheme: dark) { .colore-corso { background: #213650; color: #C9DCF5; } .colore-congresso { background: #4A3220; color: #F6D2AE; } }
