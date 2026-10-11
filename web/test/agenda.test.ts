@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { istante } from '../src/nucleo/calendario'
 import type { EsameOLezione, Evento, GiornataSpeciale, Tassa, Turno } from '../src/dati/modello'
-import { giorniTra, impegniTra, perGiorno, testoOrario } from '../src/moduli/agenda/impegni'
+import { blocchiPerGiorno, disponi, giorniTra, impegniTra, lunediDi, perGiorno, spostaGiorni, testoOrario } from '../src/moduli/agenda/impegni'
 
 const base = { creatoIl: 0, modificatoIl: 1 }
 const adesso = istante(2026, 10, 15, 10)
@@ -46,5 +46,27 @@ describe('Agenda', () => {
   test('giorni tra due date, anche al cambio dell’ora legale', () => {
     expect(giorniTra('2026-10-24', '2026-10-27')).toEqual(['2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27'])
     expect(giorniTra('2026-10-27', '2026-10-24')).toEqual([])
+  })
+})
+
+describe('Vista a settimana', () => {
+  const imp = (chiave: string, giorno: string, a?: number, b?: number) =>
+    ({ chiave, fonte: 'evento', id: chiave, giorno, titolo: chiave, minutoInizio: a, minutoFine: b, colore: '', link: '', modificatoIl: 0 }) as const
+
+  test('la notte continua nel giorno dopo, tutto il giorno resta fuori', () => {
+    const m = blocchiPerGiorno([imp('N', '2026-10-17', 20 * 60, 8 * 60), imp('ferie', '2026-10-17')], ['2026-10-17', '2026-10-18'])
+    expect(m.get('2026-10-17')!.map((b) => [b.da, b.a, b.continuaDopo])).toEqual([[1200, 1440, true]])
+    expect(m.get('2026-10-18')!.map((b) => [b.da, b.a, b.continuaPrima])).toEqual([[0, 480, true]])
+  })
+
+  test('impegni sovrapposti vanno affiancati', () => {
+    const r = disponi([{ da: 480, a: 1080 }, { da: 900, a: 960 }, { da: 1000, a: 1100 }, { da: 1200, a: 1260 }])
+    expect(r.map((b) => [b.corsia, b.corsie])).toEqual([[0, 2], [1, 2], [1, 2], [0, 1]])
+  })
+
+  test('lunedì della settimana e spostamenti', () => {
+    expect(lunediDi('2026-10-18')).toBe('2026-10-12')
+    expect(lunediDi('2026-10-12')).toBe('2026-10-12')
+    expect(spostaGiorni('2026-10-26', 7)).toBe('2026-11-02')
   })
 })

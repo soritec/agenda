@@ -76,9 +76,9 @@ export function EsamiOLezioni({ tipo }: { tipo: TipoAttivita }) {
   )
 }
 
-function FormAttivita({ tipo, record, onChiudi }: { tipo: TipoAttivita; record?: EsameOLezione; onChiudi: () => void }) {
+export function FormAttivita({ tipo, record, giorno, onChiudi }: { tipo: TipoAttivita; record?: EsameOLezione; giorno?: string; onChiudi: () => void }) {
   const [b, setB] = useState({
-    giorno: record?.giorno ?? chiaveGiorno(oggi()), titolo: record?.titolo ?? '',
+    giorno: record?.giorno ?? giorno ?? chiaveGiorno(oggi()), titolo: record?.titolo ?? '',
     materia: record?.materia ?? '', esito: record?.esito ?? '', note: record?.note ?? '', completato: Boolean(record?.completato),
   })
   const t = TITOLI[tipo]

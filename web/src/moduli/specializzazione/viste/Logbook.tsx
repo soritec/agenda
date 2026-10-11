@@ -201,7 +201,11 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
       </Foglio>
 
       {modifica && (
-        <FormProcedura record={modifica.record} inizio={impostazioni?.inizioSpecializzazione} anni={anni} onChiudi={() => setModifica(undefined)} />
+        <FormProcedura record={modifica.record} inizio={impostazioni?.inizioSpecializzazione} anni={anni} onChiudi={() => {
+          setModifica(undefined)
+          // Il modulo aperto da "+ Procedura" non deve riaprirsi ricaricando la pagina.
+          if (location.hash.includes('nuova=1')) history.replaceState(null, '', '#/specializzazione/logbook')
+        }} />
       )}
     </div>
   )

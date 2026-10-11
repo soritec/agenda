@@ -144,3 +144,73 @@ export function perGiorno(impegni: Impegno[]): Map<string, Impegno[]> {
   for (const i of impegni) m.set(i.giorno, [...(m.get(i.giorno) ?? []), i])
   return m
 }
+
+/* Vista a settimana: blocchi orari per colonna */
+
+export interface Blocco {
+  impegno: Impegno
+  /** Minuti dalla mezzanotte del giorno della colonna (0–1440). */
+  da: number
+  a: number
+  /** Il blocco continua dal giorno prima o nel giorno dopo (es. guardia notturna). */
+  continuaPrima?: boolean
+  continuaDopo?: boolean
+  /** Corsia e numero di corsie del gruppo di blocchi che si sovrappongono. */
+  corsia: number
+  corsie: number
+}
+
+const giornoDopo = (g: string) => {
+  const c = giornoDaChiave(g)!
+  return chiaveGiorno(giornoDi(istante(c.anno, c.mese, c.giorno, 12) + 86_400_000))
+}
+
+/**
+ * Divide gli impegni con orario in blocchi per giorno: quelli che passano la mezzanotte
+ * finiscono a 24:00 e continuano il giorno dopo da 0:00. Gli impegni di tutto il giorno restano fuori.
+ */
+export function blocchiPerGiorno(impegni: Impegno[], giorni: string[]): Map<string, Blocco[]> {
+  const grezzi = new Map<string, Omit<Blocco, 'corsia' | 'corsie'>[]>(giorni.map((g) => [g, []]))
+  for (const i of impegni) {
+    if (i.minutoInizio === undefined) continue
+    const fine = i.minutoFine ?? i.minutoInizio + 60
+    const attraversa = fine <= i.minutoInizio && i.minutoFine !== undefined
+    grezzi.get(i.giorno)?.push({ impegno: i, da: i.minutoInizio, a: attraversa ? 1440 : Math.max(fine, i.minutoInizio + 30), continuaDopo: attraversa || undefined })
+    if (attraversa && fine > 0) grezzi.get(giornoDopo(i.giorno))?.push({ impegno: i, da: 0, a: fine, continuaPrima: true })
+  }
+  const out = new Map<string, Blocco[]>()
+  for (const [g, elenco] of grezzi) out.set(g, disponi(elenco))
+  return out
+}
+
+/** Affianca i blocchi che si sovrappongono: ognuno prende la prima corsia libera del suo gruppo. */
+export function disponi<T extends { da: number; a: number }>(blocchi: T[]): (T & { corsia: number; corsie: number })[] {
+  const ordinati = [...blocchi].sort((x, y) => x.da - y.da || y.a - x.a)
+  const out: (T & { corsia: number; corsie: number })[] = []
+  let gruppo: (T & { corsia: number; corsie: number })[] = []
+  let fineGruppo = -1
+  const chiudi = () => { const n = Math.max(1, ...gruppo.map((b) => b.corsia + 1)); for (const b of gruppo) b.corsie = n; out.push(...gruppo); gruppo = [] }
+  for (const b of ordinati) {
+    if (b.da >= fineGruppo) { chiudi(); fineGruppo = -1 }
+    const occupate = new Set(gruppo.filter((x) => x.a > b.da).map((x) => x.corsia))
+    let corsia = 0
+    while (occupate.has(corsia)) corsia++
+    gruppo.push({ ...b, corsia, corsie: 1 })
+    fineGruppo = Math.max(fineGruppo, b.a)
+  }
+  chiudi()
+  return out
+}
+
+/** Lunedì della settimana del giorno dato. */
+export function lunediDi(giorno: string): string {
+  const c = giornoDaChiave(giorno)!
+  const ms = istante(c.anno, c.mese, c.giorno, 12)
+  const dow = componenti(ms).giornoSettimana
+  return chiaveGiorno(giornoDi(ms - (dow - 1) * 86_400_000))
+}
+
+export function spostaGiorni(giorno: string, n: number): string {
+  const c = giornoDaChiave(giorno)!
+  return chiaveGiorno(giornoDi(istante(c.anno, c.mese, c.giorno, 12) + n * 86_400_000))
+}

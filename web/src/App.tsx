@@ -40,7 +40,7 @@ export function App() {
     else if (sotto) pagina = <DettaglioTurno key={sotto} id={sotto} />
     else pagina = <VistaTurni anno={anno} mese={mese} />
   } else if (sezione === 'agenda') {
-    pagina = <Agenda key={`${anno}-${mese}`} anno={anno} mese={mese} eventoAperto={sotto === 'evento' ? percorso[2] : undefined} nuovoGiorno={parametri.get('giorno') ?? undefined} />
+    pagina = <Agenda key={sotto === 'evento' ? percorso[2] : 'agenda'} vistaParam={parametri.get('vista')} giornoParam={parametri.get('giorno')} eventoAperto={sotto === 'evento' ? percorso[2] : undefined} />
   } else if (sezione === 'specializzazione') {
     if (sotto === 'logbook') pagina = <Logbook key={parametri.get('nuova') ?? ''} apriNuova={parametri.get('nuova') === '1'} />
     else if (sotto === 'esami') pagina = <EsamiOLezioni key="esame" tipo="esame" />

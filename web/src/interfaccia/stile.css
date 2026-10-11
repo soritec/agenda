@@ -434,3 +434,57 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
   .mese.agenda .cella .voci { display: none; }
   .mese.agenda .cella .puntini { display: flex; gap: 2px; position: relative; pointer-events: none; flex-wrap: wrap; justify-content: center; }
 }
+
+/* Agenda: scelta della vista, "+" sul giorno, due settimane, settimana */
+.segmenti a { flex: 1 1 auto; min-height: 32px; padding: 6px 12px; border-radius: 9px; color: var(--testo-2); font-size: 14px; font-weight: 500; text-align: center; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+.segmenti a.attivo { background: var(--superficie); color: var(--testo); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.scelta-vista { flex-wrap: nowrap; }
+.piu-giorno { width: 22px; height: 22px; border-radius: 11px; border: none; background: var(--primario); color: var(--primario-testo); font-size: 16px; line-height: 22px; padding: 0; cursor: pointer; flex-shrink: 0; }
+.cella .piu-giorno { position: absolute; top: 4px; right: 4px; display: none; }
+@media (hover: hover) { .cella:hover .piu-giorno { display: block; } }
+.due-settimane { background: var(--superficie); border: 1px solid var(--linea); border-radius: 18px; padding: 12px 8px 8px; }
+.due-settimane .giorni-settimana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: 11px; font-weight: 600; color: var(--testo-2); padding-bottom: 6px; }
+.due-settimane .griglia { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.giorno-esteso { min-height: 170px; border-radius: 10px; padding: 4px; display: flex; flex-direction: column; gap: 3px; background: var(--superficie); border: 1px solid var(--linea); min-width: 0; }
+.giorno-esteso.festivo { background: var(--superficie-2); }
+.giorno-esteso .testa-giorno { display: flex; align-items: center; gap: 6px; padding: 2px 2px 4px; }
+.giorno-esteso .numero { font-weight: 700; font-size: 15px; width: 26px; height: 26px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.giorno-esteso.oggi .numero { background: #CFE1DE; color: #1F4A4E; }
+.giorno-esteso .nome-giorno { display: none; font-size: 13px; color: var(--testo-2); text-transform: capitalize; flex: 1; }
+.giorno-esteso .piu-giorno { margin-left: auto; opacity: 0.85; }
+.voce-estesa { display: flex !important; flex-direction: column; align-items: flex-start !important; justify-content: flex-start !important; min-width: 0 !important; height: auto !important; line-height: 1.25 !important; padding: 3px 5px !important; border-radius: 6px; white-space: normal !important; font-size: 11.5px !important; text-align: left !important; }
+.voce-estesa .ora { font-size: 10.5px; opacity: 0.85; font-weight: 500; }
+.voce-estesa .titolo { font-weight: 700; overflow-wrap: anywhere; }
+.voce-estesa .dettaglio { font-weight: 400; opacity: 0.85; overflow-wrap: anywhere; }
+.settimana-scorri { --colonna-giorno: 0px; overflow-x: auto; border: 1px solid var(--linea); border-radius: 18px; background: var(--superficie); scroll-snap-type: x mandatory; scroll-padding-left: 44px; }
+.settimana { display: grid; position: relative; }
+.settimana .angolo { border-bottom: 1px solid var(--linea); position: sticky; left: 0; background: var(--superficie); z-index: 2; }
+.testa-colonna { display: flex; flex-direction: column; align-items: center; padding: 8px 2px 6px; border-bottom: 1px solid var(--linea); border-left: 1px solid var(--linea); position: relative; scroll-snap-align: start; }
+.testa-colonna .numero { font-size: 18px; font-weight: 700; width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.testa-colonna.oggi .numero { background: #CFE1DE; color: #1F4A4E; }
+.testa-colonna.festivo .numero { color: var(--testo-2); }
+.testa-colonna .piu-giorno { position: absolute; top: 8px; right: 6px; }
+.etichetta-ore { padding: 6px 4px; border-bottom: 1px solid var(--linea); position: sticky; left: 0; background: var(--superficie); z-index: 2; font-size: 10px; text-align: right; }
+.riga-giornata { border-left: 1px solid var(--linea); border-bottom: 1px solid var(--linea); padding: 3px; display: flex; flex-direction: column; gap: 2px; min-height: 28px; min-width: 0; }
+.riga-giornata .voce { height: auto; white-space: normal; line-height: 1.25; padding: 2px 5px; font-size: 11px; }
+.colonna-ore { position: sticky; left: 0; background: var(--superficie); z-index: 2; }
+.colonna-ore span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 10.5px; color: var(--testo-2); font-variant-numeric: tabular-nums; }
+.colonna-giorno { position: relative; border-left: 1px solid var(--linea); cursor: copy; background-image: linear-gradient(to bottom, var(--linea) 1px, transparent 1px); }
+.colonna-giorno.festivo { background-color: var(--superficie-2); }
+.colonna-giorno .blocco { position: absolute; display: flex !important; flex-direction: column; align-items: flex-start !important; justify-content: flex-start !important; min-width: 0 !important; gap: 1px; height: auto; overflow: hidden; padding: 3px 5px !important; border-radius: 6px; line-height: 1.2 !important; white-space: normal !important; font-size: 11.5px !important; text-align: left !important; cursor: pointer; box-shadow: 0 0 0 1px var(--superficie); }
+.colonna-giorno .blocco .titolo { font-weight: 700; overflow-wrap: anywhere; }
+.colonna-giorno .blocco .ora { font-size: 10.5px; font-weight: 500; opacity: 0.9; }
+.colonna-giorno .blocco .dettaglio { font-weight: 400; opacity: 0.85; overflow-wrap: anywhere; }
+.linea-adesso { position: absolute; left: 0; right: 0; height: 2px; background: var(--pericolo); z-index: 1; pointer-events: none; }
+.linea-adesso::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 4px; background: var(--pericolo); }
+@media (max-width: 700px) {
+  .scelta-vista { order: 3; width: 100%; }
+  .settimana-scorri { --colonna-giorno: calc((100vw - 32px - 46px) / 3); }
+  .due-settimane { padding: 0; border: none; background: none; }
+  .due-settimane .giorni-settimana { display: none; }
+  .due-settimane .griglia { grid-template-columns: 1fr; gap: 6px; }
+  .giorno-esteso { min-height: 0; }
+  .giorno-esteso .nome-giorno { display: block; }
+  .voce-estesa { font-size: 13px !important; padding: 6px 8px !important; }
+  .voce-estesa .ora { font-size: 12px; }
+}
