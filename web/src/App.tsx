@@ -52,7 +52,7 @@ export function App() {
     else if (sotto === 'ricerca') pagina = <SezioneInArrivo titolo="Ricerca" testo="Questa sezione la sviluppiamo più avanti: dimmi tu cosa ti serve (progetti, articoli, scadenze, dati raccolti…)." />
     else if (sotto === 'impostazioni') pagina = <ImpostazioniSpecializzazione />
     else pagina = <Specializzazione />
-  } else if (sezione === 'task') pagina = <Task apertoId={sotto} giorno={parametri.get('giorno')} minuto={parametri.get('minuto')} />
+  } else if (sezione === 'task') pagina = <Task key={parametri.get('scheda') ?? 'oggi'} apertoId={sotto} giorno={parametri.get('giorno')} minuto={parametri.get('minuto')} scheda={parametri.get('scheda')} />
   else if (sezione === 'studio') pagina = <InArrivo titolo="Studio e risorse" />
   else if (sezione === 'budget') pagina = <InArrivo titolo="Budget" />
   else if (sezione === 'journaling') pagina = <InArrivo titolo="Journaling" />

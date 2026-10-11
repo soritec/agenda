@@ -109,3 +109,45 @@ export function leggiTestoVeloce(testo: string, oggi: string, giornoSettimanaOgg
   }
   return { titolo: t.replace(/\s+/g, ' ').trim(), scadenza, minuto, priorita }
 }
+
+export const SCHEDE = ['oggi', 'programmati', 'senzaData'] as const
+export type Scheda = (typeof SCHEDE)[number]
+export const TITOLI_SCHEDA: Record<Scheda, string> = { oggi: 'Oggi', programmati: 'Programmati', senzaData: 'Senza data' }
+
+const perPriorita = (a: Attivita, b: Attivita) =>
+  PRIORITA.indexOf(prioritaDa(a.priorita)) - PRIORITA.indexOf(prioritaDa(b.priorita))
+  || (a.minuto ?? 9999) - (b.minuto ?? 9999) || a.creatoIl - b.creatoIl
+
+/**
+ * Task divisi nelle tre schede della pagina. I fatti restano visibili (in fondo, in trasparenza):
+ * in Oggi quelli completati da oggi, in Senza data quelli completati negli ultimi 7 giorni,
+ * nei Programmati finché il loro giorno non è passato.
+ */
+export function perScheda(elenco: Attivita[], oggi: string, inizioOggi: number) {
+  const aperti = elenco.filter((t) => !t.completataIl)
+  const fatti = elenco.filter((t) => t.completataIl)
+  const inRitardo = aperti.filter((t) => t.scadenza && t.scadenza < oggi).sort((a, b) => a.scadenza!.localeCompare(b.scadenza!) || perPriorita(a, b))
+  const oggiAperti = aperti.filter((t) => t.scadenza === oggi).sort(perPriorita)
+  const oggiFatti = fatti.filter((t) => t.scadenza && t.scadenza <= oggi && t.completataIl! >= inizioOggi).sort(perPriorita)
+
+  const programmati = new Map<string, Attivita[]>()
+  for (const t of elenco.filter((x) => x.scadenza && x.scadenza > oggi).sort((a, b) =>
+    a.scadenza!.localeCompare(b.scadenza!) || Number(Boolean(a.completataIl)) - Number(Boolean(b.completataIl)) || perPriorita(a, b))) {
+    programmati.set(t.scadenza!, [...(programmati.get(t.scadenza!) ?? []), t])
+  }
+  const settimanaFa = inizioOggi - 7 * 86_400_000
+  const senzaData = [
+    ...aperti.filter((t) => !t.scadenza).sort(perPriorita),
+    ...fatti.filter((t) => !t.scadenza && t.completataIl! >= settimanaFa).sort((a, b) => b.completataIl! - a.completataIl!),
+  ]
+  return {
+    oggi: { inRitardo, aperti: oggiAperti, fatti: oggiFatti },
+    programmati,
+    senzaData,
+    conteggi: {
+      oggi: inRitardo.length + oggiAperti.length,
+      programmati: aperti.filter((t) => t.scadenza && t.scadenza > oggi).length,
+      senzaData: aperti.filter((t) => !t.scadenza).length,
+    } satisfies Record<Scheda, number>,
+  }
+}

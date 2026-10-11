@@ -50,3 +50,23 @@ describe('Task', () => {
   })
 })
 
+
+describe('Schede dei task', () => {
+  test('oggi, programmati e senza data, con i fatti in fondo', async () => {
+    const { perScheda } = await import('../src/moduli/task/logica')
+    const inizio = 1_000_000_000
+    const r = perScheda([
+      base('ritardo', { scadenza: '2026-10-09' }),
+      base('oggi-b', { scadenza: '2026-10-11', priorita: 'bassa' }), base('oggi-a', { scadenza: '2026-10-11', priorita: 'alta' }),
+      base('fatto-oggi', { scadenza: '2026-10-11', completataIl: inizio + 5 }), base('fatto-ieri', { scadenza: '2026-10-10', completataIl: inizio - 5 }),
+      base('dom-fatto', { scadenza: '2026-10-12', completataIl: inizio + 1 }), base('dom', { scadenza: '2026-10-12' }), base('ven', { scadenza: '2026-10-16' }),
+      base('libero'), base('libero-fatto', { completataIl: inizio - 86_400_000 }), base('libero-vecchio', { completataIl: inizio - 30 * 86_400_000 }),
+    ], '2026-10-11', inizio)
+    expect(r.oggi.inRitardo.map((t) => t.id)).toEqual(['ritardo'])
+    expect(r.oggi.aperti.map((t) => t.id)).toEqual(['oggi-a', 'oggi-b'])
+    expect(r.oggi.fatti.map((t) => t.id)).toEqual(['fatto-oggi'])
+    expect([...r.programmati].map(([g, l]) => [g, l.map((t) => t.id)])).toEqual([['2026-10-12', ['dom', 'dom-fatto']], ['2026-10-16', ['ven']]])
+    expect(r.senzaData.map((t) => t.id)).toEqual(['libero', 'libero-fatto'])
+    expect(r.conteggi).toEqual({ oggi: 3, programmati: 2, senzaData: 1 })
+  })
+})

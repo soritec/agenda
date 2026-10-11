@@ -563,3 +563,15 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .spunta.piccola { width: 15px; height: 15px; border-radius: 8px; border-width: 1.5px; font-size: 9px; margin-top: 0; border-color: currentColor; }
 @media (prefers-color-scheme: dark) { .tendina-task { background: #3B3048; color: #E3D6F2; } }
 @media (max-width: 700px) { .tendina-task { font-size: 13px; } .spunta.piccola { width: 18px; height: 18px; } }
+.barra-priorita { width: 4px; align-self: stretch; border-radius: 2px; background: #D9534F; flex-shrink: 0; margin-right: -4px; }
+.riga-task { -webkit-touch-callout: none; }
+.riga-nuovo-task { cursor: default !important; align-items: center !important; }
+.pulsante.piu-tardi { min-height: 32px; padding: 4px 10px; font-size: 13px; flex-shrink: 0; }
+.pillola.piccola { height: 26px; font-size: 12px; padding: 0 8px; }
+.menu-piu-tardi { display: flex; flex-direction: column; border-top: 1px solid var(--linea); padding: 4px 0 8px; }
+.menu-piu-tardi > button { text-align: left; padding: 10px 4px; background: none; border: none; border-bottom: 1px solid var(--linea); color: var(--testo); font-size: 15px; cursor: pointer; }
+.menu-piu-tardi > button:last-child { border-bottom: none; }
+.menu-piu-tardi .scegli-giorno { display: flex; gap: 8px; align-items: center; padding: 8px 4px; border-bottom: 1px solid var(--linea); }
+.menu-piu-tardi .scegli-giorno input { flex: 1; min-height: 36px; padding: 4px 8px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); }
+.menu-azioni .riga { font-size: 15px; }
+.segmenti a[role="tab"] { flex: 1 1 0; }
