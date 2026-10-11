@@ -18,7 +18,7 @@ const testoNumero = (n?: number) => (n === undefined ? '' : String(n).replace('.
 
 export function CorsiEcm() {
   const corsi = useCollezione('corsi')
-  const [modifica, setModifica] = useState<{ c?: Corso }>()
+  const [modifica, setModifica] = useState<{ c?: Corso; tipo?: 'corso' | 'congresso' }>()
   const anno = chiaveGiorno(oggi()).slice(0, 4)
   const anni = [...new Set((corsi ?? []).map((c) => c.giorno.slice(0, 4)))].sort().reverse()
   return (
@@ -26,16 +26,22 @@ export function CorsiEcm() {
       <header className="intestazione">
         <div>
           <a href="#/specializzazione" className="piccolo">‹ Specializzazione</a>
-          <h1 className="titolo-grande">Corsi ed ECM</h1>
+          <h1 className="titolo-grande">Corsi, congressi ed ECM</h1>
         </div>
-        <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ Corso</button>
+        <div className="riga-azioni">
+          <a className="pulsante" href="https://www.cogeaps.it" target="_blank" rel="noreferrer">Co.Ge.A.P.S. ›</a>
+          <button type="button" className="pulsante" onClick={() => setModifica({ tipo: 'congresso' })}>+ Congresso</button>
+          <button type="button" className="pulsante primario" onClick={() => setModifica({ tipo: 'corso' })}>+ Corso</button>
+        </div>
       </header>
+      <span className="secondario piccolo">Su Co.Ge.A.P.S. trovi i crediti ECM registrati ufficialmente: confrontali con quelli segnati qui.</span>
       <div className="tessere">
         <div className="tessera"><span className="valore">{testoNumero(creditiAnno(corsi ?? [], anno))}</span><span className="secondario piccolo">crediti nel {anno}</span></div>
-        <div className="tessera"><span className="valore">{(corsi ?? []).filter((c) => c.giorno.startsWith(anno)).length}</span><span className="secondario piccolo">corsi nel {anno}</span></div>
+        <div className="tessera"><span className="valore">{(corsi ?? []).filter((c) => c.giorno.startsWith(anno) && c.tipo !== 'congresso').length}</span><span className="secondario piccolo">corsi nel {anno}</span></div>
+        <div className="tessera"><span className="valore">{(corsi ?? []).filter((c) => c.giorno.startsWith(anno) && c.tipo === 'congresso').length}</span><span className="secondario piccolo">congressi nel {anno}</span></div>
         <div className="tessera"><span className="valore">{testoNumero(creditiAnno(corsi ?? [], ''))}</span><span className="secondario piccolo">crediti in totale</span></div>
       </div>
-      {(corsi ?? []).length === 0 && <div className="vuoto secondario">Nessun corso. Aggiungi congressi e corsi con i loro crediti e gli attestati in PDF.</div>}
+      {(corsi ?? []).length === 0 && <div className="vuoto secondario">Niente ancora. Aggiungi corsi e congressi con i loro crediti e gli attestati in PDF.</div>}
       {anni.map((a) => (
         <section key={a} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <h2 className="titolo-sezione">{a} <span className="secondario piccolo" style={{ fontWeight: 400 }}>· {testoNumero(creditiAnno(corsi ?? [], a))} crediti</span></h2>
@@ -43,7 +49,7 @@ export function CorsiEcm() {
             {(corsi ?? []).filter((c) => c.giorno.startsWith(a)).sort((x, y) => y.giorno.localeCompare(x.giorno)).map((c) => (
               <div key={c.id} className="riga" style={{ cursor: 'default' }}>
                 <button type="button" className="crescente" onClick={() => setModifica({ c })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
-                  <span style={{ fontWeight: 600 }}>{c.titolo}</span>
+                  <span style={{ fontWeight: 600 }}><span className={`etichetta-tipo ${c.tipo === 'congresso' ? 'colore-congresso' : 'colore-corso'}`}>{c.tipo === 'congresso' ? 'Congresso' : 'Corso'}</span> {c.titolo}</span>
                   <span className="secondario piccolo">{[dataEstesa(c.giorno), c.ente, c.ore !== undefined ? `${testoNumero(c.ore)} ore` : ''].filter(Boolean).join(' · ')}</span>
                   <EtichetteAllegati collegatoA={`corso:${c.id}`} />
                 </button>
@@ -55,31 +61,36 @@ export function CorsiEcm() {
           </div>
         </section>
       ))}
-      {modifica && <FormCorso c={modifica.c} onChiudi={() => setModifica(undefined)} />}
+      {modifica && <FormCorso c={modifica.c} tipoIniziale={modifica.tipo} onChiudi={() => setModifica(undefined)} />}
     </div>
   )
 }
 
-function FormCorso({ c, onChiudi }: { c?: Corso; onChiudi: () => void }) {
+function FormCorso({ c, tipoIniziale, onChiudi }: { c?: Corso; tipoIniziale?: 'corso' | 'congresso'; onChiudi: () => void }) {
   const id = useRef(c?.id ?? nuovoId()).current
-  const [b, setB] = useState({ titolo: c?.titolo ?? '', giorno: c?.giorno ?? chiaveGiorno(oggi()), ente: c?.ente ?? '', crediti: testoNumero(c?.crediti), ore: testoNumero(c?.ore), note: c?.note ?? '' })
+  const [b, setB] = useState({ tipo: (c?.tipo === 'congresso' ? 'congresso' : c ? 'corso' : tipoIniziale ?? 'corso') as 'corso' | 'congresso', titolo: c?.titolo ?? '', giorno: c?.giorno ?? chiaveGiorno(oggi()), ente: c?.ente ?? '', crediti: testoNumero(c?.crediti), ore: testoNumero(c?.ore), note: c?.note ?? '' })
   const valido = b.titolo.trim() !== '' && !!giornoDaChiave(b.giorno)
   async function conferma() {
     if (!valido) return
-    await salva('corsi', { ...c, id, titolo: b.titolo.trim(), giorno: b.giorno, ente: b.ente.trim() || undefined, crediti: numero(b.crediti), ore: numero(b.ore), note: b.note.trim() || undefined })
+    await salva('corsi', { ...c, id, tipo: b.tipo, titolo: b.titolo.trim(), giorno: b.giorno, ente: b.ente.trim() || undefined, crediti: numero(b.crediti), ore: numero(b.ore), note: b.note.trim() || undefined })
     onChiudi()
   }
   return (
-    <Foglio aperto titolo={c ? 'Corso' : 'Nuovo corso'} onChiudi={onChiudi}
+    <Foglio aperto titolo={c ? (b.tipo === 'congresso' ? 'Congresso' : 'Corso') : b.tipo === 'congresso' ? 'Nuovo congresso' : 'Nuovo corso'} onChiudi={onChiudi}
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
       <div className="modulo">
-        <Campo etichetta="Titolo"><input value={b.titolo} autoFocus={!c} placeholder="es. Corso di ecografia ostetrica" onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>
+        <div className="segmenti" role="radiogroup" aria-label="Tipo">
+          {(['corso', 'congresso'] as const).map((t) => (
+            <button key={t} type="button" role="radio" aria-checked={b.tipo === t} className={b.tipo === t ? 'attivo' : ''} onClick={() => setB({ ...b, tipo: t })}>{t === 'corso' ? 'Corso' : 'Congresso'}</button>
+          ))}
+        </div>
+        <Campo etichetta="Titolo"><input value={b.titolo} autoFocus={!c} placeholder={b.tipo === 'congresso' ? 'es. Congresso nazionale SIGO' : 'es. Corso di ecografia ostetrica'} onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>
         <div className="campi-affiancati">
           <Campo etichetta="Giorno"><input type="date" value={b.giorno} onChange={(e) => setB({ ...b, giorno: e.target.value })} /></Campo>
           <Campo etichetta="Crediti ECM"><input inputMode="decimal" value={b.crediti} onChange={(e) => setB({ ...b, crediti: e.target.value })} /></Campo>
           <Campo etichetta="Ore"><input inputMode="decimal" value={b.ore} onChange={(e) => setB({ ...b, ore: e.target.value })} /></Campo>
         </div>
-        <Campo etichetta="Organizzatore (facoltativo)"><input value={b.ente} onChange={(e) => setB({ ...b, ente: e.target.value })} /></Campo>
+        <Campo etichetta={b.tipo === 'congresso' ? 'Luogo o società (facoltativo)' : 'Organizzatore (facoltativo)'}><input value={b.ente} onChange={(e) => setB({ ...b, ente: e.target.value })} /></Campo>
         <Campo etichetta="Note"><textarea value={b.note} onChange={(e) => setB({ ...b, note: e.target.value })} /></Campo>
         <div className="campo"><span>Attestato</span><Allegati collegatoA={`corso:${id}`} /></div>
         <NotaPrivacy />

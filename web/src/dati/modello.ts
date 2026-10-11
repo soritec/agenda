@@ -126,6 +126,8 @@ export interface EsameOLezione extends Base {
 
 /** Corso o congresso con crediti ECM (attestati come allegati "corso:<id>"). */
 export interface Corso extends Base {
+  /** 'corso' | 'congresso' (assente nei vecchi record = corso) */
+  tipo?: string
   titolo: string
   giorno: string
   ente?: string

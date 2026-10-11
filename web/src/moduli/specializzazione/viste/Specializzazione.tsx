@@ -105,7 +105,7 @@ export function Specializzazione() {
           <span className="dettaglio">EG e DPP, peso fetale, Bishop, Robson, rischio TEV, β-hCG e altri</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/ecm">
-          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#1F6E8C', background: '#DDEFF5' }}><IconaAttestato dimensione={18} /></span>Corsi ed ECM</span>
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#1F6E8C', background: '#DDEFF5' }}><IconaAttestato dimensione={18} /></span>Corsi, congressi ed ECM</span>
           <span className="valore">{creditiAnno(corsi ?? [], chiaveGiorno(oggi()).slice(0, 4)) || '—'}</span>
           <span className="dettaglio">crediti ECM nel {chiaveGiorno(oggi()).slice(0, 4)}</span>
         </a>
