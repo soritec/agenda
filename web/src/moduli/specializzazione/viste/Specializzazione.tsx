@@ -96,9 +96,9 @@ export function Specializzazione() {
           <span className="valore">{daPagare.length ? F.importo(totaleDaPagare) : '—'}</span>
           <span className="dettaglio">{daPagare.length ? `${daPagare.length} da pagare` : 'Niente da pagare'}</span>
         </a>
-        <a className="riquadro-sezione in-arrivo" href="#/specializzazione/calcolatori">
+        <a className="riquadro-sezione" href="#/specializzazione/calcolatori">
           <span className="titolo">Calcolatori</span>
-          <span className="dettaglio">EG e DPP, Hadlock, Bishop… in arrivo</span>
+          <span className="dettaglio">EG e DPP, peso fetale, Bishop, Robson, rischio TEV, β-hCG e altri</span>
         </a>
         <a className="riquadro-sezione in-arrivo" href="#/specializzazione/ricerca">
           <span className="titolo">Ricerca</span>

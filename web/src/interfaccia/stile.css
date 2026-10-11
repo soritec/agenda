@@ -376,3 +376,22 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .etichetta-allegato { display: inline-flex; align-items: center; gap: 4px; max-width: 220px; height: 26px; padding: 0 9px; border-radius: 13px; border: 1px solid var(--linea-forte); background: var(--superficie-2); color: var(--accento); font-size: 12px; font-weight: 600; cursor: pointer; }
 .etichetta-allegato span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 dialog.foglio:has(.anteprima-file) { width: min(900px, 100vw - 24px); }
+
+/* Calcolatori */
+.segmenti { display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; border-radius: 12px; background: var(--linea); }
+.segmenti button { flex: 1 1 auto; min-height: 36px; padding: 6px 12px; border: none; border-radius: 9px; background: none; color: var(--testo-2); font-size: 14px; font-weight: 500; cursor: pointer; }
+.segmenti button.attivo { background: var(--superficie); color: var(--testo); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.risultati { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.risultati .vuoto { grid-column: 1 / -1; }
+.risultato { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: var(--raggio); background: var(--accento-tenue); color: var(--testo); }
+.risultato .valore { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.risultato.ok { background: #DCEBD9; color: #2F5A2B; }
+.risultato.attenzione { background: #F6EEDF; color: #6E4B12; }
+.risultato.allarme { background: #F6DADA; color: #8A2A2A; }
+.risultato.ok .secondario, .risultato.attenzione .secondario, .risultato.allarme .secondario { color: inherit; opacity: 0.8; }
+input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
+@media (prefers-color-scheme: dark) {
+  .risultato.ok { background: #2C3F2A; color: #CFE6C9; }
+  .risultato.attenzione { background: #3A2F1C; color: #F0D9A8; }
+  .risultato.allarme { background: #4A2626; color: #F3C3C3; }
+}

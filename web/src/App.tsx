@@ -12,6 +12,7 @@ import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { Impostazioni } from './interfaccia/Impostazioni'
 import { SezioneInArrivo, Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
+import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
 import { Tasse } from './moduli/specializzazione/viste/Tasse'
@@ -43,7 +44,7 @@ export function App() {
     else if (sotto === 'lezioni') pagina = <EsamiOLezioni key="lezione" tipo="lezione" />
     else if (sotto === 'tasse') pagina = <Tasse />
     else if (sotto === 'procedura' && percorso[2]) pagina = <SchedaProcedura id={percorso[2]} />
-    else if (sotto === 'calcolatori') pagina = <SezioneInArrivo titolo="Calcolatori" testo="Età gestazionale e DPP, peso fetale (Hadlock), liquido amniotico, Bishop, Apgar, Robson, shock index, rischio tromboembolico, RMI, β-hCG, BMI: arriveranno qui, ognuno con formula e fonte." />
+    else if (sotto === 'calcolatori') pagina = <Calcolatori key={percorso[2] ?? ''} id={percorso[2]} />
     else if (sotto === 'ricerca') pagina = <SezioneInArrivo titolo="Ricerca" testo="Questa sezione la sviluppiamo più avanti: dimmi tu cosa ti serve (progetti, articoli, scadenze, dati raccolti…)." />
     else if (sotto === 'impostazioni') pagina = <ImpostazioniSpecializzazione />
     else pagina = <Specializzazione />
