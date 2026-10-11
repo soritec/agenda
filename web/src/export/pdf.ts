@@ -173,3 +173,47 @@ export async function creaPdfTesto(titolo: string, sottotitolo: string, sezioni:
   }
   return doc.output('blob')
 }
+
+/** PDF di un taccuino: copertina colorata, poi una pagina per ogni pagina del diario (con le foto JPEG/PNG). */
+export async function creaPdfTaccuino(t: { nome: string; colore: string; testoCopertina: string }, pagine: { titolo: string; data: string; umore?: string; testo: string; etichette?: string[]; foto: Blob[] }[]): Promise<Blob> {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const esa = (c: string): Colore => { const n = parseInt(c.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] }
+  doc.setFillColor(...esa(t.colore))
+  doc.rect(0, 0, 210, 297, 'F')
+  doc.setTextColor(...esa(t.testoCopertina))
+  doc.setFont('helvetica', 'bold').setFontSize(32)
+  doc.text(doc.splitTextToSize(t.nome, 160) as string[], 25, 120)
+  doc.setFont('helvetica', 'normal').setFontSize(12)
+  doc.text(`${pagine.length} ${pagine.length === 1 ? 'pagina' : 'pagine'}`, 25, 140)
+  const margine = 20, larghezza = 210 - 2 * margine, fondo = 297 - 18
+  const dataUrl = (b: Blob) => new Promise<string>((ok) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.readAsDataURL(b) })
+  for (const p of pagine) {
+    doc.addPage()
+    let y = 22
+    const aCapo = (h: number) => { if (y + h > fondo) { doc.addPage(); y = 20 } }
+    doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(...SECONDARIO)
+    doc.text([p.data, p.umore].filter(Boolean).join('  ·  '), margine, y)
+    y += 8
+    doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(...TESTO)
+    for (const r of doc.splitTextToSize(p.titolo || 'Senza titolo', larghezza) as string[]) { aCapo(8); doc.text(r, margine, y); y += 8 }
+    y += 2
+    doc.setFont('times', 'normal').setFontSize(12)
+    for (const par of p.testo.split('\n')) {
+      for (const r of doc.splitTextToSize(par || ' ', larghezza) as string[]) { aCapo(6); doc.text(r, margine, y); y += 6 }
+    }
+    if (p.etichette?.length) { y += 3; aCapo(6); doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...SECONDARIO); doc.text(p.etichette.map((e) => `#${e}`).join('  '), margine, y); y += 6; doc.setTextColor(...TESTO) }
+    for (const f of p.foto) {
+      if (!/image\/(jpeg|png)/.test(f.type)) continue
+      const url = await dataUrl(f)
+      const img = await new Promise<HTMLImageElement>((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url }).catch(() => undefined)
+      if (!img) continue
+      const w = Math.min(larghezza, 120), h = (img.height / img.width) * w
+      y += 4
+      aCapo(Math.min(h, 200))
+      doc.addImage(url, f.type === 'image/png' ? 'PNG' : 'JPEG', margine, y, w, Math.min(h, 200))
+      y += Math.min(h, 200) + 2
+    }
+  }
+  return doc.output('blob')
+}

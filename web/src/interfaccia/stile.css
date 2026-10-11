@@ -809,3 +809,60 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .grande-piu, .grande-meno, .grande-risparmio { min-height: 46px; font-size: 13px; flex-direction: row; gap: 6px; padding: 0 6px; }
   .grande-piu span, .grande-meno span { font-size: 18px; }
 }
+
+/* Journaling */
+.cerca-diario { display: flex; align-items: center; gap: 6px; border: 1px solid var(--linea-forte); border-radius: 12px; padding: 0 10px; background: var(--superficie); color: var(--testo-2); min-width: 220px; }
+.cerca-diario input { border: none; background: none; min-height: 38px; font-size: 15px; flex: 1; outline: none; color: var(--testo); }
+.scaffale { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.libro { border: none; padding: 0; background: none; cursor: pointer; text-align: left; aspect-ratio: 3 / 4; transition: transform 0.15s; }
+.libro:hover { transform: translateY(-3px); }
+.libro.nuovo { border: 1.5px dashed var(--linea-forte); border-radius: 6px 14px 14px 6px; color: var(--testo-2); text-align: center; font-weight: 600; }
+.copertina { width: 100%; height: 100%; border-radius: 6px 14px 14px 6px; padding: 14px 12px 12px 20px; display: flex; flex-direction: column; gap: 6px; position: relative; box-shadow: 0 6px 14px rgba(0,0,0,0.10), inset 6px 0 0 rgba(0,0,0,0.08); overflow: hidden; box-sizing: border-box; }
+.copertina::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 1.5px; background: rgba(0,0,0,0.12); }
+.copertina .nome-copertina { font-weight: 700; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
+.copertina .info-copertina { margin-top: auto; font-size: 12px; opacity: 0.85; display: flex; align-items: center; gap: 4px; }
+.copertina.piccola { width: 30px; height: 38px; padding: 0; align-items: center; justify-content: center; border-radius: 3px 7px 7px 3px; flex-shrink: 0; }
+.copertina.piccola::before { left: 4px; }
+.anteprima-copertina { width: 140px; aspect-ratio: 3 / 4; align-self: center; }
+.scelta-icona { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); color: var(--testo); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.scelta-icona.scelta { border: 2px solid var(--primario); background: var(--accento-tenue); }
+.riga-diario { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .riga-diario { grid-template-columns: 1fr; } }
+.calendario-umore { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.giorno-umore { aspect-ratio: 1; border-radius: 8px; background: var(--superficie-2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--testo); }
+.giorno-umore.oggi { box-shadow: inset 0 0 0 2px var(--primario); font-weight: 700; }
+.ricordo { display: flex; flex-direction: column; gap: 4px; color: var(--testo); padding: 10px 12px; border-radius: 12px; background: var(--superficie-2); }
+.testo-diario-anteprima { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; line-height: 1.5; color: var(--testo-2); }
+.diario { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.elenco-pagine { display: flex; flex-direction: column; gap: 10px; }
+.riga.pagina-scelta { background: var(--accento-tenue); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+.pagina-aperta { background: var(--superficie); border: 1px solid var(--linea); border-radius: 18px; padding: 18px 22px; min-height: 420px; }
+.editor-diario { display: flex; flex-direction: column; gap: 10px; }
+.titolo-pagina { border: none; background: none; font-size: 26px; font-weight: 700; color: var(--testo); outline: none; padding: 4px 0; }
+.barra-strumenti { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 10px; background: var(--superficie-2); position: sticky; top: 0; z-index: 2; }
+.barra-strumenti button { min-width: 34px; height: 32px; padding: 0 8px; border-radius: 8px; border: none; background: none; color: var(--testo); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+.barra-strumenti button:hover { background: var(--superficie); }
+.testo-diario { min-height: 260px; outline: none; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; line-height: 1.7; color: var(--testo); white-space: pre-wrap; }
+.testo-diario:empty::before { content: attr(data-vuoto); color: var(--testo-2); }
+.testo-diario h3 { font-family: inherit; font-size: 19px; margin: 14px 0 4px; }
+.testo-diario blockquote { margin: 8px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--linea-forte); color: var(--testo-2); font-style: italic; }
+.testo-diario ul.lista-spunta { list-style: none; padding-left: 4px; }
+.testo-diario ul.lista-spunta > li { position: relative; padding-left: 28px; min-height: 1.7em; }
+.testo-diario ul.lista-spunta > li::before { content: ''; position: absolute; left: 0; top: 0.35em; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--linea-forte); cursor: pointer; }
+.testo-diario ul.lista-spunta > li.fatto { color: var(--testo-2); text-decoration: line-through; }
+.testo-diario ul.lista-spunta > li.fatto::before { background: var(--primario); border-color: var(--primario); content: '✓'; color: #fff; font-size: 11px; line-height: 16px; text-align: center; }
+.galleria { display: flex; flex-wrap: wrap; gap: 8px; }
+.miniatura { width: 88px; height: 88px; border-radius: 12px; overflow: visible; position: relative; }
+.miniatura > button:first-child { width: 100%; height: 100%; border: none; padding: 0; border-radius: 12px; overflow: hidden; background: var(--superficie-2); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--testo-2); }
+.miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.miniatura.aggiungi-foto { border: 1.5px dashed var(--linea-forte); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--testo-2); cursor: pointer; }
+.etichette-diario { color: var(--testo-2); }
+.codice-lucchetto { font-size: 24px; letter-spacing: 0.4em; text-align: center; max-width: 220px; min-height: 48px; border-radius: 12px; border: 1px solid var(--linea-forte); background: var(--superficie); }
+@media (max-width: 760px) {
+  .diario { grid-template-columns: 1fr; }
+  .diario.con-pagina .elenco-pagine { display: none; }
+  .pagina-aperta { padding: 14px; border-radius: 14px; }
+  .scaffale { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+  .cerca-diario { min-width: 0; width: 100%; }
+}
+.solo-telefono { display: none; } @media (max-width: 760px) { .solo-telefono { display: inline-block; margin-bottom: 8px; } }

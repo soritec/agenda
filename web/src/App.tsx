@@ -17,6 +17,7 @@ import { Task, TaskDiOggi } from './moduli/task/viste/Task'
 import { Budget, CategorieBudget } from './moduli/budget/viste/Budget'
 import { Studio } from './moduli/studio/viste/Studio'
 import { CorsiEcm, JournalClubPagina } from './moduli/specializzazione/viste/EcmJournal'
+import { Journaling } from './moduli/journaling/viste/Journaling'
 import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
@@ -60,7 +61,7 @@ export function App() {
   } else if (sezione === 'task') pagina = <Task key={parametri.get('scheda') ?? 'oggi'} apertoId={sotto} giorno={parametri.get('giorno')} minuto={parametri.get('minuto')} scheda={parametri.get('scheda')} />
   else if (sezione === 'studio') pagina = <Studio scheda={parametri.get('scheda')} risorseQuiz={parametri.get('risorse')} />
   else if (sezione === 'budget') pagina = sotto === 'categorie' ? <CategorieBudget /> : <Budget meseParam={parametri.get('mese')} />
-  else if (sezione === 'journaling') pagina = <InArrivo titolo="Journaling" />
+  else if (sezione === 'journaling') pagina = <Journaling taccuinoId={sotto} paginaId={parametri.get('pagina')} />
   else if (sezione === 'cerca') pagina = <InArrivo titolo="Cerca" />
   else if (sezione === 'impostazioni') pagina = <Impostazioni />
   else pagina = <Oggi />

@@ -231,6 +231,32 @@ export interface SessionePiano extends Base {
   tieni?: boolean
 }
 
+/* Journaling */
+
+/** Taccuino del diario: copertina con colore, icona, trama o foto (allegato "copertina:<id>"); lucchetto facoltativo. */
+export interface Taccuino extends Base {
+  nome: string
+  colore: string
+  icona: string
+  /** 'nessuna' | 'righe' | 'puntini' | 'quadretti' */
+  trama?: string
+  /** Codice del lucchetto, salvato solo come impronta (hash) con il suo sale. */
+  lucchetto?: { sale: string; impronta: string }
+  ordine: number
+}
+
+/** Pagina di un taccuino (foto come allegati "pagina:<id>"). */
+export interface PaginaDiario extends Base {
+  taccuinoId: string
+  giorno: string
+  titolo: string
+  /** Testo formattato (HTML ripulito: grassetto, corsivo, titoletti, elenchi, liste da spuntare, citazioni). */
+  testo: string
+  /** 'bene' | 'cosi' | 'pesante' */
+  umore?: string
+  etichette?: string[]
+}
+
 /** Tempo di studio registrato dal timer (o a mano). */
 export interface SessioneStudio extends Base {
   giorno: string
@@ -424,6 +450,8 @@ export interface Collezioni {
   sessioniStudio: SessioneStudio
   pianiStudio: PianoStudio
   sessioniPiano: SessionePiano
+  taccuini: Taccuino
+  pagineDiario: PaginaDiario
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario']
