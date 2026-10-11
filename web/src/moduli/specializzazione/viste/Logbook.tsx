@@ -7,6 +7,7 @@ import type { Procedura, TipoProcedura } from '../../../dati/modello'
 import { blobCSV, type TabellaExport } from '../../../export/csv'
 import { condividiOScarica, creaPdf, scarica, type RigaPdf } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
+import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
 import {
@@ -165,17 +166,18 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
         <div className="lista">
           {elenco.length === 0 && <div className="vuoto">Ancora niente qui.</div>}
           {elenco.slice(0, mostrate).map((p) => (
-            <div key={p.id} className="riga" style={{ cursor: 'default' }}>
-              <button type="button" onClick={() => setModifica({ record: p })}
-                style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
-                <span className="secondario piccolo numeri" style={{ width: 64, flexShrink: 0 }}>{dataBreve(p.giorno)}</span>
-                <span className="crescente">
+            <div key={p.id} className="riga" style={{ cursor: 'default', alignItems: 'flex-start' }}>
+              <span className="secondario piccolo numeri" style={{ width: 64, flexShrink: 0, paddingTop: 2 }}>{dataBreve(p.giorno)}</span>
+              <span className="crescente">
+                <button type="button" onClick={() => setModifica({ record: p })}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 2, background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
                   <span style={{ fontWeight: 500 }}>{mappaTipi.get(p.tipoId)?.nome ?? '—'}</span>
                   <span className="secondario piccolo">
                     {[TITOLI_RUOLO[ruoloDa(p.ruolo)], `${p.annoCorso}° anno`, p.eta !== undefined ? `${p.eta} anni` : '', p.settimane ? `${p.settimane} sett.` : '', p.esito ?? ''].filter(Boolean).join(' · ')}
                   </span>
-                </span>
-              </button>
+                </button>
+                <EtichetteAllegati collegatoA={`procedura:${p.id}`} />
+              </span>
               <button type="button" className="elimina-riga" aria-label="Elimina"
                 onClick={() => void elimina('procedure', p.id).then(() => mostraAvviso('Procedura eliminata', () => void ripristina('procedure', p.id)))}>×</button>
             </div>

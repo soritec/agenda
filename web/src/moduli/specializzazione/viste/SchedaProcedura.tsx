@@ -5,6 +5,7 @@ import { salva } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
 import type { TipoProcedura } from '../../../dati/modello'
 import { Allegati } from '../../../interfaccia/Allegati'
+import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
 import { Campo, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { giornoDaChiave } from '../../turni/supporto'
 import { conteggi, RUOLI, ruoloDa, TITOLI_RUOLO } from '../logica'
@@ -136,7 +137,10 @@ function Contenuto({ tipo, registrate }: { tipo: TipoProcedura; registrate: { id
             {[...registrate].sort((a, b) => b.giorno.localeCompare(a.giorno)).slice(0, 20).map((p) => (
               <div key={p.id} className="riga" style={{ cursor: 'default' }}>
                 <span className="secondario piccolo numeri" style={{ width: 64 }}>{dataBreve(p.giorno)}</span>
-                <span className="crescente">{TITOLI_RUOLO[ruoloDa(p.ruolo)]} · {p.annoCorso}° anno</span>
+                <span className="crescente">
+                  <span>{TITOLI_RUOLO[ruoloDa(p.ruolo)]} · {p.annoCorso}° anno</span>
+                  <EtichetteAllegati collegatoA={`procedura:${p.id}`} />
+                </span>
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { aggiungiAllegato, apriAllegato, eliminaAllegato } from '../dati/allegati'
+import { aggiungiAllegato, eliminaAllegato } from '../dati/allegati'
+import { mostraAllegato } from './Visualizzatore'
 import { useCollezione } from '../dati/hooks'
 import { Avviso, mostraAvviso } from './componenti'
 
@@ -33,7 +34,7 @@ export function Allegati({ collegatoA, avvisoPrivacy }: { collegatoA: string; av
         <div className="lista">
           {allegati.map((a) => (
             <div key={a.id} className="riga" style={{ cursor: 'default' }}>
-              <button type="button" onClick={() => void apriAllegato(a).catch((e: unknown) => setErrore(e instanceof Error ? e.message : 'Non riesco ad aprire il file.'))}
+              <button type="button" onClick={() => mostraAllegato(a)}
                 style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2, background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
                 <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.nome}</span>
                 <span className="secondario piccolo">{dimensione(a.dimensione)}</span>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Toast } from './componenti'
+import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
 import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni } from './icone'
@@ -46,6 +47,7 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
       </nav>
       <main className="contenuto">{children}</main>
       <Toast />
+      <Visualizzatore />
       <nav className="barra-schede" aria-label="Sezioni" ref={barra}>
         {SEZIONI.map(({ id, titolo, Icona }) => (
           <a key={id} href={`#/${id}`} aria-current={id === attiva ? 'page' : undefined}>

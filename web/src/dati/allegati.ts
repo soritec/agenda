@@ -38,7 +38,7 @@ export async function contenutoAllegato(a: Allegato): Promise<Blob> {
 }
 
 /** Apre il file in una nuova scheda (PDF, immagini) o lo scarica. */
-export async function apriAllegato(a: Allegato): Promise<void> {
+export async function apriInNuovaFinestra(a: Allegato): Promise<void> {
   const blob = await contenutoAllegato(a)
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

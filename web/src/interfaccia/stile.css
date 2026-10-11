@@ -370,3 +370,9 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .tabella-logbook .riga-gruppo td { background: var(--superficie-2); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--testo-2); }
 @media (max-width: 700px) { .tabella-logbook .num { width: 38px; padding-left: 2px; padding-right: 2px; } .tabella-logbook th { font-size: 10px; } }
 .appunti { min-height: 220px; width: 100%; padding: 14px 16px; border-radius: var(--raggio); border: 1px solid var(--linea-forte); background: var(--superficie); line-height: 1.55; font-size: 15px; resize: vertical; }
+/* Allegati */
+.anteprima-file { width: 100%; height: min(70dvh, 900px); border: 1px solid var(--linea); border-radius: 10px; background: #fff; }
+.etichette-allegati { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.etichetta-allegato { display: inline-flex; align-items: center; gap: 4px; max-width: 220px; height: 26px; padding: 0 9px; border-radius: 13px; border: 1px solid var(--linea-forte); background: var(--superficie-2); color: var(--accento); font-size: 12px; font-weight: 600; cursor: pointer; }
+.etichetta-allegato span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+dialog.foglio:has(.anteprima-file) { width: min(900px, 100vw - 24px); }
