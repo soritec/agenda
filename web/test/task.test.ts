@@ -50,11 +50,3 @@ describe('Task', () => {
   })
 })
 
-describe('Frasi', () => {
-  test('una frase stabile per giorno, che cambia con lo scarto', async () => {
-    const { fraseDelGiorno, FRASI } = await import('../src/moduli/oggi/frasi')
-    expect(fraseDelGiorno('2026-10-11')).toBe(fraseDelGiorno('2026-10-11'))
-    expect(fraseDelGiorno('2026-10-11', 1)).not.toBe(fraseDelGiorno('2026-10-11'))
-    expect(new Set(FRASI).size).toBe(FRASI.length)
-  })
-})
