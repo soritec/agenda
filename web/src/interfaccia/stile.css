@@ -580,3 +580,45 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .elimina-task:hover { background: #F6DADA; color: var(--pericolo); }
 .riga-task { -webkit-user-select: none; user-select: none; }
 .pillola.priorita-scelta[aria-pressed="true"].p-nessuna { background: var(--accento-tenue); border-color: var(--primario); font-weight: 700; }
+
+/* Budget */
+.tessere-budget { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tessere-budget .valore { font-size: 24px; font-weight: 700; }
+.valore.positivo, .importo.entrata { color: #1C7A5C; }
+.valore.negativo, .importo.uscita { color: #A4472A; }
+.piu-meno { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grande-piu, .grande-meno { min-height: 64px; border-radius: 16px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.grande-piu span, .grande-meno span { font-size: 34px; line-height: 1; font-weight: 500; }
+.grande-piu { background: #DCEBD9; color: #1F5A3F; }
+.grande-meno { background: #F6DED6; color: #7A2E1A; }
+.grande-piu:active, .grande-meno:active { transform: scale(0.98); }
+.barra-categoria .intestazione-barra { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.barra-categoria .barra { height: 8px; border-radius: 4px; background: var(--superficie-2); margin-top: 4px; overflow: hidden; }
+.barra-categoria .barra i { display: block; height: 100%; border-radius: 4px; }
+.riga-movimento { cursor: default !important; }
+.riga-movimento.conclusa { opacity: 0.6; }
+.importo { font-weight: 700; white-space: nowrap; }
+.etichetta-piccola { font-size: 11px; font-weight: 500; color: var(--testo-2); background: var(--superficie-2); border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
+.riga-semplice { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--linea); }
+.riga-semplice:last-child { border-bottom: none; }
+.riga-semplice .crescente { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.campo-importo { display: flex; align-items: center; gap: 8px; font-size: 34px; font-weight: 700; border-bottom: 2px solid var(--linea-forte); padding: 4px 0; }
+.campo-importo.entrata { color: #1C7A5C; } .campo-importo.uscita { color: #A4472A; }
+.campo-importo input { flex: 1; min-width: 0; border: none; background: none; font-size: 34px; font-weight: 700; color: inherit; outline: none; font-variant-numeric: tabular-nums; }
+.pillola.categoria-scelta .pallino-fonte { width: 8px; height: 8px; }
+.riga-categoria .tetto { display: inline-flex; align-items: center; gap: 4px; }
+.riga-categoria .tetto input { width: 70px; min-height: 30px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--linea-forte); background: var(--superficie); text-align: right; }
+.scelta-colore { width: 26px; height: 26px; border: none; padding: 0; background: none; border-radius: 13px; cursor: pointer; flex-shrink: 0; }
+.campione-colore { width: 26px; height: 26px; border-radius: 13px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.campione-colore[aria-pressed="true"] { border-color: var(--testo); box-shadow: inset 0 0 0 2px var(--superficie); }
+@media (prefers-color-scheme: dark) {
+  .grande-piu { background: #2C3F2A; color: #CFE6C9; } .grande-meno { background: #4A2E26; color: #F3CDBD; }
+  .valore.positivo, .importo.entrata, .campo-importo.entrata { color: #8FD3B3; }
+  .valore.negativo, .importo.uscita, .campo-importo.uscita { color: #F0A58C; }
+}
+@media (max-width: 700px) {
+  .tessere-budget { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .tessere-budget .tessera { padding: 10px; }
+  .tessere-budget .valore { font-size: 17px; }
+  .tessere-budget .tessera > .secondario:last-child { display: none; }
+}

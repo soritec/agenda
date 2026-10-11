@@ -34,10 +34,6 @@ export function Impostazioni() {
         {stato.tipo === 'non-collegato' ? <Collegamento /> : <StatoCollegato stato={stato} />}
       </section>
       <Backup />
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <h2 className="titolo-sezione">Turni</h2>
-        <a className="pulsante" href="#/turni/impostazioni" style={{ alignSelf: 'flex-start' }}>Turni tipo, sedi e regole</a>
-      </section>
     </div>
   )
 }

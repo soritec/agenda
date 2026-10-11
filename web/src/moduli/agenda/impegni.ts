@@ -1,5 +1,6 @@
 import { componenti, giornoDi, istante } from '../../nucleo/calendario'
 import type { Assegnazione, Attivita, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
+import { vociDelMese, spostaMese, type DatiBudget } from '../budget/logica'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
 import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
 
@@ -10,11 +11,11 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
 export const FONTI = ['turno', 'giornata', 'evento', 'task', 'esame', 'lezione', 'tassa'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze tasse',
+  turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', esame: 'Esami', lezione: 'Lezioni', tassa: 'Scadenze',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', tassa: 'Tassa' }
+export const TITOLO_VOCE: Record<Fonte, string> = { turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', esame: 'Esame', lezione: 'Lezione', tassa: 'Scadenza' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -55,6 +56,8 @@ export interface DatiAgenda {
   esami?: EsameOLezione[]
   tasse?: Tassa[]
   attivita?: Attivita[]
+  /** Uscite fisse e in programma del budget, mostrate come scadenze. */
+  budget?: DatiBudget
 }
 
 const minutoDi = (ms: number) => { const c = componenti(ms); return c.ora * 60 + c.minuto }
@@ -133,6 +136,18 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       colore: t.completataIl ? 'colore-task fatto' : 'colore-task', link: `#/task/${t.id}`,
       concluso: Boolean(t.completataIl), modificatoIl: t.modificatoIl,
     })
+  }
+  if (d.budget) {
+    for (let mese = da.slice(0, 7); mese <= a.slice(0, 7); mese = spostaMese(mese, 1)) {
+      for (const v of vociDelMese({ ...d.budget, turni: [], tasse: [] }, mese)) {
+        if (v.tipo !== 'uscita' || !dentro(v.giorno) || (v.origine === 'movimento' && v.giorno <= oggi)) continue
+        out.push({
+          chiave: `budget:${v.chiave}`, fonte: 'tassa', id: v.id, giorno: v.giorno, titolo: v.titolo,
+          dettaglio: (v.importoCent / 100).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }),
+          colore: v.giorno < oggi ? 'colore-pagato' : 'colore-inScadenza', link: `#/budget?mese=${mese}`, concluso: v.giorno < oggi, modificatoIl: 0,
+        })
+      }
+    }
   }
   for (const t of d.tasse ?? []) {
     if (!t.scadenza || !dentro(t.scadenza)) continue

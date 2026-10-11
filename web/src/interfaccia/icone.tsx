@@ -40,7 +40,8 @@ export const IconaTask = (p: P) => (
   <Icona {...p}><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8.5 12l2.5 2.5 4.5-5" /></Icona>
 )
 export const IconaSpecializzazione = (p: P) => (
-  <Icona {...p}><path d="M3 9l9-4.5L21 9l-9 4.5z" /><path d="M7 11v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11" /></Icona>
+  // Fonendoscopio
+  <Icona {...p}><path d="M5 3H4a1.5 1.5 0 0 0-1.5 1.5V9a5.5 5.5 0 0 0 11 0V4.5A1.5 1.5 0 0 0 12 3h-1" /><path d="M8 14.5v1a5.5 5.5 0 0 0 11 0V13" /><circle cx="19" cy="10.5" r="2.2" /></Icona>
 )
 export const IconaStudio = (p: P) => (
   <Icona {...p}><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z" /><path d="M12 6.5V19" /></Icona>

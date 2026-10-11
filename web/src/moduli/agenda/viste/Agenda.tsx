@@ -64,6 +64,9 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
   const esami = useCollezione('esami')
   const tasse = useCollezione('tasse')
   const attivita = useCollezione('attivita')
+  const categorieBudget = useCollezione('categorieBudget')
+  const movimenti = useCollezione('movimenti')
+  const ricorrenti = useCollezione('ricorrenti')
   const impostazioni = useImpostazioni()
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
@@ -91,11 +94,12 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto }: { vistaParam?:
     : da.slice(0, 7) === a.slice(0, 7) ? `${numeroGiorno(da)} – ${numeroGiorno(a)} ${nomeMese(a)}`
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita }
+  const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
+  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })

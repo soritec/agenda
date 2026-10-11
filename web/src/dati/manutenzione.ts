@@ -1,6 +1,7 @@
 import { correzioniCatalogoV1 } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
+import { CATEGORIE_PREDEFINITE, idPredefinita } from '../moduli/budget/logica'
 import { elenca, elencaTutti, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
 
 /**
@@ -42,6 +43,14 @@ export async function eseguiManutenzione(): Promise<void> {
       .map((t) => ({ ...t, chirurgica: true }))
     if (daSegnare.length) await salvaTanti('tipiProcedura', daSegnare)
     nuove.push('procedure-chirurgiche-v1')
+  }
+
+  if (!fatte.has('categorie-budget-v1')) {
+    // Categorie di partenza del budget, con id fissi (niente doppioni tra dispositivi).
+    const esistenti = new Set((await elencaTutti('categorieBudget')).map((c) => c.id))
+    const mancanti = CATEGORIE_PREDEFINITE.map((c, ordine) => ({ ...c, id: idPredefinita(c.nome), ordine })).filter((c) => !esistenti.has(c.id))
+    if (mancanti.length) await salvaTanti('categorieBudget', mancanti)
+    nuove.push('categorie-budget-v1')
   }
 
   if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })

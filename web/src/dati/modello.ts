@@ -188,6 +188,51 @@ export interface Attivita extends Base {
   completataIl?: number
 }
 
+/* Budget */
+
+export interface CategoriaBudget extends Base {
+  nome: string
+  /** 'entrata' | 'uscita' */
+  tipo: string
+  /** Colore della categoria (esadecimale). */
+  colore: string
+  /** Tetto mensile di spesa, in centesimi (solo uscite, facoltativo). */
+  tettoCent?: number
+  /** Entrate da lavoro extra (sostituzioni, libera professione): nuove voci "da incassare". */
+  extra?: boolean
+  /** Uscite di formazione e lavoro, raggruppate nei riepiloghi. */
+  lavoro?: boolean
+  ordine: number
+}
+
+export interface Movimento extends Base {
+  /** 'entrata' | 'uscita' */
+  tipo: string
+  importoCent: number
+  /** "2026-10-21" */
+  giorno: string
+  categoriaId: string
+  nota?: string
+  /** Entrata non ancora ricevuta. */
+  daIncassare?: boolean
+}
+
+/** Entrata o uscita che si ripete ogni mese o ogni anno: le singole volte si calcolano, non si salvano. */
+export interface Ricorrente extends Base {
+  tipo: string
+  importoCent: number
+  categoriaId: string
+  descrizione: string
+  /** 'mese' | 'anno' */
+  frequenza: string
+  /** Primo giorno ("2026-10-01"): fissa anche il giorno del mese (e il mese, se annuale). */
+  inizio: string
+  /** Ultimo mese compreso ("2027-06"), facoltativo. */
+  fine?: string
+  /** Mesi ("2026-11") in cui questa volta non vale. */
+  saltati?: string[]
+}
+
 export interface Collegamento extends Base {
   titolo: string
   url: string
@@ -228,6 +273,9 @@ export interface Collezioni {
   allegati: Allegato
   eventi: Evento
   attivita: Attivita
+  categorieBudget: CategoriaBudget
+  movimenti: Movimento
+  ricorrenti: Ricorrente
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti']
