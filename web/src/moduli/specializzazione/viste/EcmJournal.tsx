@@ -28,7 +28,7 @@ export function CorsiEcm() {
           <a href="#/specializzazione" className="piccolo">‹ Specializzazione</a>
           <h1 className="titolo-grande">Corsi, congressi ed ECM</h1>
         </div>
-        <div className="riga-azioni">
+        <div className="riga-azioni azioni-ecm">
           <a className="pulsante" href="https://www.cogeaps.it" target="_blank" rel="noreferrer">Co.Ge.A.P.S. ›</a>
           <button type="button" className="pulsante pulsante-corso" onClick={() => setModifica({ tipo: 'corso' })}>+ Corso</button>
           <button type="button" className="pulsante pulsante-congresso" onClick={() => setModifica({ tipo: 'congresso' })}>+ Congresso</button>

@@ -740,3 +740,6 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .pulsante.pulsante-corso { background: #213650; color: #C9DCF5; border-color: #33507A; }
   .pulsante.pulsante-congresso { background: #4A3220; color: #F6D2AE; border-color: #6E4A2C; }
 }
+.intestazione > .azioni-ecm { align-self: center; justify-content: center; width: 100%; margin-left: 0; }
+.azioni-ecm .pulsante { min-width: 120px; justify-content: center; text-align: center; }
+@media (max-width: 700px) { .azioni-ecm { width: 100%; } .azioni-ecm .pulsante { flex: 1 1 0; min-width: 0; } }
