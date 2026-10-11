@@ -396,3 +396,41 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
   .risultato.allarme { background: #4A2626; color: #F3C3C3; }
 }
 .file-nascosto { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+
+/* Agenda */
+.filtri-agenda { display: flex; flex-wrap: wrap; gap: 6px; }
+.pillola.spenta { opacity: 0.45; text-decoration: line-through; }
+.pallino-fonte { width: 8px; height: 8px; border-radius: 4px; flex-shrink: 0; display: inline-block; }
+.f-turno { background: #2E4160; } .f-giornata { background: #B9B1A5; } .f-evento { background: #3E7C77; }
+.f-esame { background: #C98A6F; } .f-lezione { background: #7F9BBF; } .f-tassa { background: #C9A15A; }
+.mese.agenda .cella { justify-content: flex-start; align-items: stretch; min-height: 92px; }
+.mese.agenda .cella .numero { align-self: flex-start; }
+.mese.agenda .cella.selezionato { background: var(--accento-tenue); box-shadow: inset 0 0 0 1.5px var(--primario); }
+.cella .voci { position: relative; pointer-events: none; display: flex; flex-direction: column; gap: 2px; padding: 0 3px; min-width: 0; }
+.voce { display: block; font-size: 10.5px; font-weight: 600; line-height: 16px; height: 16px; padding: 0 5px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; justify-content: flex-start; background: var(--superficie-2); color: var(--testo); }
+.voce.sigla { display: block; text-align: left; }
+.voce.conclusa { opacity: 0.45; }
+.cella .altre { font-size: 10px; color: var(--testo-2); padding-left: 5px; }
+.cella .puntini { display: none; }
+.voce.g-ferie { background: #ECE9E4; color: #4A443B; } .voce.g-riposo { background: #E2EEF5; color: #2F4560; }
+.voce.g-congresso { background: #E6EFD9; color: #34502F; } .voce.g-smontoNotte { background: #E6E6F1; color: #3F3F66; }
+.c-personale { background: #D6EAE8; color: #2C5652; } .c-lavoro { background: #D8E2EE; color: #2F4560; }
+.c-studio { background: #EADFE6; color: #5A3E57; } .c-altro { background: #ECEAE6; color: #55524D; }
+.pillola.voce-scelta { border-color: transparent; }
+.pillola.voce-scelta[aria-pressed="true"] { box-shadow: inset 0 0 0 2px currentColor; font-weight: 700; }
+.riga-impegno { align-items: stretch !important; }
+.riga-impegno.conclusa { opacity: 0.5; }
+.orario-impegno { width: 52px; flex-shrink: 0; font-size: 12px; color: var(--testo-2); white-space: pre-line; line-height: 1.3; padding-top: 1px; }
+@media (prefers-color-scheme: dark) {
+  .voce.g-ferie { background: #34312D; color: #E6E0D6; } .voce.g-riposo { background: #2E3D52; color: #CADAF0; }
+  .voce.g-congresso { background: #33432F; color: #CFE3C8; } .voce.g-smontoNotte { background: #34344A; color: #DADAF0; }
+  .c-personale { background: #24413F; color: #C8E6E2; } .c-lavoro { background: #2E3D52; color: #CADAF0; }
+  .c-studio { background: #46344A; color: #EBD3E7; } .c-altro { background: #33312E; color: #E2DED7; }
+  .f-turno { background: #7D96C4; }
+}
+@media (max-width: 700px) {
+  .mese.agenda .cella { min-height: 56px; align-items: center; }
+  .mese.agenda .cella .numero { align-self: center; }
+  .mese.agenda .cella .voci { display: none; }
+  .mese.agenda .cella .puntini { display: flex; gap: 2px; position: relative; pointer-events: none; flex-wrap: wrap; justify-content: center; }
+}

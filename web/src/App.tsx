@@ -12,6 +12,7 @@ import { RiepilogoTurni } from './moduli/turni/viste/RiepilogoTurni'
 import { StampaTurni } from './moduli/turni/viste/StampaTurni'
 import { Impostazioni } from './interfaccia/Impostazioni'
 import { SezioneInArrivo, Specializzazione } from './moduli/specializzazione/viste/Specializzazione'
+import { Agenda, ElencoImpegni } from './moduli/agenda/viste/Agenda'
 import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
@@ -20,7 +21,8 @@ import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni } from './interfaccia/icone'
 import { VistaTurni } from './moduli/turni/viste/VistaTurni'
-import { classeSigla, datiDa, oggi, perId, sedeEffettiva, siglaTurno, titoloTurno } from './moduli/turni/supporto'
+import { impegniTra } from './moduli/agenda/impegni'
+import { chiaveGiorno, classeSigla, datiDa, oggi, perId, sedeEffettiva, siglaTurno, titoloTurno } from './moduli/turni/supporto'
 import { minuti } from './moduli/turni/tipi'
 
 export function App() {
@@ -37,8 +39,9 @@ export function App() {
     else if (sotto === 'stampa') pagina = <StampaTurni anno={anno} mese={mese} />
     else if (sotto) pagina = <DettaglioTurno key={sotto} id={sotto} />
     else pagina = <VistaTurni anno={anno} mese={mese} />
-  } else if (sezione === 'agenda') pagina = <InArrivo titolo="Agenda" />
-  else if (sezione === 'specializzazione') {
+  } else if (sezione === 'agenda') {
+    pagina = <Agenda key={`${anno}-${mese}`} anno={anno} mese={mese} eventoAperto={sotto === 'evento' ? percorso[2] : undefined} nuovoGiorno={parametri.get('giorno') ?? undefined} />
+  } else if (sezione === 'specializzazione') {
     if (sotto === 'logbook') pagina = <Logbook key={parametri.get('nuova') ?? ''} apriNuova={parametri.get('nuova') === '1'} />
     else if (sotto === 'esami') pagina = <EsamiOLezioni key="esame" tipo="esame" />
     else if (sotto === 'lezioni') pagina = <EsamiOLezioni key="lezione" tipo="lezione" />
@@ -60,15 +63,23 @@ export function App() {
   return <Guscio attiva={attiva}>{pagina}</Guscio>
 }
 
-/** "Oggi": le attività di oggi in evidenza, quelle di domani più piccole e richiudibili. Per ora sono i turni; eventi e task arriveranno con i loro moduli. */
+/** "Oggi": le attività di oggi in evidenza, quelle di domani più piccole e richiudibili. */
 function Oggi() {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
   const sedi = useCollezione('sedi')
   const assegnazioni = useCollezione('assegnazioni')
+  const giornate = useCollezione('ferie')
+  const eventi = useCollezione('eventi')
+  const esami = useCollezione('esami')
+  const tasse = useCollezione('tasse')
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
+  // Gli altri impegni dell'agenda (i turni hanno le loro schede qui sotto).
+  const altri = impegniTra({ giornate, eventi, esami, tasse }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
+  const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0))
+  const altriDomani = altri.filter((i) => i.giorno !== chiaveGiorno(g0))
   const inizioOggi = inizioGiorno(g0), inizioDomani = inizioGiorno(aggiungiGiorni(g0, 1)), inizioDopodomani = inizioGiorno(aggiungiGiorni(g0, 2))
   const ordinati = [...(turni ?? [])].sort((x, y) => x.inizio - y.inizio)
   // Oggi: turni che iniziano oggi o sono ancora in corso (es. la notte iniziata ieri sera).
@@ -85,7 +96,8 @@ function Oggi() {
         <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a>
       </header>
 
-      {diOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/turni">Vai ai turni</a></div>}
+      {diOggi.length === 0 && altriOggi.length === 0 && <div className="scheda secondario">Nessuna attività oggi. <a href="#/agenda">Vai all'agenda</a></div>}
+      {altriOggi.length > 0 && <ElencoImpegni voci={altriOggi} />}
       {diOggi.map((t) => {
         const sede = mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')
         const partenza = sede?.minutiViaggio && !t.tuttoIlGiorno && t.inizio > Date.now() ? t.inizio - sede.minutiViaggio * 60_000 : undefined
@@ -112,12 +124,12 @@ function Oggi() {
         )
       })}
 
-      <details className="domani" open={diOggi.length === 0}>
+      <details className="domani" open={diOggi.length === 0 && altriOggi.length === 0}>
         <summary className="titolo-sezione" style={{ cursor: 'pointer' }}>
-          Domani <span className="secondario piccolo" style={{ fontWeight: 400 }}>· {diDomani.length === 0 ? 'nessuna attività' : diDomani.length === 1 ? '1 attività' : `${diDomani.length} attività`}</span>
+          Domani <span className="secondario piccolo" style={{ fontWeight: 400 }}>· {diDomani.length + altriDomani.length === 0 ? 'nessuna attività' : diDomani.length + altriDomani.length === 1 ? '1 attività' : `${diDomani.length + altriDomani.length} attività`}</span>
         </summary>
         <div className="lista" style={{ marginTop: 8 }}>
-          {diDomani.length === 0 && <div className="vuoto piccolo">Niente in programma</div>}
+          {diDomani.length + altriDomani.length === 0 && <div className="vuoto piccolo">Niente in programma</div>}
           {diDomani.map((t) => (
             <a key={t.id} className="riga piccolo" href={`#/turni/${t.id}`}>
               <span className={classeSigla(t.tipo)}>{siglaTurno(t, mappaModelli)}</span>
@@ -128,8 +140,8 @@ function Oggi() {
             </a>
           ))}
         </div>
+        {altriDomani.length > 0 && <div style={{ marginTop: 8 }}><ElencoImpegni voci={altriDomani} /></div>}
       </details>
-      <p className="secondario piccolo">Eventi, task e promemoria compariranno qui quando arriveranno i rispettivi moduli.</p>
     </div>
   )
 }

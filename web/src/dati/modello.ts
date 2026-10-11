@@ -147,6 +147,26 @@ export interface Allegato extends Base {
   caricato?: boolean
 }
 
+/* Agenda */
+
+/** Impegno dell'agenda che non è un turno (visita, riunione, appuntamento, viaggio…). */
+export interface Evento extends Base {
+  titolo: string
+  /** "2026-10-21" */
+  giorno: string
+  /** Ultimo giorno, per gli impegni di più giorni (assente = un solo giorno). */
+  giornoFine?: string
+  /** Senza orari: occupa tutta la giornata. */
+  tuttoIlGiorno?: boolean
+  /** Minuti dalla mezzanotte (ora italiana). */
+  minutoInizio?: number
+  minutoFine?: number
+  luogo?: string
+  /** 'personale' | 'lavoro' | 'studio' | 'altro' */
+  categoria: string
+  note?: string
+}
+
 export interface Collegamento extends Base {
   titolo: string
   url: string
@@ -185,6 +205,7 @@ export interface Collezioni {
   collegamenti: Collegamento
   tasse: Tassa
   allegati: Allegato
+  eventi: Evento
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi']

@@ -8,7 +8,7 @@ import type { Istantanea } from './fusione'
  */
 
 const NOME_DB = 'agenda'
-const VERSIONE_DB = 6
+const VERSIONE_DB = 7
 
 /** `sincronizzazione` = la modifica arriva da GitHub (non va rimandata indietro). */
 export type OrigineModifica = 'utente' | 'sincronizzazione'
@@ -45,6 +45,9 @@ function apri(): Promise<IDBPDatabase> {
         database.createObjectStore('allegati', { keyPath: 'id' })
         // Contenuto dei file allegati (chiave = id dell'allegato): non fa parte dell'istantanea sincronizzata.
         database.createObjectStore('file')
+      }
+      if (vecchiaVersione < 7) {
+        database.createObjectStore('eventi', { keyPath: 'id' })
       }
     },
   })
