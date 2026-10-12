@@ -6,6 +6,7 @@ import {
   useStatoSincronizzazione, type Stato,
 } from '../dati/sincronizzazione'
 import { Avviso, Campo, mostraAvviso } from './componenti'
+import { GestioneProfili } from './GestioneProfili'
 
 const PAGINA_TOKEN = 'https://github.com/settings/personal-access-tokens/new'
 
@@ -33,6 +34,7 @@ export function Impostazioni() {
         <h2 className="titolo-sezione">Sincronizzazione e password</h2>
         {stato.tipo === 'non-collegato' ? <Collegamento /> : <StatoCollegato stato={stato} />}
       </section>
+      <GestioneProfili />
       <Backup />
     </div>
   )

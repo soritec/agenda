@@ -8,14 +8,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'tassa'] as const
+export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'promemoria', 'tassa'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', tassa: 'Scadenze',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenze',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', tassa: 'Scadenza' }
+export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenza' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -59,6 +59,8 @@ export interface DatiAgenda {
   note?: NotaGiorno[]
   journal?: JournalClub[]
   piani?: PianoStudio[]
+  /** Promemoria ricevuti (dalla chat). */
+  promemoria?: { id: string; giorno: string; testo: string; fatto?: boolean; modificatoIl: number; da?: string }[]
   sessioniPiano?: SessionePiano[]
   /** Uscite fisse e in programma del budget, mostrate come scadenze. */
   budget?: DatiBudget
@@ -149,6 +151,13 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       chiave: `studio:${s.id}`, fonte: 'studio', id: s.id, giorno: s.giorno, titolo: `${s.tipo === 'studio' ? 'Studio: ' : ''}${s.titolo}`,
       dettaglio: [p.nome, s.paginaDa !== undefined ? `p. ${s.paginaDa}–${s.paginaA}` : '', `${s.minuti} min`].filter(Boolean).join(' · '),
       colore: 'colore-studio', link: '#/studio', concluso: Boolean(s.fatta), modificatoIl: s.modificatoIl,
+    })
+  }
+  for (const p of d.promemoria ?? []) {
+    if (!dentro(p.giorno)) continue
+    out.push({
+      chiave: `promemoria:${p.id}`, fonte: 'promemoria', id: p.id, giorno: p.giorno, titolo: p.testo, dettaglio: p.da ? `promemoria da ${p.da}` : 'promemoria',
+      colore: 'colore-promemoria', link: '#/chat', concluso: Boolean(p.fatto), modificatoIl: p.modificatoIl,
     })
   }
   for (const j of d.journal ?? []) {

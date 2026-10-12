@@ -4,7 +4,10 @@ import { BachecaPostIt } from '../moduli/oggi/PostIt'
 import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat } from './icone'
+import { Avatar, useProfili } from './profili'
+import { useCondivisi } from '../dati/condiviso'
+import { cambiaProfilo } from '../dati/profili'
 
 export const SEZIONI = [
   { id: 'oggi', titolo: 'Oggi', Icona: IconaOggi },
@@ -16,6 +19,7 @@ export const SEZIONI = [
   { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
   { id: 'journaling', titolo: 'Journaling e habit tracker', Icona: IconaJournaling },
   { id: 'postit', titolo: 'Raccolta post-it', Icona: IconaPostIt },
+  { id: 'chat', titolo: 'Chat', Icona: IconaChat },
   { id: 'cerca', titolo: 'Cerca', Icona: IconaCerca },
 ] as const satisfies readonly { id: string; titolo: string; Icona: (p: { dimensione?: number }) => ReactNode }[]
 
@@ -27,6 +31,14 @@ const TITOLI_BREVI: Partial<Record<Sezione, string>> = { specializzazione: 'Spec
 export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni'; children: ReactNode }) {
   const stato = useStatoSincronizzazione()
   const barra = useRef<HTMLElement>(null)
+  const { profili, attivo } = useProfili()
+  const messaggi = useCondivisi('messaggi')
+  const promemoria = useCondivisi('promemoria')
+  const nonLetti = (messaggi ?? []).filter((m) => m.a === attivo.id && !m.letto).length
+    + (promemoria ?? []).filter((p) => p.a === attivo.id && !p.fatto && !p.vistoIl).length
+  // Solo le sezioni scelte per questo profilo (la chat c'è se ci sono almeno due profili).
+  const sezioni = SEZIONI.filter((s) => (!attivo.moduli || attivo.moduli.includes(s.id) || s.id === 'oggi') && (s.id !== 'chat' || profili.length > 1))
+  const badge = (id: string) => (id === 'chat' && nonLetti > 0 ? <span className="badge-menu">{nonLetti}</span> : null)
   // Sull'iPhone la barra in basso scorre: si porta in vista la sezione attiva quando cambia.
   useEffect(() => {
     barra.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' })
@@ -34,10 +46,21 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
   return (
     <div className="guscio">
       <nav className="laterale" aria-label="Sezioni">
-        {SEZIONI.map(({ id, titolo, Icona }) => (
+        {profili.length > 1 && (
+          <div className="scelta-profilo">
+            {profili.map((p) => (
+              <button key={p.id} type="button" className={p.id === attivo.id ? 'attivo' : ''} title={p.id === attivo.id ? p.nome : `Passa a ${p.nome}`}
+                onClick={() => { if (p.id !== attivo.id) cambiaProfilo(p.id) }}>
+                <Avatar p={p} dimensione={24} /><span>{p.nome}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {sezioni.map(({ id, titolo, Icona }) => (
           <a key={id} href={`#/${id}`} aria-current={id === attiva ? 'page' : undefined}>
             <Icona dimensione={17} />
-            {titolo}
+            <span style={{ flex: 1 }}>{titolo}</span>
+            {badge(id)}
           </a>
         ))}
         <span style={{ flex: 1 }} />
@@ -51,10 +74,11 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
       <Toast />
       <Visualizzatore />
       <nav className="barra-schede" aria-label="Sezioni" ref={barra}>
-        {SEZIONI.map(({ id, titolo, Icona }) => (
+        {sezioni.map(({ id, titolo, Icona }) => (
           <a key={id} href={`#/${id}`} aria-current={id === attiva ? 'page' : undefined}>
             <Icona dimensione={24} />
             <span>{TITOLI_BREVI[id] ?? titolo}</span>
+            {badge(id)}
           </a>
         ))}
         <a href="#/impostazioni" aria-current={attiva === 'impostazioni' ? 'page' : undefined}>

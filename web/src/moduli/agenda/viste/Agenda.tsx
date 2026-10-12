@@ -15,6 +15,8 @@ import { differenzaGiorni, piuGiorniData, turnoSpostato } from '../sposta'
 import { eliminaTurno, spostaTurno } from '../../turni/smonto'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
 import { FormTask, segnaFatto } from '../../task/viste/Task'
+import { useCondivisi } from '../../../dati/condiviso'
+import { useProfili } from '../../../interfaccia/profili'
 import type { Attivita } from '../../../dati/modello'
 import { celleMese, chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti, perId } from '../../turni/supporto'
 import {
@@ -85,6 +87,9 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   const note = useCollezione('noteGiorno')
   const journal = useCollezione('journalClub')
   const piani = useCollezione('pianiStudio')
+  const { profili: tuttiProfili, attivo: profilo } = useProfili()
+  const promemoriaTutti = useCondivisi('promemoria')
+  const promemoria = useMemo(() => (promemoriaTutti ?? []).filter((p) => p.a === profilo.id).map((p) => ({ ...p, da: tuttiProfili.find((x) => x.id === p.da)?.nome })), [promemoriaTutti, profilo.id, tuttiProfili])
   const sessioniPiano = useCollezione('sessioniPiano')
   const [esporta, setEsporta] = useState(false)
 
@@ -101,11 +106,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano }
+  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -283,7 +288,7 @@ interface Rimozione {
   elimina: (i: Impegno) => void
 }
 /** Le scadenze delle tasse si tolgono dalla loro sezione. */
-const eliminabile = (i: Impegno) => i.fonte !== 'tassa'
+const eliminabile = (i: Impegno) => i.fonte !== 'tassa' && i.fonte !== 'promemoria'
 
 function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; inRiga?: boolean }) {
   if (!eliminabile(i)) return null

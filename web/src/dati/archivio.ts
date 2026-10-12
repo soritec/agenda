@@ -1,3 +1,4 @@
+import { nomeDatabase, PROFILO_PRINCIPALE } from './profili'
 import { openDB, type IDBPDatabase } from 'idb'
 import { IMPOSTAZIONI_PREDEFINITE, NOMI_COLLEZIONI, type Base, type Collezioni, type Impostazioni, type NomeCollezione } from './modello'
 import type { Istantanea } from './fusione'
@@ -7,7 +8,6 @@ import type { Istantanea } from './fusione'
  * e la sincronizzazione con GitHub (passo successivo) fonderà questo archivio con quello remoto.
  */
 
-const NOME_DB = 'agenda'
 const VERSIONE_DB = 16
 
 /** `sincronizzazione` = la modifica arriva da GitHub (non va rimandata indietro). */
@@ -18,7 +18,20 @@ const ascoltatori = new Set<Ascoltatore>()
 let db: Promise<IDBPDatabase> | undefined
 
 function apri(): Promise<IDBPDatabase> {
-  db ??= openDB(NOME_DB, VERSIONE_DB, {
+  db ??= apriDatabase(nomeDatabase())
+  return db
+}
+
+/** Archivio del profilo principale: tiene anche il collegamento con GitHub, valido per tutti i profili. */
+let principale: Promise<IDBPDatabase> | undefined
+function apriPrincipale(): Promise<IDBPDatabase> {
+  if (nomeDatabase() === nomeDatabase(PROFILO_PRINCIPALE)) return apri()
+  principale ??= apriDatabase(nomeDatabase(PROFILO_PRINCIPALE))
+  return principale
+}
+
+function apriDatabase(nome: string): Promise<IDBPDatabase> {
+  return openDB(nome, VERSIONE_DB, {
     // Un'altra scheda con una versione più nuova dell'app deve aggiornare l'archivio: questa si ricarica.
     blocking() { if (typeof location !== 'undefined') location.reload() },
     upgrade(database, vecchiaVersione) {
@@ -78,13 +91,14 @@ function apri(): Promise<IDBPDatabase> {
       }
     },
   })
-  return db
 }
 
 /** Solo per i test: chiude e dimentica la connessione. */
 export async function chiudiPerTest() {
   if (db) (await db).close()
+  if (principale) (await principale).close()
   db = undefined
+  principale = undefined
 }
 
 function notifica(origine: OrigineModifica = 'utente') {
@@ -213,11 +227,11 @@ export interface ConfigurazioneSincronizzazione {
 }
 
 export async function leggiConfigurazioneSincronizzazione(): Promise<ConfigurazioneSincronizzazione | undefined> {
-  return (await (await apri()).get('impostazioni', 'sincronizzazione')) as ConfigurazioneSincronizzazione | undefined
+  return (await (await apriPrincipale()).get('impostazioni', 'sincronizzazione')) as ConfigurazioneSincronizzazione | undefined
 }
 
 export async function salvaConfigurazioneSincronizzazione(c: ConfigurazioneSincronizzazione | undefined): Promise<void> {
-  const database = await apri()
+  const database = await apriPrincipale()
   if (c) await database.put('impostazioni', c, 'sincronizzazione')
   else await database.delete('impostazioni', 'sincronizzazione')
 }

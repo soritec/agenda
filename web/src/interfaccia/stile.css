@@ -990,3 +990,46 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 @media (max-width: 700px) { .colonna-habit .griglia-abitudini .nome-abitudine { width: 112px; } .colonna-habit .pallino-abitudine { max-width: 15px; } }
 .chip-abitudine { white-space: nowrap; }
 @media (max-width: 700px) { .chip-abitudine { white-space: normal; max-width: 100%; padding: 5px 9px; font-size: 12.5px; } .chip-abitudine .secondario { white-space: nowrap; } }
+
+/* Profili e chat */
+.avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; flex-shrink: 0; }
+.scelta-profilo { display: flex; flex-direction: column; gap: 2px; padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--linea); }
+.scelta-profilo button { display: flex; align-items: center; gap: 8px; border: none; background: none; padding: 5px 8px; border-radius: 10px; cursor: pointer; color: var(--testo-2); font-size: 13.5px; text-align: left; }
+.scelta-profilo button.attivo { background: var(--superficie); color: var(--testo); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.scelta-profilo button:not(.attivo) .avatar { opacity: 0.6; }
+.badge-menu { min-width: 18px; height: 18px; border-radius: 9px; background: #C0504D; color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+.barra-schede a { position: relative; }
+.barra-schede .badge-menu { position: absolute; top: 2px; right: 8px; }
+.f-promemoria { background: #C9922F; }
+.colore-promemoria { background: #FBF1DE; color: #6E4B12; box-shadow: inset 0 0 0 1px #E8CF9C; }
+.pagina-chat { display: flex; flex-direction: column; gap: 12px; }
+.conversazione { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: var(--superficie); border: 1px solid var(--linea); min-height: 320px; max-height: calc(100vh - 290px); overflow-y: auto; }
+.fumetto { position: relative; max-width: 78%; align-self: flex-start; background: var(--superficie-2); border-radius: 16px 16px 16px 4px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.fumetto.mio { align-self: flex-end; background: #DCEBE6; border-radius: 16px 16px 4px 16px; }
+.testo-fumetto { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.4; }
+.ora-fumetto { font-size: 11px; color: var(--testo-2); align-self: flex-end; }
+.x-fumetto { position: absolute; top: -8px; left: -8px; width: 20px; height: 20px; border-radius: 10px; border: none; background: var(--pericolo); color: #fff; font-size: 12px; cursor: pointer; display: none; padding: 0; }
+.x-fumetto.statico { position: static; display: inline-flex; align-items: center; justify-content: center; margin-left: auto; }
+@media (hover: hover) { .fumetto:hover .x-fumetto { display: block; } }
+@media (hover: none) { .fumetto.mio .x-fumetto { display: block; opacity: 0.7; } }
+.carta-promemoria { align-self: flex-start; max-width: 84%; border-radius: 14px; border: 1px dashed #C9922F; background: #FBF1DE; color: #4A3510; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.carta-promemoria.mio { align-self: flex-end; }
+.carta-promemoria.fatto { border-style: solid; border-color: #9CCBB0; background: #E8F3EC; color: #24513A; }
+.testa-promemoria { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+.testo-promemoria { font-size: 15px; font-weight: 600; white-space: pre-wrap; }
+.piede-promemoria { display: flex; align-items: center; gap: 10px; font-size: 12px; flex-wrap: wrap; }
+.spunta-promemoria { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.scrivi-chat { display: flex; gap: 8px; align-items: flex-end; }
+.scrivi-chat textarea { flex: 1; min-height: 44px; max-height: 140px; resize: vertical; padding: 10px 14px; border-radius: 22px; border: 1px solid var(--linea-forte); background: var(--superficie); font-size: 15px; font-family: inherit; color: var(--testo); }
+.promemoria-oggi { display: flex; flex-direction: column; gap: 4px; border-color: #E8CF9C; background: #FFFBF2; }
+@media (prefers-color-scheme: dark) {
+  .fumetto.mio { background: #24413F; }
+  .carta-promemoria { background: #3A2F1C; color: #F0D9A8; border-color: #8A6A2C; }
+  .carta-promemoria.fatto { background: #23392F; color: #BFE3D2; border-color: #4E7A63; }
+  .promemoria-oggi { background: #2E2818; border-color: #6E5A2C; }
+  .colore-promemoria { background: #3A2F1C; color: #F0D9A8; box-shadow: none; }
+}
+.profili-compatti { display: inline-flex; gap: 4px; }
+.profili-compatti button { border: 2px solid transparent; border-radius: 50%; padding: 1px; background: none; cursor: pointer; }
+.profili-compatti button.attivo { border-color: var(--primario); }
+.profili-compatti button:not(.attivo) { opacity: 0.55; }

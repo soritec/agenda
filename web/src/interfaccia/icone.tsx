@@ -128,6 +128,12 @@ export const IconaPostIt = (p: P) => (
 export const IconaArchivia = (p: P) => (
   <Icona {...p}><rect x="3" y="4" width="18" height="5" rx="1" /><path d="M5 9v10h14V9" /><path d="M10 13h4" /></Icona>
 )
+export const IconaChat = (p: P) => (
+  <Icona {...p}><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z" /><path d="M8 9h8M8 12h5" /></Icona>
+)
+export const IconaSveglia = (p: P) => (
+  <Icona {...p}><circle cx="12" cy="13" r="7" /><path d="M12 9.5V13l2.5 1.5" /><path d="M4.5 5.5l3-2M19.5 5.5l-3-2" /></Icona>
+)
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )

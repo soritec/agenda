@@ -7,18 +7,20 @@ import { apriChiave, cifra, decifra, nuovaChiave, type Cifrato, type Descrittore
 import { differenze, fondi, haDifferenze, istantaneaVuota, type Istantanea } from './fusione'
 import { ErroreGitHub, leggiFile, scriviFile, verificaAccesso, type ConfigurazioneGitHub } from './github'
 import { caricaAllegatiMancanti } from './allegati'
+import { ascoltaCondivisi, istantaneaCondivisa, scriviCondivisi } from './condiviso'
+import { FILE_CONDIVISO, fileDati } from './profili'
 
 /**
  * Sincronizzazione tra dispositivi tramite il repository privato dei dati su GitHub.
- * Su GitHub ci sono solo due file: `chiave.json` (sale e verifica della password, nulla di segreto)
- * e `agenda.cifrato.json` (tutti i dati, cifrati). Ogni dispositivo tiene la sua copia completa e
- * funziona anche senza rete; a ogni sincronizzazione le due copie si fondono record per record.
+ * Su GitHub: `chiave.json` (sale e verifica della password, nulla di segreto), un file cifrato per ogni profilo
+ * (`agenda.cifrato.json` per il principale) e `condiviso.cifrato.json` (profili, chat, promemoria).
+ * Ogni dispositivo tiene la sua copia completa e funziona anche senza rete; a ogni sincronizzazione
+ * le copie si fondono record per record.
  */
 
 export const PROPRIETARIO_PREDEFINITO = 'soritec'
 export const REPOSITORY_PREDEFINITO = 'agenda-dati'
 const FILE_CHIAVE = 'chiave.json'
-const FILE_DATI = 'agenda.cifrato.json'
 
 export type Stato =
   | { tipo: 'non-collegato' }
@@ -101,42 +103,55 @@ async function esegui(): Promise<void> {
   imposta({ tipo: 'in-corso', ultima })
   const c = github(config)
   try {
-    for (let tentativo = 0; tentativo < 3; tentativo++) {
-      const file = await leggiFile(c, FILE_DATI)
-      let remota = istantaneaVuota()
-      if (file) {
-        try {
-          remota = JSON.parse(await decifra(config.chiave, (JSON.parse(file.testo) as { cifrato: Cifrato }).cifrato)) as Istantanea
-        } catch {
-          throw new Error('Non riesco a leggere i dati: la password potrebbe essere stata cambiata su un altro dispositivo. Scollega e ricollega questo dispositivo.')
-        }
-      }
-      const locale = await istantaneaLocale()
-      const fusa = fondi(locale, remota)
-      const daScrivere = differenze(fusa, locale)
-      const impostazioniNuove = (fusa.impostazioni?.modificatoIl ?? 0) > (locale.impostazioni?.modificatoIl ?? 0)
-      if (Object.keys(daScrivere).length || impostazioniNuove) await scriviGrezzi(daScrivere, impostazioniNuove ? fusa.impostazioni : undefined)
-
-      let sha = file?.sha
-      if (!file || haDifferenze(fusa, remota)) {
-        const contenuto = JSON.stringify({ formato: 1, cifrato: await cifra(config.chiave, JSON.stringify(fusa)) })
-        try {
-          sha = await scriviFile(c, FILE_DATI, contenuto, file?.sha, 'Aggiorna i dati')
-        } catch (e) {
-          if (e instanceof ErroreGitHub && e.stato === 409) continue // un altro dispositivo ha scritto: si rilegge e si rifonde
-          throw e
-        }
-      }
-      const adesso = Date.now()
-      await salvaConfigurazioneSincronizzazione({ ...config, sha, ultimaSincronizzazione: adesso })
-      await caricaAllegatiMancanti()
-      return imposta({ tipo: 'pronto', ultima: adesso })
-    }
-    throw new Error('Troppe modifiche contemporanee: riprovo tra poco.')
+    // Prima l'archivio del profilo (con le impostazioni), poi quello comune.
+    const sha = await sincronizzaFile(c, config, fileDati(), istantaneaLocale, (r, imp) => scriviGrezzi(r, imp))
+    await sincronizzaFile(c, config, FILE_CONDIVISO, istantaneaCondivisa, (r) => scriviCondivisi(r))
+    const adesso = Date.now()
+    await salvaConfigurazioneSincronizzazione({ ...config, sha, ultimaSincronizzazione: adesso })
+    await caricaAllegatiMancanti()
+    return imposta({ tipo: 'pronto', ultima: adesso })
   } catch (e) {
     if (!navigator.onLine) return imposta({ tipo: 'senza-rete', ultima })
     imposta({ tipo: 'errore', messaggio: e instanceof Error ? e.message : 'Sincronizzazione non riuscita.', ultima })
   }
+}
+
+/** Fonde un file di GitHub con la copia locale e riscrive dove serve; riprova se un altro dispositivo ha scritto nel frattempo. */
+async function sincronizzaFile(
+  c: ConfigurazioneGitHub, config: ConfigurazioneSincronizzazione, nomeFile: string,
+  leggiLocale: () => Promise<Istantanea>, scrivi: (r: Istantanea['collezioni'], impostazioni?: Istantanea['impostazioni']) => Promise<void>,
+): Promise<string | undefined> {
+  for (let tentativo = 0; tentativo < 3; tentativo++) {
+    const file = await leggiFile(c, nomeFile)
+    let remota = istantaneaVuota()
+    if (file) {
+      try {
+        remota = JSON.parse(await decifra(config.chiave, (JSON.parse(file.testo) as { cifrato: Cifrato }).cifrato)) as Istantanea
+      } catch {
+        throw new Error('Non riesco a leggere i dati: la password potrebbe essere stata cambiata su un altro dispositivo. Scollega e ricollega questo dispositivo.')
+      }
+    }
+    const locale = await leggiLocale()
+    const fusa = fondi(locale, remota)
+    const daScrivere = differenze(fusa, locale)
+    const impostazioniNuove = (fusa.impostazioni?.modificatoIl ?? 0) > (locale.impostazioni?.modificatoIl ?? 0)
+    if (Object.keys(daScrivere).length || impostazioniNuove) await scrivi(daScrivere, impostazioniNuove ? fusa.impostazioni : undefined)
+    if (file && !haDifferenze(fusa, remota)) return file.sha
+    const contenuto = JSON.stringify({ formato: 1, cifrato: await cifra(config.chiave, JSON.stringify(fusa)) })
+    try {
+      return await scriviFile(c, nomeFile, contenuto, file?.sha, 'Aggiorna i dati')
+    } catch (e) {
+      if (e instanceof ErroreGitHub && e.stato === 409) continue // un altro dispositivo ha scritto: si rilegge e si rifonde
+      throw e
+    }
+  }
+  throw new Error('Troppe modifiche contemporanee: riprovo tra poco.')
+}
+
+/** Sincronizzazione più frequente (es. con la chat aperta). */
+let rapida = 0
+export function sincronizzazioneRapida(attiva: boolean) {
+  rapida = Math.max(0, rapida + (attiva ? 1 : -1))
 }
 
 let avviata = false
@@ -156,6 +171,8 @@ export function avviaSincronizzazioneAutomatica(): void {
     }
   })
   ascolta((origine) => { if (origine === 'utente') presto(2500) })
+  ascoltaCondivisi((origine) => { if (origine === 'utente') presto(600) })
+  setInterval(() => { if (rapida > 0 && document.visibilityState === 'visible') void sincronizza() }, 20_000)
   window.addEventListener('online', () => presto(500))
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') presto(300) })
   setInterval(() => { if (document.visibilityState === 'visible') void sincronizza() }, 5 * 60_000)

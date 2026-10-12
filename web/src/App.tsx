@@ -20,6 +20,8 @@ import { CorsiEcm, JournalClubPagina } from './moduli/specializzazione/viste/Ecm
 import { Journaling } from './moduli/journaling/viste/Journaling'
 import { AbitudiniDiOggi } from './moduli/abitudini/viste/HabitTracker'
 import { RaccoltaPostIt } from './moduli/oggi/PostIt'
+import { Chat, PromemoriaDiOggi } from './moduli/chat/Chat'
+import { ScegliProfiloCompatto } from './interfaccia/profili'
 import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
@@ -66,6 +68,7 @@ export function App() {
   else if (sezione === 'journaling') pagina = <Journaling taccuinoId={sotto} paginaId={parametri.get('pagina')} scheda={parametri.get('scheda')} meseHabit={parametri.get('mese')} />
   else if (sezione === 'habit') pagina = <Journaling scheda="habit" meseHabit={parametri.get('mese')} />
   else if (sezione === 'postit') pagina = <RaccoltaPostIt />
+  else if (sezione === 'chat') pagina = <Chat />
   else if (sezione === 'cerca') pagina = <InArrivo titolo="Cerca" />
   else if (sezione === 'impostazioni') pagina = <Impostazioni />
   else pagina = <Oggi />
@@ -110,7 +113,8 @@ function Oggi() {
           <div className="sopratitolo">{F.dataEstesa(Date.now())}</div>
           <h1 className="titolo-grande">Oggi</h1>
         </div>
-        <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a>
+        <span className="riga-azioni"><ScegliProfiloCompatto />
+        <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a></span>
       </header>
 
       {noteOggi.map((n) => (
@@ -147,6 +151,7 @@ function Oggi() {
         )
       })}
 
+      <PromemoriaDiOggi />
       <TaskDiOggi />
       <AbitudiniDiOggi />
 
