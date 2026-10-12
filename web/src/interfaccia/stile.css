@@ -105,9 +105,18 @@ h1, h2, h3 { margin: 0; }
 
 /* Schede e liste */
 .scheda { background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--raggio); padding: 16px 18px; }
-.lista { background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--raggio); padding: 0 16px; }
-.lista > .riga { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--linea); color: var(--testo); width: 100%; background: none; border-left: none; border-right: none; border-top: none; text-align: left; cursor: pointer; }
-.lista > .riga:last-child { border-bottom: none; }
+.lista { display: flex; flex-direction: column; gap: 6px; }
+/* Ogni voce di un elenco è una schedina a sé. */
+.lista > .riga { display: flex; align-items: center; gap: 12px; padding: 11px 14px; color: var(--testo); width: 100%; background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--raggio); text-align: left; cursor: pointer; }
+.lista > .vuoto, .lista > .riga-semplice { background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--raggio); padding: 11px 14px; }
+
+/* Tendine: piccola freccia a linea che ruota quando si apre (al posto del triangolo del browser). */
+summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: ''; width: 6px; height: 6px; margin: 0 4px 3px 6px; border-right: 1.75px solid var(--testo-2); border-bottom: 1.75px solid var(--testo-2); transform: rotate(45deg); transition: transform 0.18s ease; flex-shrink: 0; }
+details[open] > summary::after { transform: rotate(-135deg); margin-bottom: -3px; }
+.tendina-gemini > summary::after, .tendina-task summary::after { margin-left: auto; }
+.tendina-task summary::after { border-color: currentColor; opacity: 0.7; }
 .riga .crescente { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .vuoto { padding: 20px 0; color: var(--testo-2); text-align: center; }
 .striscia { display: flex; align-items: center; justify-content: space-between; background: var(--superficie-2); border-radius: var(--raggio); padding: 14px 16px; color: var(--testo); }
@@ -552,9 +561,6 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .campo-in-riga { flex: 1; min-width: 0; border: none; background: none; font-size: 15px; padding: 4px 0; outline: none; color: var(--testo); }
 .tendina-task { border-radius: 6px; background: #EEE6F5; color: #4B3466; font-size: 11.5px; }
 .tendina-task summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 2px 6px; font-weight: 700; }
-.tendina-task summary::-webkit-details-marker { display: none; }
-.tendina-task summary::after { content: '▾'; margin-left: auto; opacity: 0.7; }
-.tendina-task[open] summary::after { content: '▴'; }
 .tendina-task .conteggio { font-weight: 500; opacity: 0.8; font-variant-numeric: tabular-nums; }
 .tendina-task .elenco { display: flex; flex-direction: column; gap: 3px; padding: 2px 6px 6px; }
 .voce-tendina { display: flex; align-items: flex-start; gap: 6px; line-height: 1.25; }
@@ -628,7 +634,6 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .voce.colore-nota svg, .voce-estesa.colore-nota svg { vertical-align: -2px; margin-right: 3px; color: #B8902F; flex-shrink: 0; }
 .riga-giornata .voce.colore-nota { display: flex; align-items: flex-start; gap: 2px; font-weight: 600; }
 .f-nota { background: #E8C766; }
-.cella.con-nota { background: #FFFBEE; }
 .pin-cella { position: absolute; top: 4px; right: 5px; color: #B8902F; pointer-events: none; }
 .pin-ore { display: flex; justify-content: center; align-items: flex-start; color: #B8902F; }
 .riga-giornata { cursor: copy; }
@@ -640,7 +645,6 @@ input[aria-invalid="true"] { border-color: var(--pericolo) !important; }
 .nota-oggi .crescente { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 @media (prefers-color-scheme: dark) {
   .colore-nota, .nota-oggi { background: #3A3320; color: #F2E2B0; box-shadow: none; border-color: #4E4428; }
-  .cella.con-nota { background: #2F2A1C; }
 }
 
 /* Risparmi (azzurro) */
@@ -776,10 +780,7 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .riga-argomento-piano .pagine { display: inline-flex; align-items: center; gap: 4px; color: var(--testo-2); font-size: 13px; }
 .riga-argomento-piano .pagine input { width: 64px; text-align: right; }
 .tendina-gemini > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 8px; }
-.tendina-gemini > summary::-webkit-details-marker { display: none; }
-.tendina-gemini > summary::after { content: '▾'; margin-left: auto; color: var(--testo-2); }
 .tendina-gemini[open] > summary { margin-bottom: 10px; }
-.tendina-gemini[open] > summary::after { content: '▴'; }
 @media (prefers-color-scheme: dark) {
   .avviso-occupato { background: #3A2F1C; color: #F0D9A8; border-color: #8A6A2C; }
   .pulsante.pulsante-gemini { background: #2E2A4A; color: #D6D2F5; border-color: #45407A; }
@@ -835,7 +836,7 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .testo-diario-anteprima { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; line-height: 1.5; color: var(--testo-2); }
 .diario { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
 .elenco-pagine { display: flex; flex-direction: column; gap: 10px; }
-.riga.pagina-scelta { background: var(--accento-tenue); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+.riga.pagina-scelta { background: var(--accento-tenue); }
 .pagina-aperta { background: var(--superficie); border: 1px solid var(--linea); border-radius: 18px; padding: 18px 22px; min-height: 420px; }
 .editor-diario { display: flex; flex-direction: column; gap: 10px; }
 .titolo-pagina { border: none; background: none; font-size: 26px; font-weight: 700; color: var(--testo); outline: none; padding: 4px 0; }
@@ -972,13 +973,15 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 }
 
 /* Journaling, impaginazione A */
-.journal-alto { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.85fr) minmax(0, 0.75fr); gap: 16px; align-items: start; }
+.journal-alto { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .journal-alto > .scheda { min-width: 0; }
-.journal-alto .sezione-taccuini { padding: 14px 16px; }
-.journal-alto .scaffale.in-riga .libro { flex-basis: 88px; height: 116px; }
-.journal-alto .scaffale.in-riga .nome-copertina { font-size: 12.5px; }
-.journal-alto .scaffale.in-riga .copertina { padding: 8px 8px 8px 16px; }
-@media (max-width: 1100px) { .journal-alto { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .journal-alto > .sezione-taccuini { grid-column: 1 / -1; } }
+/* I taccuini sono la parte principale: in alto, su tutta la larghezza e grandi. */
+.journal-alto > .sezione-taccuini { grid-column: 1 / -1; padding: 16px 18px; }
+.journal-alto .scaffale.in-riga { gap: 18px; padding: 6px 4px 14px; }
+.journal-alto .scaffale.in-riga .libro { flex-basis: 150px; height: 200px; }
+.journal-alto .scaffale.in-riga .nome-copertina { font-size: 16px; }
+.journal-alto .scaffale.in-riga .copertina { padding: 14px 12px 12px 20px; }
+@media (max-width: 700px) { .journal-alto .scaffale.in-riga .libro { flex-basis: 120px; height: 160px; } .journal-alto .scaffale.in-riga .nome-copertina { font-size: 14px; } }
 @media (max-width: 700px) { .journal-alto { grid-template-columns: 1fr; } }
 /* Habit tracker: tutto il mese su una riga, senza scorrere */
 .colonna-habit .griglia-abitudini-scorri { overflow-x: visible; }
@@ -1033,3 +1036,7 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .profili-compatti button { border: 2px solid transparent; border-radius: 50%; padding: 1px; background: none; cursor: pointer; }
 .profili-compatti button.attivo { border-color: var(--primario); }
 .profili-compatti button:not(.attivo) { opacity: 0.55; }
+
+/* Budget: filtro dei movimenti */
+.intestazione-movimenti { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.segmenti.compatti button { min-height: 30px; padding: 4px 10px; font-size: 13px; }

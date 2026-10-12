@@ -356,7 +356,7 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, m
               if (!g) return <span key={`v${i}`} />
               const k = chiaveGiorno(g)
               const voci = mappa.get(k) ?? []
-              const classi = ['cella', festivo(k) && 'festivo', k === oggiChiave && 'oggi', k === scelto && 'selezionato', voci.some((v) => v.fonte === 'nota') && 'con-nota'].filter(Boolean).join(' ')
+              const classi = ['cella', festivo(k) && 'festivo', k === oggiChiave && 'oggi', k === scelto && 'selezionato'].filter(Boolean).join(' ')
               return (
                 <div key={k} className={classi} data-giorno={k}>
                   <button type="button" className="aggiungi" onClick={() => onScegli(k)} onDoubleClick={() => aggiungi(k)}

@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { creditiAnno, daRipassare, idArgomento, leggiFlashcardDaTesto, lunedi, minutiSettimana, rispondi } from '../src/moduli/studio/logica'
 
 const b = { creatoIl: 0, modificatoIl: 0 }
@@ -62,5 +62,24 @@ describe('Quiz di Gemini', () => {
     expect(leggiQuiz(json)).toEqual([{ domanda: 'AFI oligoidramnios?', opzioni: ['< 2', '< 5', '< 8', '< 10'], corretta: 1, spiegazione: 'ACOG', fonte: 'Linee guida' }])
     expect(leggiQuiz('```json\n{"domande":[{"domanda":"x","opzioni":["a","b"],"corretta":0}]}\n```')).toHaveLength(1)
     expect(leggiQuiz('non è json')).toEqual([])
+  })
+
+  test('con Google sovraccarico (503) riprova e passa a un altro modello', async () => {
+    vi.useFakeTimers()
+    const memoria = new Map<string, string>([['agenda.chiaveGemini', 'chiave-finta']])
+    vi.stubGlobal('localStorage', { getItem: (k: string) => memoria.get(k) ?? null, setItem: () => {}, removeItem: () => {} })
+    const chiamate: string[] = []
+    vi.stubGlobal('fetch', async (url: string) => {
+      chiamate.push(url)
+      if (url.includes('gemini-2.5-flash:')) return new Response('overloaded', { status: 503 })
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Riassunto' }] } }] }), { status: 200 })
+    })
+    const { elabora } = await import('../src/moduli/studio/ai')
+    const risultato = elabora('riassumi', { testo: 'materiale' })
+    await vi.runAllTimersAsync()
+    expect(await risultato).toBe('Riassunto')
+    expect(chiamate.filter((u) => u.includes('gemini-2.5-flash:'))).toHaveLength(3)
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 })

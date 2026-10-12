@@ -47,6 +47,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
   const [modifica, setModifica] = useState<Modifica>()
   const [esporta, setEsporta] = useState(false)
   const [tutti, setTutti] = useState(false)
+  const [filtro, setFiltro] = useState<'tutti' | 'entrata' | 'uscita' | 'risparmi'>('tutti')
   const [obiettivoAperto, setObiettivoAperto] = useState<{ o?: ObiettivoRisparmio }>()
 
   const r = riepilogo(dati, mese, oggiChiave)
@@ -107,7 +108,8 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
     mostraAvviso(`Incassato: ${euro(v.importoCent)}`)
   }
 
-  const elencoVoci = tutti ? voci : voci.slice(0, 8)
+  const vociFiltrate = filtro === 'tutti' ? voci : voci.filter((v) => (filtro === 'risparmi' ? v.tipo === 'risparmio' || v.tipo === 'prelievo' : v.tipo === filtro))
+  const elencoVoci = tutti ? vociFiltrate : vociFiltrate.slice(0, 8)
 
   return (
     <div className="schermata" style={{ maxWidth: 980 }}>
@@ -168,9 +170,17 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
           </section>
 
           <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <h2 className="titolo-sezione">Movimenti del mese</h2>
+            <div className="intestazione-movimenti">
+              <h2 className="titolo-sezione">Movimenti del mese</h2>
+              <div className="segmenti compatti" role="radiogroup" aria-label="Mostra">
+                {([['tutti', 'Tutti'], ['entrata', 'Entrate'], ['uscita', 'Uscite'], ['risparmi', 'Risparmi']] as const).map(([k, t]) => (
+                  <button key={k} type="button" role="radio" aria-checked={filtro === k} className={filtro === k ? 'attivo' : ''} onClick={() => setFiltro(k)}>{t}</button>
+                ))}
+              </div>
+            </div>
             <div className="lista">
               {voci.length === 0 && <div className="vuoto piccolo">Ancora niente: usa + o − qui sopra.</div>}
+              {voci.length > 0 && vociFiltrate.length === 0 && <div className="vuoto piccolo">Nessun movimento di questo tipo nel mese.</div>}
               {elencoVoci.map((v) => {
                 const c = categorie.get(v.categoriaId ?? '')
                 const futuro = v.giorno > oggiChiave
@@ -195,7 +205,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                 )
               })}
             </div>
-            {voci.length > 8 && <button type="button" className="pulsante" onClick={() => setTutti(!tutti)}>{tutti ? 'Mostra meno' : `Mostra tutti (${voci.length})`}</button>}
+            {vociFiltrate.length > 8 && <button type="button" className="pulsante" onClick={() => setTutti(!tutti)}>{tutti ? 'Mostra meno' : `Mostra tutti (${vociFiltrate.length})`}</button>}
           </section>
         </div>
 

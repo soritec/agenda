@@ -56,7 +56,6 @@ export function Specializzazione() {
           <h1 className="titolo-grande">Specializzazione</h1>
         </div>
         <div className="riga-azioni">
-          <a className="pulsante primario" href="#/specializzazione/logbook?nuova=1">+ Procedura</a>
           <a className="pulsante tondo" href="#/specializzazione/impostazioni" aria-label="Impostazioni della specializzazione"><IconaImpostazioni dimensione={18} /></a>
         </div>
       </header>

@@ -68,7 +68,7 @@ export function ImpostazioniSpecializzazione() {
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <h2 className="titolo-sezione">Procedure del logbook</h2>
         <div className="lista">
-          {elenco.map((t, i) => (
+          {elenco.map((t) => (
             <div key={t.id} className="riga" style={{ cursor: 'default' }}>
               <input value={t.nome} aria-label="Nome della procedura"
                 onChange={(e) => void salva('tipiProcedura', { ...t, nome: e.target.value })}
@@ -77,8 +77,6 @@ export function ImpostazioniSpecializzazione() {
                 <input type="checkbox" checked={Boolean(t.chirurgica)} onChange={(e) => void salva('tipiProcedura', { ...t, chirurgica: e.target.checked || undefined })} />
                 Chirurgica
               </label>
-              <button type="button" className="link piccolo" disabled={i === 0} aria-label="Sposta su"
-                onClick={() => { const prima = elenco[i - 1]!; void salva('tipiProcedura', { ...t, ordine: prima.ordine }).then(() => salva('tipiProcedura', { ...prima, ordine: t.ordine })) }}>↑</button>
               <button type="button" className="elimina-riga" aria-label={`Elimina ${t.nome}`}
                 onClick={() => {
                   if (usati.has(t.id) && !window.confirm(`"${t.nome}" è usata nel logbook: le procedure registrate restano ma senza nome. Eliminarla?`)) return
