@@ -1107,3 +1107,48 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .risultato-ai .testo-ai { padding-right: 30px; }
 .riga-cambio { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
 .riga-cambio input { width: 84px; min-height: 36px; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Applications */
+.f-application { background: #7F9BA6; }
+.colore-application { background: #E9EEF1; color: #2F4A58; box-shadow: inset 0 0 0 1px #CBD8DE; }
+@media (prefers-color-scheme: dark) { .colore-application { background: #24313A; color: #CFE0EA; box-shadow: none; } }
+.application { padding: 12px 14px !important; }
+.testa-application { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nome-studio { background: none; border: none; padding: 0; font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; text-align: left; }
+.etichetta-programma { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--superficie-2); color: var(--testo-2); white-space: nowrap; }
+.etichetta-programma.esito-offerta { background: #DCEBD9; color: #33553A; font-weight: 600; }
+.etichetta-programma.esito-no { background: #F0D8CC; color: #7A3E28; font-weight: 600; }
+.scadenza-application { font-size: 13px; font-weight: 600; color: var(--pericolo); margin-top: 4px; }
+.scadenza-application.passata { opacity: 0.7; }
+.pallini-application { display: flex; align-items: flex-start; margin: 14px 0 4px; overflow-x: auto; padding-bottom: 2px; }
+.passo-application { flex: 1 1 0; min-width: 66px; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--testo-2); }
+.passo-application::before { content: ''; position: absolute; top: 10px; right: 50%; width: 100%; height: 2px; background: var(--linea-forte); }
+.passo-application:first-child::before { display: none; }
+.passo-application .pallino { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--linea-forte); background: var(--superficie); display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+.passo-application:hover .pallino { border-color: #3E7C77; }
+.passo-application .nome-passo { font-size: 11.5px; line-height: 1.2; text-align: center; padding: 0 2px; }
+.passo-application .data-passo { font-size: 10.5px; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.passo-application.fatto .pallino { background: #3E7C77; border-color: #3E7C77; }
+.passo-application.fatto .pallino::after { content: ''; width: 5px; height: 10px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
+.passo-application.fatto::before { background: #3E7C77; }
+.passo-application.fatto { color: var(--testo); }
+.passo-application.prossimo .pallino { border-color: #3E7C77; border-style: dashed; }
+.passo-application.prossimo { color: var(--testo); font-weight: 600; }
+.passo-application.no .pallino { background: #B4776A; border-color: #B4776A; }
+.passo-application.no .pallino::after { content: '×'; color: #fff; font-size: 14px; font-weight: 700; line-height: 1; }
+.modifica-passi { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding: 10px; border-radius: 10px; background: var(--superficie-2); }
+.riga-passo { display: flex; align-items: center; gap: 8px; }
+.riga-passo input { flex: 1; min-width: 0; min-height: 34px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--linea); background: var(--superficie); font-size: 14px; }
+.modifica-passi .aggiunta-veloce { flex-wrap: wrap; }
+.piede-application { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--linea); }
+.apri-valutazioni { background: none; border: none; padding: 0; font: inherit; font-size: 13.5px; color: var(--accento); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.apri-valutazioni::after { content: ''; width: 6px; height: 6px; border-right: 1.75px solid currentColor; border-bottom: 1.75px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.18s ease; }
+.apri-valutazioni.aperto::after { transform: translateY(1px) rotate(-135deg); }
+.valutazioni-application { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.griglia-voti { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.voce-voto { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px 6px 10px; border-radius: 8px; border: none; background: var(--superficie-2); color: var(--testo); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+.voce-voto .voto { min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+.date-passi { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.pallini-application { scrollbar-width: none; }
+.pallini-application::-webkit-scrollbar { display: none; }
+@media (max-width: 640px) { .passo-application { min-width: 52px; } .passo-application .nome-passo { font-size: 10.5px; } }

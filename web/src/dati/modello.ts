@@ -462,6 +462,8 @@ export interface Impostazioni {
   obiettivoStudioMinuti?: number
   /** Valuta degli importi di questo profilo (predefinita: euro). */
   valuta?: 'EUR' | 'GBP'
+  /** Passi predefiniti delle nuove application. */
+  passiApplication?: string[]
   /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */
   modificatoIl?: number
 }
@@ -543,6 +545,36 @@ export interface Candidata extends Base {
   scelta?: boolean
 }
 
+/** Application a uno studio legale (vacation scheme, training contract…), con i passi della selezione. */
+export interface Application extends Base {
+  studio: string
+  /** 'vacation' | 'tc' | 'insight' | 'workshop' | 'altro' */
+  programma: string
+  /** Dettaglio libero (es. "Winter", "2028 start"). */
+  dettaglio?: string
+  /** Scadenza per inviarla ("2026-10-16"); assente se rolling. */
+  deadline?: string
+  rolling?: boolean
+  /** Nomi dei passi della selezione, in ordine. */
+  passi: string[]
+  /** Quanti passi sono fatti (i primi `fatti`). */
+  fatti: number
+  /** Non passata al passo `fatti`. */
+  nonPassata?: boolean
+  /** Data (e ora) dei passi, per nome del passo: compaiono in Agenda. */
+  datePassi?: Record<string, { giorno: string; minuto?: number }>
+  colore: string
+  note?: string
+  link?: string
+  /** Valutazioni dello studio per categoria ("A*", "A", "B"…). */
+  voti?: Record<string, string>
+  tcCent?: number
+  nqCent?: number
+  /** Quando e da dove arrivano le valutazioni. */
+  votiIl?: string
+  votiDaGemini?: boolean
+}
+
 export interface Collezioni {
   sedi: Sede
   modelliTurno: ModelloTurno
@@ -584,6 +616,7 @@ export interface Collezioni {
   pagamentiCasa: PagamentoCasa
   coseCasa: CosaCasa
   candidate: Candidata
+  applications: Application
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate', 'applications']

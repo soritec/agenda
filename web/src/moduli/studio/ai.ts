@@ -72,13 +72,18 @@ const base64 = async (b: Blob) => {
   return btoa(s)
 }
 
-async function chiama(istruzione: string, m: Materiale, json: boolean): Promise<string> {
+/** `cerca` = Gemini può cercare su Google (per informazioni aggiornate; in quel caso niente risposta JSON forzata). */
+async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = false): Promise<string> {
   const chiave = leggiChiave()
   if (!chiave) throw new Error('Inserisci prima la tua chiave Gemini.')
   const parti: unknown[] = []
   for (const p of m.pdf ?? []) parti.push({ inline_data: { mime_type: 'application/pdf', data: await base64(p.blob) } })
   parti.push({ text: `${istruzione}\n\nRegola: non riportare mai dati che identificano persone o pazienti.${m.testo.trim() ? `\n\nMateriale:\n${m.testo}` : ''}` })
-  const corpo = JSON.stringify({ contents: [{ role: 'user', parts: parti }], generationConfig: json ? { responseMimeType: 'application/json' } : undefined })
+  const corpo = JSON.stringify({
+    contents: [{ role: 'user', parts: parti }],
+    generationConfig: json && !cerca ? { responseMimeType: 'application/json' } : undefined,
+    tools: cerca ? [{ google_search: {} }] : undefined,
+  })
   let ultimo = 0
   let ultimoMessaggio = ''
   const modelli = await modelliDisponibili(chiave)
@@ -175,4 +180,17 @@ export function organizzaConAI(dati: {
     + 'pagine divise in blocchi continui senza buchi, carico simile tra i giorni, niente o poco studio nei giorni segnati "occupato", ultimo giorno disponibile per il ripasso generale. '
     + 'Rispondi solo con un array JSON di oggetti {"giorno":"AAAA-MM-GG","tipo":"studio"|"ripassoGenerale","argomento":nome esatto dell\'argomento,"paginaDa":numero,"paginaA":numero,"minuti":numero}.',
     { testo: `Argomenti:\n${JSON.stringify(dati.argomenti)}\n\nGiorni disponibili:\n${JSON.stringify(dati.giorni)}` }, true)
+}
+
+/**
+ * Valutazioni di uno studio legale cercate su internet da Gemini (classifiche degli studenti, es. Legal Cheek):
+ * voti per categoria e stipendi di trainee e NQ. Sono da verificare: l'utente li vede segnati come tali.
+ */
+export async function valutaStudio(studio: string, categorie: string[]): Promise<string> {
+  return chiama(
+    `Cerca su internet le valutazioni più recenti dello studio legale "${studio}" (Regno Unito) nelle classifiche degli studenti e dei trainee, in particolare Legal Cheek Firms Most List. `
+    + `Per ognuna di queste categorie dai il voto (A*, A, B, C o D), solo se lo trovi: ${categorie.join(', ')}. `
+    + 'Trova anche lo stipendio da trainee del primo anno a Londra e quello da NQ, in sterline. '
+    + `Rispondi solo con un oggetto JSON: {"voti": {"Categoria": "voto"}, "tc": numero, "nq": numero}. Se non trovi un dato, lascialo fuori.`,
+    { testo: '' }, true, true)
 }

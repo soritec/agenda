@@ -146,3 +146,5 @@ export const IconaLetto = (p: P) => <Icona {...p}><path d="M3.5 18.5V7M3.5 14h17
 export const IconaPorta = (p: P) => <Icona {...p}><path d="M6 20.5V4.5h9v16M4 20.5h13M12 12.5h.01M15 7h3.5v13.5" /></Icona>
 export const IconaPersona = (p: P) => <Icona {...p}><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></Icona>
 export const IconaPuntini = (p: P) => <Icona {...p}><circle cx="6" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="18" cy="12" r="1" /></Icona>
+export const IconaValigetta = (p: P) => <Icona {...p}><rect x="3.5" y="7.5" width="17" height="12" rx="2.5" /><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17M11 12.5v1.5h2v-1.5" /></Icona>
+export const IconaScintille = (p: P) => <Icona {...p}><path d="M10 4l1.6 4.4L16 10l-4.4 1.6L10 16l-1.6-4.4L4 10l4.4-1.6zM17.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" /></Icona>

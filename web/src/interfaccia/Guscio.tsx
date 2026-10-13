@@ -4,7 +4,7 @@ import { BachecaPostIt } from '../moduli/oggi/PostIt'
 import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat, IconaCasa } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat, IconaCasa, IconaValigetta } from './icone'
 import { Avatar, useProfili } from './profili'
 import { useCondivisi } from '../dati/condiviso'
 import { cambiaProfilo, MODULI_SU_SCELTA, profiloAttivo } from '../dati/profili'
@@ -20,6 +20,7 @@ export const SEZIONI = [
   { id: 'studio', titolo: 'Studio e risorse', Icona: IconaStudio },
   { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
   { id: 'casa', titolo: 'Casa', Icona: IconaCasa },
+  { id: 'applications', titolo: 'Applications', Icona: IconaValigetta },
   { id: 'journaling', titolo: 'Journaling e habit tracker', Icona: IconaJournaling },
   { id: 'postit', titolo: 'Raccolta post-it', Icona: IconaPostIt },
   { id: 'chat', titolo: 'Chat', Icona: IconaChat },

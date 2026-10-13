@@ -93,6 +93,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   const piani = useCollezione('pianiStudio')
   const { profili: tuttiProfili, attivo: profilo } = useProfili()
   const candidate = useCollezione('candidate')
+  const applications = useCollezione('applications')
   const stanze = useCollezione('stanze')
   const promemoriaTutti = useCondivisi('promemoria')
   const promemoria = useMemo(() => (promemoriaTutti ?? []).filter((p) => p.a === profilo.id).map((p) => ({ ...p, da: tuttiProfili.find((x) => x.id === p.da)?.nome })), [promemoriaTutti, profilo.id, tuttiProfili])
@@ -112,11 +113,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni: MEDICO ? turni : undefined, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate: MEDICO ? giornate : undefined, linkEsami: MEDICO ? undefined : '#/studio', eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze }
+  const dati = { turni: MEDICO ? turni : undefined, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate: MEDICO ? giornate : undefined, linkEsami: MEDICO ? undefined : '#/studio', eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, applications }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, applications, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte) && FONTI_PROFILO.includes(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -263,7 +264,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       </div>
 
       <div className="filtri-agenda" role="group" aria-label="Cosa mostrare">
-        {FONTI_PROFILO.map((f) => (
+        {FONTI_PROFILO.filter((f) => (f !== 'casa' && f !== 'application') || tutti.some((i) => i.fonte === f)).map((f) => (
           <button key={f} type="button" className={`pillola${nascoste.has(f) ? ' spenta' : ''}`} aria-pressed={!nascoste.has(f)} onClick={() => cambiaFiltro(f)}>
             <span className={`pallino-fonte f-${f}`} />{TITOLI_FONTE[f]}
           </button>
@@ -296,7 +297,7 @@ interface Rimozione {
   eraPressione: () => boolean
 }
 /** Le scadenze delle tasse si tolgono dalla loro sezione. */
-const eliminabile = (i: Impegno) => i.fonte !== 'tassa' && i.fonte !== 'promemoria' && i.fonte !== 'casa'
+const eliminabile = (i: Impegno) => i.fonte !== 'tassa' && i.fonte !== 'promemoria' && i.fonte !== 'casa' && i.fonte !== 'application'
 
 function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; inRiga?: boolean }) {
   if (!eliminabile(i)) return null

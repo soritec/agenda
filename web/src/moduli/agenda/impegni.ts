@@ -1,5 +1,5 @@
 import { componenti, giornoDi, istante } from '../../nucleo/calendario'
-import type { Assegnazione, Attivita, Candidata, Stanza, JournalClub, NotaGiorno, PianoStudio, SessionePiano, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
+import type { Application, Assegnazione, Attivita, Candidata, Stanza, JournalClub, NotaGiorno, PianoStudio, SessionePiano, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
 import { vociDelMese, spostaMese, type DatiBudget } from '../budget/logica'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
 import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
@@ -8,14 +8,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'promemoria', 'tassa', 'casa'] as const
+export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'promemoria', 'tassa', 'casa', 'application'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa', application: 'Applications',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenza', casa: 'Casa' }
+export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenza', casa: 'Casa', application: 'Application' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -63,6 +63,8 @@ export interface DatiAgenda {
   linkEsami?: string
   /** Casa: viewing delle candidate, partenze e arrivi delle coinquiline. */
   candidate?: Candidata[]
+  /** Application: deadline (finché non è inviata) e date dei passi. */
+  applications?: Application[]
   stanze?: Stanza[]
   /** Promemoria ricevuti (dalla chat). */
   promemoria?: { id: string; giorno: string; testo: string; fatto?: boolean; modificatoIl: number; da?: string }[]
@@ -156,6 +158,23 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       chiave: `studio:${s.id}`, fonte: 'studio', id: s.id, giorno: s.giorno, titolo: `${s.tipo === 'studio' ? 'Studio: ' : ''}${s.titolo}`,
       dettaglio: [p.nome, s.paginaDa !== undefined ? `p. ${s.paginaDa}–${s.paginaA}` : '', `${s.minuti} min`].filter(Boolean).join(' · '),
       colore: 'colore-studio', link: '#/studio', concluso: Boolean(s.fatta), modificatoIl: s.modificatoIl,
+    })
+  }
+  for (const ap of d.applications ?? []) {
+    if (ap.deadline && !ap.rolling && dentro(ap.deadline)) {
+      out.push({
+        chiave: `application:deadline:${ap.id}`, fonte: 'application', id: ap.id, giorno: ap.deadline, titolo: `Deadline: ${ap.studio}`,
+        colore: 'colore-application', link: '#/applications', concluso: ap.fatti > 0 || Boolean(ap.nonPassata) || ap.deadline < oggi, modificatoIl: ap.modificatoIl,
+      })
+    }
+    ap.passi.forEach((p, i) => {
+      const dt = ap.datePassi?.[p]
+      if (!dt || !dentro(dt.giorno)) return
+      out.push({
+        chiave: `application:${i}:${ap.id}`, fonte: 'application', id: ap.id, giorno: dt.giorno, titolo: `${ap.studio}: ${p}`,
+        minutoInizio: dt.minuto, minutoFine: dt.minuto !== undefined ? Math.min(1439, dt.minuto + 60) : undefined,
+        colore: 'colore-application', link: '#/applications', concluso: i < ap.fatti || Boolean(ap.nonPassata) || dt.giorno < oggi, modificatoIl: ap.modificatoIl,
+      })
     })
   }
   for (const c of d.candidate ?? []) {

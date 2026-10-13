@@ -16,6 +16,7 @@ import { Agenda, ElencoImpegni } from './moduli/agenda/viste/Agenda'
 import { Task, TaskDiOggi } from './moduli/task/viste/Task'
 import { Budget, CategorieBudget } from './moduli/budget/viste/Budget'
 import { Casa } from './moduli/casa/viste/Casa'
+import { Applications } from './moduli/applications/viste/Applications'
 import { Studio } from './moduli/studio/viste/Studio'
 import { CorsiEcm, JournalClubPagina } from './moduli/specializzazione/viste/EcmJournal'
 import { Journaling } from './moduli/journaling/viste/Journaling'
@@ -65,6 +66,7 @@ export function App() {
     else pagina = <Specializzazione />
   } else if (sezione === 'task') pagina = <Task key={parametri.get('scheda') ?? 'oggi'} apertoId={sotto} giorno={parametri.get('giorno')} minuto={parametri.get('minuto')} scheda={parametri.get('scheda')} />
   else if (sezione === 'studio') pagina = <Studio scheda={parametri.get('scheda')} risorseQuiz={parametri.get('risorse')} />
+  else if (sezione === 'applications') pagina = <Applications />
   else if (sezione === 'casa') pagina = <Casa meseParam={parametri.get('mese') ?? undefined} />
   else if (sezione === 'budget') pagina = sotto === 'categorie' ? <CategorieBudget /> : <Budget meseParam={parametri.get('mese')} />
   else if (sezione === 'journaling') pagina = <Journaling taccuinoId={sotto} paginaId={parametri.get('pagina')} scheda={parametri.get('scheda')} meseHabit={parametri.get('mese')} />
