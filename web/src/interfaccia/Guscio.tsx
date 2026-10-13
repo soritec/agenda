@@ -4,7 +4,7 @@ import { BachecaPostIt } from '../moduli/oggi/PostIt'
 import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat, IconaCasa, IconaValigetta } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat, IconaCasa, IconaValigetta, IconaGiornale, IconaSegnalibro } from './icone'
 import { Avatar, useProfili } from './profili'
 import { useCondivisi } from '../dati/condiviso'
 import { cambiaProfilo, MODULI_SU_SCELTA, profiloAttivo } from '../dati/profili'
@@ -21,6 +21,8 @@ export const SEZIONI = [
   { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
   { id: 'casa', titolo: 'Casa', Icona: IconaCasa },
   { id: 'applications', titolo: 'Applications', Icona: IconaValigetta },
+  { id: 'commercial', titolo: 'Commercial awareness', Icona: IconaGiornale },
+  { id: 'salvati', titolo: 'Salvati', Icona: IconaSegnalibro },
   { id: 'journaling', titolo: 'Journaling e habit tracker', Icona: IconaJournaling },
   { id: 'postit', titolo: 'Raccolta post-it', Icona: IconaPostIt },
   { id: 'chat', titolo: 'Chat', Icona: IconaChat },
@@ -29,7 +31,7 @@ export const SEZIONI = [
 
 export type Sezione = (typeof SEZIONI)[number]['id']
 /** Titoli brevi per la barra in basso dell'iPhone. */
-const TITOLI_BREVI: Partial<Record<Sezione, string>> = { specializzazione: 'Specializz.', studio: 'Studio', journaling: 'Journaling', postit: 'Post-it' }
+const TITOLI_BREVI: Partial<Record<Sezione, string>> = { specializzazione: 'Specializz.', studio: 'Studio', journaling: 'Journaling', postit: 'Post-it', commercial: 'News' }
 
 /** Barra laterale sul Mac (schermi larghi), barra in basso su iPhone. */
 export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni'; children: ReactNode }) {

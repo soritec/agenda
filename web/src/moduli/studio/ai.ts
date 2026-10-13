@@ -41,8 +41,10 @@ export const salvaChiave = (k: string) => { try { if (k) localStorage.setItem(CH
  * studiano giurisprudenza in inglese (testi e termini giuridici inglesi restano in inglese).
  */
 const MEDICO = profiloPrincipale()
-const CHI = MEDICO ? 'una specializzanda in ginecologia e ostetricia' : 'una studentessa di un master in giurisprudenza (LLM) in Inghilterra'
-const ESAME = MEDICO ? "d'esame di specializzazione in ginecologia e ostetricia" : "d'esame del master in giurisprudenza (diritto inglese)"
+const CHI = MEDICO ? 'una specializzanda in ginecologia e ostetricia' : 'an LLM law student in England'
+const ESAME = MEDICO ? "d'esame di specializzazione in ginecologia e ostetricia" : 'LLM (English law) exam'
+/** Lingua delle risposte: italiano per il profilo principale, inglese per chi studia diritto in Inghilterra. */
+const LINGUA = MEDICO ? 'in italiano' : 'in English'
 const TERMINI = MEDICO ? '' : ' Lascia in inglese i termini giuridici, i nomi dei casi e delle leggi.'
 
 export const AZIONI_AI = MEDICO ? {
@@ -53,11 +55,11 @@ export const AZIONI_AI = MEDICO ? {
   flashcard: { titolo: 'Flashcard', istruzione: 'Crea in italiano 10 flashcard sui concetti chiave. Formato rigoroso, una per coppia di righe: "D: domanda" e sotto "R: risposta breve". Nient\'altro.' },
   traduci: { titolo: 'Traduci in italiano', istruzione: 'Traduci il materiale in italiano medico corretto, mantenendo la struttura.' },
 } as const : {
-  riassumi: { titolo: 'Riassumi', istruzione: `Fai un riassunto chiaro e fedele del materiale, in italiano, per ${CHI} che ripassa. Paragrafi brevi; metti in evidenza principi, casi (con il loro nome), norme e argomentazioni.${TERMINI}` },
-  schema: { titolo: 'Schema a punti', istruzione: `Trasforma il materiale in uno schema a punti gerarchico in italiano (titoli brevi, sotto-punti), utile per ripassare: regola, eccezioni, casi principali, critiche.${TERMINI}` },
-  semplifica: { titolo: 'Semplifica', istruzione: `Riscrivi il materiale in italiano in modo più semplice e scorrevole, senza perdere passaggi giuridici importanti.${TERMINI}` },
-  domande: { titolo: "Domande d'esame", istruzione: `Scrivi 8 domande ${ESAME} sul materiale (anche problem question brevi), ognuna seguita dalla risposta sintetica con i casi pertinenti. Formato: "D: …" e sulla riga sotto "R: …".${TERMINI}` },
-  flashcard: { titolo: 'Flashcard', istruzione: `Crea in italiano 10 flashcard sui concetti chiave (principi, casi e cosa hanno stabilito, norme). Formato rigoroso, una per coppia di righe: "D: domanda" e sotto "R: risposta breve". Nient'altro.${TERMINI}` },
+  riassumi: { titolo: 'Summarise', istruzione: `Write a clear, faithful summary of the material in English for ${CHI} revising for exams. Short paragraphs; highlight principles, cases (with their names), statutes and arguments.` },
+  schema: { titolo: 'Outline', istruzione: 'Turn the material into a hierarchical bullet-point outline in English (short headings, sub-points) for revision: rule, exceptions, leading cases, criticism.' },
+  semplifica: { titolo: 'Simplify', istruzione: 'Rewrite the material in plain, readable English without losing important legal steps.' },
+  domande: { titolo: 'Exam questions', istruzione: `Write 8 ${ESAME} questions in English on the material (including short problem questions), each followed by a concise answer citing the relevant cases. Use exactly this format: a line starting with "D: " for the question and the next line starting with "R: " for the answer.` },
+  flashcard: { titolo: 'Flashcards', istruzione: 'Create 10 flashcards in English on the key concepts (principles, cases and what they decided, statutes). Strict format, one per pair of lines: "D: question" and below it "R: short answer". Nothing else.' },
   traduci: { titolo: 'Traduci in italiano', istruzione: 'Traduci il materiale in italiano giuridico corretto, mantenendo la struttura; tra parentesi lascia il termine inglese originale dei concetti tecnici.' },
 } as const
 export type AzioneAI = keyof typeof AZIONI_AI
@@ -136,7 +138,7 @@ export function leggiQuiz(testo: string): DomandaQuiz[] {
 
 export async function generaQuiz(m: Materiale, quante: number): Promise<DomandaQuiz[]> {
   const testo = await chiama(
-    `Crea un quiz ${ESAME}, in italiano, basato SOLO sul materiale fornito.${TERMINI} ${quante} domande a risposta multipla, ciascuna con 4 opzioni e una sola corretta, di difficoltà variabile. `
+    `Crea un quiz ${ESAME}, scritto ${LINGUA}, basato SOLO sul materiale fornito.${TERMINI} ${quante} domande a risposta multipla, ciascuna con 4 opzioni e una sola corretta, di difficoltà variabile. `
     + 'Rispondi solo con un array JSON di oggetti: {"domanda": string, "opzioni": [4 string], "corretta": indice 0-3, "spiegazione": string breve, "fonte": titolo della fonte}.', m, true)
   const domande = leggiQuiz(testo)
   if (!domande.length) throw new Error('Gemini non ha creato domande valide: riprova.')
@@ -145,7 +147,7 @@ export async function generaQuiz(m: Materiale, quante: number): Promise<DomandaQ
 
 export async function generaFlashcard(m: Materiale, quante: number): Promise<{ domanda: string; risposta: string; fonte?: string }[]> {
   const testo = await chiama(
-    `Crea ${quante} flashcard in italiano sui concetti chiave del materiale (definizioni, soglie, numeri, raccomandazioni). `
+    `Crea ${quante} flashcard scritte ${LINGUA} sui concetti chiave del materiale (definizioni, soglie, numeri, raccomandazioni). `
     + 'Rispondi solo con un array JSON di oggetti: {"domanda": string, "risposta": string breve, "fonte": titolo della fonte}.', m, true)
   let dati: unknown
   try { dati = JSON.parse(testo.replace(/^```(?:json)?\s*|\s*```$/g, '')) } catch { dati = [] }
@@ -158,7 +160,7 @@ export async function generaFlashcard(m: Materiale, quante: number): Promise<{ d
 
 /** Argomenti dal syllabus (testo o PDF): elenco di nomi brevi. */
 export async function estraiArgomenti(m: Materiale): Promise<string[]> {
-  const testo = await chiama('Dal syllabus/programma fornito estrai l\'elenco degli argomenti da studiare, in italiano, con nomi brevi (max 6 parole), nell\'ordine del programma. Rispondi solo con un array JSON di stringhe.', m, true)
+  const testo = await chiama(`Dal syllabus/programma fornito estrai l\'elenco degli argomenti da studiare, scritti ${LINGUA}, con nomi brevi (max 6 parole), nell'ordine del programma. Rispondi solo con un array JSON di stringhe.`, m, true)
   try {
     const dati = JSON.parse(testo.replace(/^```(?:json)?\s*|\s*```$/g, '')) as unknown
     const elenco = (Array.isArray(dati) ? dati : []).map(String).map((s) => s.trim()).filter(Boolean)
@@ -192,5 +194,28 @@ export async function valutaStudio(studio: string, categorie: string[]): Promise
     + `Per ognuna di queste categorie dai il voto (A*, A, B, C o D), solo se lo trovi: ${categorie.join(', ')}. `
     + 'Trova anche lo stipendio da trainee del primo anno a Londra e quello da NQ, in sterline. '
     + `Rispondi solo con un oggetto JSON: {"voti": {"Categoria": "voto"}, "tc": numero, "nq": numero}. Se non trovi un dato, lascialo fuori.`,
+    { testo: '' }, true, true)
+}
+
+/* Commercial awareness (in inglese; le notizie di politica italiana in italiano) */
+
+/** Le notizie economiche e giuridiche più importanti del periodo, divise per tema, cercate su internet. */
+export async function notizieDellaSettimana(da: string, a: string, temi: { chiave: string; nome: string }[]): Promise<string> {
+  return chiama(
+    `Search the web for the most important business, financial and legal news published between ${da} and ${a}, useful for the commercial awareness of a law student applying to City law firms in London. `
+    + `Give about 2 stories for each of these topics (key: name): ${temi.map((t) => `${t.chiave}: ${t.nome}`).join('; ')}. `
+    + 'For each story write a summary of 4-5 sentences that explains the context, what happened and what may happen next, so that someone who knows nothing about it understands it. '
+    + 'Write everything in English, EXCEPT the stories of topic "ita" (Italian politics), which must be written entirely in Italian. '
+    + 'Reply only with a JSON array of objects: {"topic": key, "title": string, "source": newspaper name, "url": link to the article, "date": "YYYY-MM-DD", "summary": string, "figures": [up to 4 short key figures], "firms": [law firms involved, if any]}.',
+    { testo: '' }, true, true)
+}
+
+/** Note per i colloqui su una notizia: perché conta per uno studio, cosa dire, practice areas, studi coinvolti. */
+export async function spiegaNotizia(n: { titolo: string; riassunto?: string; fonte?: string }, italiano: boolean): Promise<string> {
+  return chiama(
+    `${italiano ? 'Rispondi in italiano.' : 'Answer in English.'} A law student preparing for training contract interviews at City law firms read this news story. `
+    + `Story: "${n.titolo}"${n.fonte ? ` (${n.fonte})` : ''}. ${n.riassunto ?? ''} `
+    + 'Explain briefly: why it matters for a commercial law firm and its clients (2-3 sentences), what she could say about it at an interview (2 sentences, showing commercial awareness), the practice areas involved, and any law firms known to be advising. '
+    + 'Reply only with a JSON object: {"why": string, "interview": string, "practiceAreas": [strings], "firms": [strings]}.',
     { testo: '' }, true, true)
 }

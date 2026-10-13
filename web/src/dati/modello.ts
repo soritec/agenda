@@ -573,6 +573,36 @@ export interface Application extends Base {
   /** Quando e da dove arrivano le valutazioni. */
   votiIl?: string
   votiDaGemini?: boolean
+  /** Salvata con il segnalibro (compare in "Salvati"). */
+  salvata?: boolean
+  salvataIl?: string
+}
+
+/** Notizia per la commercial awareness (testi in inglese, tranne la politica italiana). */
+export interface Notizia extends Base {
+  titolo: string
+  /** Tema: 'geo' | 'deal' | 'mkt' | 'reg' | 'tech' | 'life' | 'ene' | 'ita' | 'law' */
+  tema: string
+  fonte?: string
+  url?: string
+  /** Giorno della notizia ("2026-10-15"): decide la settimana. */
+  giorno: string
+  riassunto?: string
+  /** Cifre chiave ("£4bn deal value"). */
+  cifre?: string[]
+  /** Perché conta per uno studio legale. */
+  perche?: string
+  /** Cosa direi al colloquio. */
+  colloquio?: string
+  /** Practice areas coinvolte. */
+  aree?: string[]
+  /** Studi legali coinvolti. */
+  studi?: string[]
+  storiaSettimana?: boolean
+  salvata?: boolean
+  salvataIl?: string
+  /** Trovata o scritta da Gemini (da verificare). */
+  daGemini?: boolean
 }
 
 export interface Collezioni {
@@ -617,6 +647,7 @@ export interface Collezioni {
   coseCasa: CosaCasa
   candidate: Candidata
   applications: Application
+  notizie: Notizia
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate', 'applications']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate', 'applications', 'notizie']

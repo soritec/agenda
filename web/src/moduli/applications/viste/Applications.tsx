@@ -7,6 +7,8 @@ import type { Application } from '../../../dati/modello'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { IconaLink, IconaPiu, IconaScintille } from '../../../interfaccia/icone'
 import { leggiChiave, valutaStudio } from '../../studio/ai'
+import { Segnalibro } from '../../commercial/viste/Commercial'
+import { segnalibroApplication } from '../../commercial/viste/Salvati'
 import { centesimiDaTesto, chiaveGiorno, giornoDaChiave, oggi, testoDaCentesimi } from '../../turni/supporto'
 import {
   CATEGORIE_VOTO, cambiaPassi, COLORI_STUDIO, coloreVoto, fase, leggiValutazioni, linkStudio, ordinaApplications, PASSI_PREDEFINITI, PORTALI,
@@ -83,6 +85,7 @@ function SchedaApplication({ a, oggiChiave, passiPredefiniti, onApri }: { a: App
         {f === 'offerta' && <span className="etichetta-programma esito-offerta">Offerta</span>}
         {f === 'nonPassata' && <span className="etichetta-programma esito-no">Non passata</span>}
         <span className="crescente" />
+        <Segnalibro salvata={a.salvata} onClick={() => void segnalibroApplication(a)} etichetta={a.salvata ? 'Togli dai salvati' : 'Salva'} />
         <button type="button" className="pillola piccola" onClick={() => setModificaPassi(!modificaPassi)}>{modificaPassi ? 'Fatto' : 'Modifica i passi'}</button>
         <button type="button" className="elimina-task" aria-label={`Elimina ${a.studio}`}
           onClick={() => void elimina('applications', a.id).then(() => mostraAvviso(`Eliminata: ${a.studio}`, () => void ripristina('applications', a.id)))}>×</button>

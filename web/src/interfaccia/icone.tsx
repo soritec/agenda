@@ -148,3 +148,10 @@ export const IconaPersona = (p: P) => <Icona {...p}><circle cx="12" cy="8.5" r="
 export const IconaPuntini = (p: P) => <Icona {...p}><circle cx="6" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="18" cy="12" r="1" /></Icona>
 export const IconaValigetta = (p: P) => <Icona {...p}><rect x="3.5" y="7.5" width="17" height="12" rx="2.5" /><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17M11 12.5v1.5h2v-1.5" /></Icona>
 export const IconaScintille = (p: P) => <Icona {...p}><path d="M10 4l1.6 4.4L16 10l-4.4 1.6L10 16l-1.6-4.4L4 10l4.4-1.6zM17.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" /></Icona>
+export const IconaGiornale = (p: P) => <Icona {...p}><path d="M5 4.5h11.5v14a2 2 0 0 0 2 2H6.5A1.5 1.5 0 0 1 5 19z" /><path d="M16.5 8.5h2.5v10a2 2 0 0 1-2 2M8 8h5.5M8 11.5h5.5M8 15h3.5" /></Icona>
+/** Segnalibro: vuoto o pieno (salvato). */
+export const IconaSegnalibro = ({ dimensione = 22, pieno }: P & { pieno?: boolean }) => (
+  <svg width={dimensione} height={dimensione} viewBox="0 0 24 24" fill={pieno ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true">
+    <path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z" />
+  </svg>
+)
