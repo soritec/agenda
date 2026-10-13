@@ -58,8 +58,15 @@ export async function collega(token: string, password: string, proprietario = PR
   const file = await leggiFile(c, FILE_CHIAVE)
   let chiave: CryptoKey
   if (file) {
-    const aperta = await apriChiave(password, JSON.parse(file.testo) as DescrittoreChiave)
-    if (!aperta) throw new Error('Password sbagliata.')
+    const descrittore = JSON.parse(file.testo) as DescrittoreChiave
+    // Copiando la password da un messaggio capita che si aggiungano spazi o che il telefono cambi apostrofi e virgolette:
+    // si prova prima così com'è, poi nelle varianti più comuni.
+    let aperta: CryptoKey | undefined
+    for (const p of variantiPassword(password)) {
+      aperta = await apriChiave(p, descrittore)
+      if (aperta) break
+    }
+    if (!aperta) throw new Error('Password sbagliata. Controlla maiuscole, spazi e simboli (con "Mostra la password").')
     chiave = aperta
   } else {
     const nuova = await nuovaChiave(password)
@@ -193,4 +200,11 @@ export async function ripristinaBackup(testo: string): Promise<number> {
   const daScrivere = differenze(fusa, locale)
   await scriviGrezzi(daScrivere, undefined, 'utente')
   return Object.values(daScrivere).reduce((n, elenco) => n + (elenco?.length ?? 0), 0)
+}
+
+/** La password scritta e le sue varianti dovute a copia e incolla o alla tastiera del telefono. */
+export function variantiPassword(p: string): string[] {
+  const dritte = (x: string) => x.replace(/[\u2018\u2019\u02BC]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-')
+  const v = [p, p.trim(), dritte(p), dritte(p.trim()), p.normalize('NFC').trim()]
+  return [...new Set(v)].filter((x) => x.length > 0)
 }

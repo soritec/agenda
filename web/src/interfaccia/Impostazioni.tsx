@@ -71,6 +71,7 @@ function Collegamento() {
   const [token, setToken] = useState('')
   const [haPassword, setHaPassword] = useState(false)
   const [password, setPassword] = useState('')
+  const [mostra, setMostra] = useState(false)
   const [conferma, setConferma] = useState('')
   const [errore, setErrore] = useState<string>()
   const [attesa, setAttesa] = useState(false)
@@ -136,8 +137,13 @@ function Collegamento() {
         <>
           <p style={{ margin: 0 }}>Inserisci la <strong>password</strong> che hai scelto sul primo dispositivo.</p>
           <Campo etichetta="Password">
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+            <input type={mostra ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password"
+              autoCapitalize="none" autoCorrect="off" spellCheck={false} />
           </Campo>
+          <label className="interruttore" style={{ borderBottom: 'none' }}>
+            <span>Mostra la password</span>
+            <input type="checkbox" checked={mostra} onChange={(e) => setMostra(e.target.checked)} />
+          </label>
         </>
       ) : (
         <>

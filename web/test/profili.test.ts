@@ -79,3 +79,11 @@ describe('Profili', () => {
     expect((await elencaCondivisi('promemoria')).map((p) => p.testo)).toEqual(['Ricordati la domanda'])
   })
 })
+
+describe('Password copiata da un messaggio', () => {
+  test('si provano anche le varianti con spazi e apostrofi del telefono', async () => {
+    const { variantiPassword } = await import('../src/dati/sincronizzazione')
+    expect(variantiPassword(' l’albero-2026 ')).toContain("l'albero-2026")
+    expect(variantiPassword('esatta')).toEqual(['esatta'])
+  })
+})
