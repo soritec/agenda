@@ -196,7 +196,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     }
     mostraAvviso(`Eliminato: ${i.titolo}`, () => void annulla())
   }
-  const rimozione: Rimozione = { gestori: pressione.gestori, elimina: (i) => void eliminaImpegno(i) }
+  const rimozione: Rimozione = { gestori: pressione.gestori, elimina: (i) => void eliminaImpegno(i), eraPressione: pressione.eraPressione }
   const [taskNuovo, setTaskNuovo] = useState<string>()
 
   // Passaggio fluido: la nuova settimana (o mese) entra scorrendo dal lato giusto; su iPhone basta trascinare.
@@ -288,14 +288,18 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
 interface Rimozione {
   gestori: ReturnType<typeof useTrascinamento<Impegno>>['gestori']
   elimina: (i: Impegno) => void
+  /** Vero subito dopo una pressione prolungata o un trascinamento (il clic che segue non apre niente). */
+  eraPressione: () => boolean
 }
 /** Le scadenze delle tasse si tolgono dalla loro sezione. */
 const eliminabile = (i: Impegno) => i.fonte !== 'tassa' && i.fonte !== 'promemoria' && i.fonte !== 'casa'
 
 function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; inRiga?: boolean }) {
   if (!eliminabile(i)) return null
+  // Note del giorno e task hanno la × sempre visibile, per toglierli al volo.
+  const sempre = i.fonte === 'nota' || i.fonte === 'task'
   return (
-    <button type="button" className={`x-elimina${inRiga ? ' in-riga' : ''}`} aria-label={`Elimina ${i.titolo}`}
+    <button type="button" className={`x-elimina${inRiga ? ' in-riga' : ''}${sempre ? ' x-sempre' : ''}`} aria-label={`Elimina ${i.titolo}`}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); rimozione.elimina(i) }}>×</button>
   )
@@ -366,7 +370,13 @@ function VistaMese({ visibili, oggiChiave, festivo, apri, aggiungi, rimozione, m
                   <span className="numero">{g.giorno}</span>
                   {voci.some((v) => v.fonte === 'nota') && <span className="pin-cella" aria-label="Nota del giorno"><IconaPin dimensione={13} /></span>}
                   <span className="voci">
-                    {voci.slice(0, 3).map((v) => <span key={v.chiave} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`} title={v.titolo}>{v.minutoInizio !== undefined && <span className="ora-mini">{orarioBreve(v.minutoInizio)}</span>}{v.titolo}</span>)}
+                    {voci.slice(0, 3).map((v) => (
+                      // Si trascinano in un altro giorno; il tocco sceglie il giorno.
+                      <span key={v.chiave} className={`${classeVoce(v)}${v.concluso ? ' conclusa' : ''}${eliminabile(v) ? ' rimovibile' : ''}`} title={v.titolo}
+                        {...rimovibile(v, rimozione)} onClick={() => { if (!rimozione.eraPressione()) onScegli(k) }}>
+                        {v.minutoInizio !== undefined && <span className="ora-mini">{orarioBreve(v.minutoInizio)}</span>}{v.titolo}<XElimina i={v} rimozione={rimozione} />
+                      </span>
+                    ))}
                     {voci.length > 3 && <span className="altre">+{voci.length - 3}</span>}
                   </span>
                   <span className="puntini" aria-hidden="true">{voci.slice(0, 4).map((v) => <span key={v.chiave} className={`pallino-fonte f-${v.fonte}`} />)}</span>
@@ -415,7 +425,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
                 <span className="numero">{numeroGiorno(g)}</span>
                 <span className="nome-giorno">{F.dataEstesa(msGiorno(g)).split(' ')[0]}{numeroGiorno(g) === 1 ? ` · ${nomeMese(g).split(' ')[0]}` : ''}</span>
               </div>
-              {task.length > 0 && <TendinaTask voci={task} mappaAttivita={mappaAttivita} />}
+              {task.length > 0 && <TendinaTask voci={task} mappaAttivita={mappaAttivita} rimozione={rimozione} />}
               {voci.map((v) => (
                 <a key={v.chiave} href={v.link} onClick={(e) => apri(v, e)} {...rimovibile(v, rimozione)} className={`voce-estesa rimovibile ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}>
                   {v.minutoInizio !== undefined && <span className="ora numeri">{testoOrario(v)}</span>}
@@ -502,7 +512,7 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
         <div className="etichetta-ore pin-ore icona-task-ore" title="Task del giorno"><IconaTask dimensione={16} /></div>
         {giorni.map((g) => (
           <div key={g} className="riga-giornata riga-task-giorno" data-giorno={g} onClick={(e) => { if (e.target === e.currentTarget) aggiungiTask(g) }}>
-            {(taskPerGiorno.get(g) ?? []).length > 0 && <TendinaTask voci={taskPerGiorno.get(g)!} mappaAttivita={mappaAttivita} />}
+            {(taskPerGiorno.get(g) ?? []).length > 0 && <TendinaTask voci={taskPerGiorno.get(g)!} mappaAttivita={mappaAttivita} rimozione={rimozione} />}
             <button type="button" className="piu-nota" onClick={() => aggiungiTask(g)}>+ task</button>
           </div>
         ))}
@@ -703,7 +713,7 @@ function EsportaCalendario({ anno, mese, dati, nascoste, onChiudi }: {
 
 
 /** "Task · 3": si apre con un tocco e mostra i task del giorno, da spuntare. */
-function TendinaTask({ voci, mappaAttivita }: { voci: Impegno[]; mappaAttivita: Map<string, Attivita> }) {
+function TendinaTask({ voci, mappaAttivita, rimozione }: { voci: Impegno[]; mappaAttivita: Map<string, Attivita>; rimozione: Rimozione }) {
   const fatti = voci.filter((v) => v.concluso).length
   return (
     <details className="tendina-task" onClick={(e) => e.stopPropagation()}>
@@ -715,10 +725,12 @@ function TendinaTask({ voci, mappaAttivita }: { voci: Impegno[]; mappaAttivita: 
         {[...voci].sort((x, y) => Number(Boolean(x.concluso)) - Number(Boolean(y.concluso))).map((v) => {
           const t = mappaAttivita.get(v.id)
           return (
-            <div key={v.chiave} className={`voce-tendina${v.concluso ? ' conclusa' : ''}`}>
+            // Si trascina in un altro giorno (o a un orario) come gli impegni; × per toglierlo.
+            <div key={v.chiave} className={`voce-tendina rimovibile${v.concluso ? ' conclusa' : ''}`} {...rimozione.gestori(v.chiave, v)}>
               <button type="button" className={`spunta piccola${v.concluso ? ' fatta' : ''}`} aria-label={v.concluso ? `Riapri ${v.titolo}` : `Segna fatto ${v.titolo}`}
-                onClick={() => { if (t) void segnaFatto(t) }}>{v.concluso ? '✓' : ''}</button>
-              <a href={v.link}>{v.minutoInizio !== undefined && <span className="numeri secondario">{orarioBreve(v.minutoInizio)} </span>}{v.titolo}</a>
+                onPointerDown={(e) => e.stopPropagation()} onClick={() => { if (t) void segnaFatto(t) }}>{v.concluso ? '✓' : ''}</button>
+              <a href={v.link} onClick={(e) => { if (rimozione.eraPressione()) e.preventDefault() }}>{v.minutoInizio !== undefined && <span className="numeri secondario">{orarioBreve(v.minutoInizio)} </span>}{v.titolo}</a>
+              <XElimina i={v} rimozione={rimozione} />
             </div>
           )
         })}

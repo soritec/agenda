@@ -1089,3 +1089,15 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .casa .aggiunta-veloce { flex-wrap: wrap; }
 }
 .corpo-bill .crescente { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
+/* × sempre visibile su note del giorno e task (Agenda) */
+.x-elimina.x-sempre { display: flex; }
+.x-elimina.x-sempre:not(.in-riga) { position: static; width: 16px; height: 16px; margin-left: auto; border: none; background: transparent; color: inherit; opacity: 0.55; font-size: 14px; font-weight: 600; flex-shrink: 0; transform: none; }
+.x-elimina.x-sempre:not(.in-riga):hover { opacity: 1; color: var(--pericolo); }
+.voce-estesa.colore-nota { display: flex; align-items: flex-start; gap: 4px; }
+.voce-tendina.rimovibile { cursor: grab; }
+.cella .voci > .rimovibile { pointer-events: auto; cursor: grab; }
+.cella .voci > .rimovibile > .x-elimina { top: -4px; right: -4px; width: 18px; height: 18px; font-size: 11px; }
+.cella .voci > .rimovibile > .x-elimina.x-sempre { display: none; position: absolute; width: 18px; height: 18px; margin: 0; border: 2px solid var(--superficie); background: var(--pericolo); color: #fff; opacity: 1; }
+.cella .voci > .rimovibile[data-premuto="si"] > .x-elimina.x-sempre { display: flex; }
+@media (hover: hover) { .cella .voci > .rimovibile:hover > .x-elimina.x-sempre { display: flex; } }
