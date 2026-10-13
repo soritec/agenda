@@ -1,5 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
 import { IconaAvviso } from './icone'
+import { profiloPrincipale } from '../dati/profili'
 
 /** Finestra modale: dal basso su iPhone, al centro su Mac. Esc o "Annulla" la chiudono. */
 export function Foglio({ aperto, titolo, onChiudi, azione, children }: {
@@ -45,7 +46,7 @@ export function Campo({ etichetta, children }: { etichetta: string; children: Re
 
 /** Avviso obbligatorio sotto ogni campo di testo libero (spec: niente dati dei pazienti). */
 export function NotaPrivacy() {
-  return <span className="nota-privacy">Non scrivere dati che identificano pazienti (nome, codice fiscale, data di nascita, indirizzo).</span>
+  return <span className="nota-privacy">{profiloPrincipale() ? 'Non scrivere dati che identificano pazienti (nome, codice fiscale, data di nascita, indirizzo).' : 'Non scrivere dati sensibili di altre persone.'}</span>
 }
 
 export function Avviso({ children }: { children: ReactNode }) {

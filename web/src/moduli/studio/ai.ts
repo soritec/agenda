@@ -1,3 +1,4 @@
+import { profiloPrincipale } from '../../dati/profili'
 /**
  * Assistente Gemini (Google) per riassumere e rielaborare testi e per creare quiz e flashcard dalle fonti.
  * La chiave è gratuita (aistudio.google.com), resta solo su questo dispositivo e la inserisce l'utente.
@@ -35,13 +36,29 @@ async function messaggioGoogle(r: Response): Promise<string> {
 export const leggiChiave = () => { try { return localStorage.getItem(CHIAVE) ?? '' } catch { return '' } }
 export const salvaChiave = (k: string) => { try { if (k) localStorage.setItem(CHIAVE, k); else localStorage.removeItem(CHIAVE) } catch { /* niente */ } }
 
-export const AZIONI_AI = {
+/**
+ * Per chi studia: il profilo principale è una specializzanda in ginecologia e ostetricia; gli altri profili
+ * studiano giurisprudenza in inglese (testi e termini giuridici inglesi restano in inglese).
+ */
+const MEDICO = profiloPrincipale()
+const CHI = MEDICO ? 'una specializzanda in ginecologia e ostetricia' : 'una studentessa di un master in giurisprudenza (LLM) in Inghilterra'
+const ESAME = MEDICO ? "d'esame di specializzazione in ginecologia e ostetricia" : "d'esame del master in giurisprudenza (diritto inglese)"
+const TERMINI = MEDICO ? '' : ' Lascia in inglese i termini giuridici, i nomi dei casi e delle leggi.'
+
+export const AZIONI_AI = MEDICO ? {
   riassumi: { titolo: 'Riassumi', istruzione: 'Fai un riassunto chiaro e fedele del materiale, in italiano, per una specializzanda in ginecologia e ostetricia che ripassa. Paragrafi brevi; metti in evidenza definizioni, numeri e raccomandazioni.' },
   schema: { titolo: 'Schema a punti', istruzione: 'Trasforma il materiale in uno schema a punti gerarchico in italiano (titoli brevi, sotto-punti), utile per ripassare. Mantieni valori numerici, soglie e livelli di raccomandazione.' },
   semplifica: { titolo: 'Semplifica', istruzione: 'Riscrivi il materiale in italiano in modo più semplice e scorrevole, senza perdere informazioni cliniche importanti.' },
   domande: { titolo: "Domande d'esame", istruzione: "Scrivi in italiano 8 domande d'esame di specializzazione sul materiale, ognuna seguita dalla risposta sintetica. Formato: \"D: …\" e sulla riga sotto \"R: …\"." },
   flashcard: { titolo: 'Flashcard', istruzione: 'Crea in italiano 10 flashcard sui concetti chiave. Formato rigoroso, una per coppia di righe: "D: domanda" e sotto "R: risposta breve". Nient\'altro.' },
   traduci: { titolo: 'Traduci in italiano', istruzione: 'Traduci il materiale in italiano medico corretto, mantenendo la struttura.' },
+} as const : {
+  riassumi: { titolo: 'Riassumi', istruzione: `Fai un riassunto chiaro e fedele del materiale, in italiano, per ${CHI} che ripassa. Paragrafi brevi; metti in evidenza principi, casi (con il loro nome), norme e argomentazioni.${TERMINI}` },
+  schema: { titolo: 'Schema a punti', istruzione: `Trasforma il materiale in uno schema a punti gerarchico in italiano (titoli brevi, sotto-punti), utile per ripassare: regola, eccezioni, casi principali, critiche.${TERMINI}` },
+  semplifica: { titolo: 'Semplifica', istruzione: `Riscrivi il materiale in italiano in modo più semplice e scorrevole, senza perdere passaggi giuridici importanti.${TERMINI}` },
+  domande: { titolo: "Domande d'esame", istruzione: `Scrivi 8 domande ${ESAME} sul materiale (anche problem question brevi), ognuna seguita dalla risposta sintetica con i casi pertinenti. Formato: "D: …" e sulla riga sotto "R: …".${TERMINI}` },
+  flashcard: { titolo: 'Flashcard', istruzione: `Crea in italiano 10 flashcard sui concetti chiave (principi, casi e cosa hanno stabilito, norme). Formato rigoroso, una per coppia di righe: "D: domanda" e sotto "R: risposta breve". Nient'altro.${TERMINI}` },
+  traduci: { titolo: 'Traduci in italiano', istruzione: 'Traduci il materiale in italiano giuridico corretto, mantenendo la struttura; tra parentesi lascia il termine inglese originale dei concetti tecnici.' },
 } as const
 export type AzioneAI = keyof typeof AZIONI_AI
 
@@ -114,7 +131,7 @@ export function leggiQuiz(testo: string): DomandaQuiz[] {
 
 export async function generaQuiz(m: Materiale, quante: number): Promise<DomandaQuiz[]> {
   const testo = await chiama(
-    `Crea un quiz d'esame di specializzazione in ginecologia e ostetricia, in italiano, basato SOLO sul materiale fornito. ${quante} domande a risposta multipla, ciascuna con 4 opzioni e una sola corretta, di difficoltà variabile. `
+    `Crea un quiz ${ESAME}, in italiano, basato SOLO sul materiale fornito.${TERMINI} ${quante} domande a risposta multipla, ciascuna con 4 opzioni e una sola corretta, di difficoltà variabile. `
     + 'Rispondi solo con un array JSON di oggetti: {"domanda": string, "opzioni": [4 string], "corretta": indice 0-3, "spiegazione": string breve, "fonte": titolo della fonte}.', m, true)
   const domande = leggiQuiz(testo)
   if (!domande.length) throw new Error('Gemini non ha creato domande valide: riprova.')
@@ -153,9 +170,9 @@ export function organizzaConAI(dati: {
   fine: string
 }): Promise<string> {
   return chiama(
-    `Sei un tutor per una specializzanda in ginecologia e ostetricia. Organizza un piano di studio fino al ${dati.fine} (giorno dell'esame, escluso). `
+    `Sei un tutor per ${CHI}. Organizza un piano di studio fino al ${dati.fine} (giorno dell'esame, escluso). `
     + `Ha circa ${dati.minutiAlGiorno} minuti al giorno. Distribuisci gli argomenti nei giorni elencati in modo ragionato: argomenti più difficili o lunghi prima e su più giorni, `
-    + 'pagine divise in blocchi continui senza buchi, carico simile tra i giorni, niente o poco studio nei giorni segnati "occupato" (es. guardia notturna), ultimo giorno disponibile per il ripasso generale. '
+    + 'pagine divise in blocchi continui senza buchi, carico simile tra i giorni, niente o poco studio nei giorni segnati "occupato", ultimo giorno disponibile per il ripasso generale. '
     + 'Rispondi solo con un array JSON di oggetti {"giorno":"AAAA-MM-GG","tipo":"studio"|"ripassoGenerale","argomento":nome esatto dell\'argomento,"paginaDa":numero,"paginaA":numero,"minuti":numero}.',
     { testo: `Argomenti:\n${JSON.stringify(dati.argomenti)}\n\nGiorni disponibili:\n${JSON.stringify(dati.giorni)}` }, true)
 }

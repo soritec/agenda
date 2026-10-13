@@ -1,3 +1,4 @@
+import { profiloPrincipale } from '../../dati/profili'
 import type { Flashcard, SessioneStudio } from '../../dati/modello'
 import { giornoDaChiave, chiaveGiorno } from '../turni/supporto'
 
@@ -6,7 +7,7 @@ export const idArgomento = (nome: string) => `argomento-${nome.toLowerCase().nor
 
 export const TIPI_RISORSA = ['lineaGuida', 'articolo', 'libro', 'video', 'sito'] as const
 export type TipoRisorsa = (typeof TIPI_RISORSA)[number]
-export const TITOLI_TIPO_RISORSA: Record<TipoRisorsa, string> = { lineaGuida: 'Linea guida', articolo: 'Articolo', libro: 'Libro', video: 'Video', sito: 'Sito' }
+export const TITOLI_TIPO_RISORSA: Record<TipoRisorsa, string> = { lineaGuida: profiloPrincipale() ? 'Linea guida' : 'Normativa', articolo: 'Articolo', libro: 'Libro', video: 'Video', sito: 'Sito' }
 export const tipoRisorsaDa = (t: string): TipoRisorsa => ((TIPI_RISORSA as readonly string[]).includes(t) ? (t as TipoRisorsa) : 'articolo')
 
 export const STATI_LETTURA = ['daLeggere', 'inLettura', 'letto'] as const
@@ -15,7 +16,7 @@ export const TITOLI_STATO_LETTURA: Record<StatoLettura, string> = { daLeggere: '
 export const statoLetturaDa = (s: string): StatoLettura => ((STATI_LETTURA as readonly string[]).includes(s) ? (s as StatoLettura) : 'daLeggere')
 
 /** Siti utili da aggiungere con un tocco. */
-export const SITI_STUDIO = [
+export const SITI_STUDIO = profiloPrincipale() ? [
   { titolo: 'SIGO', url: 'https://www.sigo.it' },
   { titolo: 'AOGOI', url: 'https://www.aogoi.it' },
   { titolo: 'ACOG', url: 'https://www.acog.org/clinical' },
@@ -24,9 +25,19 @@ export const SITI_STUDIO = [
   { titolo: 'FIGO', url: 'https://www.figo.org' },
   { titolo: 'NICE', url: 'https://www.nice.org.uk/guidance' },
   { titolo: 'PubMed', url: 'https://pubmed.ncbi.nlm.nih.gov' },
+] : [
+  { titolo: 'BAILII', url: 'https://www.bailii.org' },
+  { titolo: 'legislation.gov.uk', url: 'https://www.legislation.gov.uk' },
+  { titolo: 'UK Supreme Court', url: 'https://www.supremecourt.uk/decided-cases' },
+  { titolo: 'National Archives (sentenze)', url: 'https://caselaw.nationalarchives.gov.uk' },
+  { titolo: 'Westlaw', url: 'https://uk.westlaw.com' },
+  { titolo: 'LexisNexis', url: 'https://www.lexisnexis.co.uk' },
+  { titolo: 'Google Scholar', url: 'https://scholar.google.com' },
+  { titolo: 'EUR-Lex', url: 'https://eur-lex.europa.eu' },
 ]
 
 export const cercaGoogle = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`
+export const cercaScholar = (q: string) => `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`
 export const cercaPubMed = (q: string) => `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(q)}`
 
 const piuGiorni = (giorno: string, n: number) => {

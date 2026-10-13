@@ -59,6 +59,8 @@ export interface DatiAgenda {
   note?: NotaGiorno[]
   journal?: JournalClub[]
   piani?: PianoStudio[]
+  /** Dove si modificano esami e lezioni (predefinito: la sezione Specializzazione). */
+  linkEsami?: string
   /** Casa: viewing delle candidate, partenze e arrivi delle coinquiline. */
   candidate?: Candidata[]
   stanze?: Stanza[]
@@ -142,7 +144,7 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
     out.push({
       chiave: `${fonte}:${e.id}`, fonte, id: e.id, giorno: e.giorno, titolo: e.titolo,
       dettaglio: [e.materia, e.esito].filter(Boolean).join(' · ') || undefined,
-      colore: `colore-${fonte}`, link: `#/specializzazione/${fonte === 'esame' ? 'esami' : 'lezioni'}`,
+      colore: `colore-${fonte}`, link: d.linkEsami ?? `#/specializzazione/${fonte === 'esame' ? 'esami' : 'lezioni'}`,
       concluso: Boolean(e.completato) || e.giorno < oggi, modificatoIl: e.modificatoIl,
     })
   }

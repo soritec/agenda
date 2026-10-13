@@ -74,5 +74,14 @@ export async function eseguiManutenzione(): Promise<void> {
     nuove.push('argomenti-studio-v1')
   }
 
+  if (profiloAttivo() !== PROFILO_PRINCIPALE && !fatte.has('argomenti-studio-altri-v1')) {
+    // Gli argomenti di partenza (medici) non servono negli altri profili: si tolgono se non usati; resta "Altro".
+    const usati = new Set([...(await elencaTutti('risorse')), ...(await elencaTutti('flashcard'))].map((x) => x.argomentoId))
+    for (const a of await elencaTutti('argomentiStudio')) {
+      if (a.eliminatoIl === undefined && ARGOMENTI_PREDEFINITI.includes(a.nome) && a.nome !== 'Altro' && a.id === idArgomento(a.nome) && !usati.has(a.id)) await elimina('argomentiStudio', a.id)
+    }
+    nuove.push('argomenti-studio-altri-v1')
+  }
+
   if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })
 }

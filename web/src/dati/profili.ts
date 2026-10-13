@@ -19,6 +19,9 @@ export function cambiaProfilo(id: string) {
 
 export const nomeDatabase = (id = profiloAttivo()) => (id === PROFILO_PRINCIPALE ? 'agenda' : `agenda-${id}`)
 export const fileDati = (id = profiloAttivo()) => (id === PROFILO_PRINCIPALE ? 'agenda.cifrato.json' : `agenda-${id}.cifrato.json`)
+/** Il profilo principale (specializzazione medica); gli altri profili hanno contenuti di partenza diversi. */
+export const profiloPrincipale = () => profiloAttivo() === PROFILO_PRINCIPALE
+
 export const FILE_CONDIVISO = 'condiviso.cifrato.json'
 
 /** Moduli di partenza per un profilo nuovo (si cambiano dalle Impostazioni). */

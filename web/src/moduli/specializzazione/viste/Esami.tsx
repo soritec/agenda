@@ -1,3 +1,4 @@
+import { profiloPrincipale } from '../../../dati/profili'
 import { useState } from 'react'
 import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
@@ -95,12 +96,12 @@ export function FormAttivita({ tipo, record, giorno, onChiudi }: { tipo: TipoAtt
     <Foglio aperto titolo={record ? t.uno : t.nuovo} onChiudi={onChiudi}
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
       <div className="modulo">
-        <Campo etichetta="Titolo"><input value={b.titolo} placeholder={tipo === 'esame' ? 'es. Esame di fine anno' : 'es. Diagnosi prenatale'} onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>
+        <Campo etichetta="Titolo"><input value={b.titolo} placeholder={profiloPrincipale() ? (tipo === 'esame' ? 'es. Esame di fine anno' : 'es. Diagnosi prenatale') : (tipo === 'esame' ? 'es. Contract Law, esame finale' : 'es. Seminario di Tort Law')} onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>
         <div className="campi-affiancati">
           <Campo etichetta="Data"><input type="date" value={b.giorno} onChange={(e) => setB({ ...b, giorno: e.target.value })} /></Campo>
           <Campo etichetta="Materia (facoltativa)"><input value={b.materia} onChange={(e) => setB({ ...b, materia: e.target.value })} /></Campo>
         </div>
-        <Campo etichetta={tipo === 'esame' ? 'Esito o voto' : 'Esito (facoltativo)'}><input value={b.esito} placeholder={tipo === 'esame' ? 'es. 30/30' : ''} onChange={(e) => setB({ ...b, esito: e.target.value })} /></Campo>
+        <Campo etichetta={tipo === 'esame' ? 'Esito o voto' : 'Esito (facoltativo)'}><input value={b.esito} placeholder={tipo === 'esame' ? (profiloPrincipale() ? 'es. 30/30' : 'es. 68 (Merit)') : ''} onChange={(e) => setB({ ...b, esito: e.target.value })} /></Campo>
         <label className="interruttore" style={{ borderBottom: 'none' }}>
           <span>Completato</span>
           <input type="checkbox" checked={b.completato} onChange={(e) => setB({ ...b, completato: e.target.checked })} />

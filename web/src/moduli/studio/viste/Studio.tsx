@@ -4,7 +4,9 @@ import * as F from '../../../nucleo/formati'
 import { elimina, nuovoId, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { contenutoAllegato } from '../../../dati/allegati'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
-import type { Allegato, ArgomentoStudio, Flashcard, Risorsa } from '../../../dati/modello'
+import type { Allegato, ArgomentoStudio, EsameOLezione, Flashcard, Risorsa } from '../../../dati/modello'
+import { profiloPrincipale } from '../../../dati/profili'
+import { FormAttivita } from '../../specializzazione/viste/Esami'
 import { condividiOScarica, creaPdfTesto } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
 import { IconaArticolo, IconaClip, IconaLibro, IconaLink, IconaLogbook, IconaMusica, IconaPlay } from '../../../interfaccia/icone'
@@ -13,7 +15,7 @@ import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../inter
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import { AZIONI_AI, elabora, generaFlashcard, generaQuiz, leggiChiave, salvaChiave, type AzioneAI, type DomandaQuiz, type Materiale } from '../ai'
 import {
-  cercaGoogle, cercaPubMed, daRipassare, leggiFlashcardDaTesto, minutiSettimana, rispondi, SITI_STUDIO, STATI_LETTURA, statoLetturaDa, TIPI_RISORSA,
+  cercaGoogle, cercaPubMed, cercaScholar, daRipassare, leggiFlashcardDaTesto, minutiSettimana, rispondi, SITI_STUDIO, STATI_LETTURA, statoLetturaDa, TIPI_RISORSA,
   tipoRisorsaDa, TITOLI_STATO_LETTURA, TITOLI_TIPO_RISORSA, type TipoRisorsa,
 } from '../logica'
 import { OggiNeiPiani, PianiStudio } from './Piani'
@@ -28,6 +30,8 @@ const COLORI_TIPO: Record<TipoRisorsa, [string, string]> = {
 const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
 const durataTesto = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`)
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
+
+const MEDICO = profiloPrincipale()
 
 export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string | null; risorseQuiz?: string | null }) {
   const argomenti = useCollezione('argomentiStudio')
@@ -98,6 +102,7 @@ export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string |
         </div>
 
         <aside className="laterale-destra">
+          {!MEDICO && <EsamiStudio oggiChiave={oggiChiave} />}
           <Timer argomenti={elencoArgomenti} />
           <OggiNeiPiani />
           <Musica />
@@ -231,15 +236,27 @@ function CollegamentiRapidi() {
       <div className="collegamenti-rapidi">
         <a href="https://drive.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#1C7A5C' }}>▲</span> Google Drive</a>
         <a href="https://www.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#2D6AA6', fontWeight: 800 }}>G</span> Google</a>
-        <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" rel="noreferrer"><span style={{ color: '#A4472A', fontWeight: 800 }}>P</span> PubMed</a>
+        {MEDICO ? (
+          <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" rel="noreferrer"><span style={{ color: '#A4472A', fontWeight: 800 }}>P</span> PubMed</a>
+        ) : (
+          <>
+            <a href="https://scholar.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#2D6AA6', fontWeight: 800 }}>S</span> Google Scholar</a>
+            <a href="https://www.bailii.org" target="_blank" rel="noreferrer"><span style={{ color: '#8A4F45', fontWeight: 800 }}>B</span> BAILII</a>
+            <a href="https://www.legislation.gov.uk" target="_blank" rel="noreferrer"><span style={{ color: '#2F4560', fontWeight: 800 }}>L</span> legislation.gov.uk</a>
+            <a href="https://uk.westlaw.com" target="_blank" rel="noreferrer"><span style={{ color: '#5A3E57', fontWeight: 800 }}>W</span> Westlaw</a>
+            <a href="https://www.lexisnexis.co.uk" target="_blank" rel="noreferrer"><span style={{ color: '#7A3E28', fontWeight: 800 }}>X</span> LexisNexis</a>
+          </>
+        )}
         <a href="https://notebooklm.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#2F4560', fontWeight: 800 }}>N</span> NotebookLM</a>
         <a href="https://claude.ai" target="_blank" rel="noreferrer"><span style={{ color: '#C96442', fontWeight: 800 }}>✳</span> Claude</a>
       </div>
       <div className="aggiunta-veloce">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cerca subito (es. PPROM linee guida)" aria-label="Cerca su Google o PubMed"
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={MEDICO ? 'Cerca subito (es. PPROM linee guida)' : 'Cerca subito (es. promissory estoppel)'} aria-label={MEDICO ? 'Cerca su Google o PubMed' : 'Cerca su Google o Google Scholar'}
           onKeyDown={(e) => { if (e.key === 'Enter' && q.trim()) window.open(cercaGoogle(q), '_blank', 'noopener') }} />
         <a className={`pulsante${q.trim() ? '' : ' disattivo'}`} href={q.trim() ? cercaGoogle(q) : undefined} target="_blank" rel="noreferrer">Google</a>
-        <a className={`pulsante${q.trim() ? '' : ' disattivo'}`} href={q.trim() ? cercaPubMed(q) : undefined} target="_blank" rel="noreferrer">PubMed</a>
+        {MEDICO
+          ? <a className={`pulsante${q.trim() ? '' : ' disattivo'}`} href={q.trim() ? cercaPubMed(q) : undefined} target="_blank" rel="noreferrer">PubMed</a>
+          : <a className={`pulsante${q.trim() ? '' : ' disattivo'}`} href={q.trim() ? cercaScholar(q) : undefined} target="_blank" rel="noreferrer">Scholar</a>}
       </div>
     </section>
   )
@@ -344,7 +361,7 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
           </button>
         ))}
       </div>
-      <span className="nota-privacy">Solo materiale di studio: niente dati delle pazienti o personali.</span>
+      <span className="nota-privacy">{MEDICO ? 'Solo materiale di studio: niente dati delle pazienti o personali.' : 'Solo materiale di studio: niente dati personali.'}</span>
       {errore && <Avviso>{errore}</Avviso>}
       {risultato && (
         <div className="risultato-ai">
@@ -638,7 +655,7 @@ function FormRisorsa({ r, iniziale, argomenti, onChiudi }: { r?: Risorsa; inizia
         </div>
         <label className="interruttore"><span>★ Preferito</span><input type="checkbox" checked={b.preferito} onChange={(e) => setB({ ...b, preferito: e.target.checked })} /></label>
         <Campo etichetta="Note"><textarea value={b.note} onChange={(e) => setB({ ...b, note: e.target.value })} /></Campo>
-        <div className="campo"><span>PDF e documenti</span><Allegati collegatoA={`risorsa:${id}`} avvisoPrivacy="Linee guida, articoli, slide. Niente dati delle pazienti." /></div>
+        <div className="campo"><span>PDF e documenti</span><Allegati collegatoA={`risorsa:${id}`}  avvisoPrivacy={MEDICO ? 'Linee guida, articoli, slide. Niente dati delle pazienti.' : 'Sentenze, articoli, slide, appunti.'} /></div>
         <NotaPrivacy />
       </div>
     </Foglio>
@@ -759,7 +776,7 @@ function InPreparazione({ oggiChiave }: { oggiChiave: string }) {
     return (
       <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <h2 className="titolo-sezione">In preparazione</h2>
-        <span className="secondario piccolo">Nessun esame in programma. <a href="#/specializzazione/esami">Aggiungilo in Specializzazione</a>.</span>
+        <span className="secondario piccolo">{MEDICO ? <>Nessun esame in programma. <a href="#/specializzazione/esami">Aggiungilo in Specializzazione</a>.</> : 'Nessun esame in programma: aggiungilo qui sopra.'}</span>
       </section>
     )
   }
@@ -782,6 +799,41 @@ function InPreparazione({ oggiChiave }: { oggiChiave: string }) {
       <input className="data-piccola" value={nuovo} placeholder="+ argomento da ripassare (Invio)" onChange={(e) => setNuovo(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && nuovo.trim()) { void salvaArgomenti([...argomenti, { testo: nuovo.trim() }]); setNuovo('') } }} />
       {argomenti.length > 0 && <span className="secondario piccolo">{argomenti.filter((a) => a.fatto).length} di {argomenti.length} argomenti ripassati</span>}
+    </section>
+  )
+}
+
+/** Esami (e consegne di elaborati) per i profili senza la sezione Specializzazione. */
+function EsamiStudio({ oggiChiave }: { oggiChiave: string }) {
+  const esami = useCollezione('esami')
+  const [aperto, setAperto] = useState<{ record?: EsameOLezione }>()
+  const elenco = (esami ?? []).filter((e) => e.tipo === 'esame').sort((a, b) => Number(Boolean(a.completato)) - Number(Boolean(b.completato)) || a.giorno.localeCompare(b.giorno))
+  const prossimi = elenco.filter((e) => !e.completato && e.giorno >= oggiChiave)
+  const altri = elenco.filter((e) => !prossimi.includes(e)).slice(-4)
+  const riga = (e: EsameOLezione) => {
+    const giorni = Math.round((msGiorno(e.giorno) - msGiorno(oggiChiave)) / 86_400_000)
+    return (
+      <div key={e.id} className={`riga-semplice${e.completato || giorni < 0 ? ' conclusa' : ''}`}>
+        <button type="button" className="crescente" onClick={() => setAperto({ record: e })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
+          <strong>{e.titolo}</strong>
+          <span className="secondario piccolo">{[F.dataBreve(msGiorno(e.giorno)), giorni === 0 ? 'oggi' : giorni === 1 ? 'domani' : giorni > 1 ? `tra ${giorni} giorni` : '', e.esito].filter(Boolean).join(' · ')}</span>
+        </button>
+        <button type="button" className="elimina-task" aria-label={`Elimina ${e.titolo}`}
+          onClick={() => void elimina('esami', e.id).then(() => mostraAvviso(`Eliminato: ${e.titolo}`, () => void ripristina('esami', e.id)))}>×</button>
+      </div>
+    )
+  }
+  return (
+    <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="testa-scheda-compatta">
+        <h2 className="titolo-sezione">Esami</h2>
+        <button type="button" className="pillola" onClick={() => setAperto({})}>+ Esame</button>
+      </div>
+      {elenco.length === 0 && <span className="secondario piccolo">Aggiungi esami e consegne degli elaborati: compaiono anche in Agenda.</span>}
+      {prossimi.map(riga)}
+      {altri.length > 0 && <span className="secondario piccolo" style={{ marginTop: 4 }}>Già fatti</span>}
+      {altri.map(riga)}
+      {aperto && <FormAttivita tipo="esame" record={aperto.record} onChiudi={() => setAperto(undefined)} />}
     </section>
   )
 }

@@ -1,3 +1,4 @@
+import { profiloPrincipale } from '../../../dati/profili'
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react'
 import { aggiungiGiorni, componenti, giornoDi, istante } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
@@ -26,6 +27,9 @@ import {
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const CHIAVE_FILTRI = 'agenda.fontiNascoste'
+/** Negli altri profili (senza turni né specializzazione) l'agenda non mostra turni, ferie e journal club. */
+const MEDICO = profiloPrincipale()
+const FONTI_PROFILO: readonly Fonte[] = MEDICO ? FONTI : FONTI.filter((f) => f !== 'turno' && f !== 'giornata' && f !== 'journal')
 const CHIAVE_VISTA = 'agenda.vista'
 export const VISTE = ['settimana', 'dueSettimane', 'mese'] as const
 export type Vista = (typeof VISTE)[number]
@@ -108,12 +112,12 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze }
+  const dati = { turni: MEDICO ? turni : undefined, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate: MEDICO ? giornate : undefined, linkEsami: MEDICO ? undefined : '#/studio', eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, da, a, vista])
-  const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
+  const visibili = tutti.filter((i) => !nascoste.has(i.fonte) && FONTI_PROFILO.includes(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
 
@@ -259,7 +263,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       </div>
 
       <div className="filtri-agenda" role="group" aria-label="Cosa mostrare">
-        {FONTI.map((f) => (
+        {FONTI_PROFILO.map((f) => (
           <button key={f} type="button" className={`pillola${nascoste.has(f) ? ' spenta' : ''}`} aria-pressed={!nascoste.has(f)} onClick={() => cambiaFiltro(f)}>
             <span className={`pallino-fonte f-${f}`} />{TITOLI_FONTE[f]}
           </button>
@@ -335,11 +339,11 @@ function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; 
       <div className="scelte-rapide">
         {voce('Nota del giorno', 'promemoria fissato sul giorno', () => onScegli('nota'), 'f-nota')}
         {voce('Impegno', 'visita, riunione, appuntamento…', () => onScegli('evento'), 'f-evento')}
-        {voce('Turno', 'guardia, reparto, sala…', () => vai(`#/turni/nuovi?mese=${aggiunta.giorno.slice(0, 7)}&giorni=${aggiunta.giorno}`), 'f-turno')}
-        {voce('Ferie o riposo', 'dal calendario dei turni', () => vai(`#/turni?mese=${aggiunta.giorno.slice(0, 7)}`), 'f-giornata')}
+        {MEDICO && voce('Turno', 'guardia, reparto, sala…', () => vai(`#/turni/nuovi?mese=${aggiunta.giorno.slice(0, 7)}&giorni=${aggiunta.giorno}`), 'f-turno')}
+        {MEDICO && voce('Ferie o riposo', 'dal calendario dei turni', () => vai(`#/turni?mese=${aggiunta.giorno.slice(0, 7)}`), 'f-giornata')}
         {voce('Task', 'cosa fare entro quel giorno', () => vai(`#/task/nuovo?giorno=${aggiunta.giorno}${aggiunta.minuto !== undefined ? `&minuto=${aggiunta.minuto}` : ''}`), 'f-task')}
-        {voce('Esame', 'della specializzazione', () => onScegli('esame'), 'f-esame')}
-        {voce('Lezione', 'della specializzazione', () => onScegli('lezione'), 'f-lezione')}
+        {voce('Esame', MEDICO ? 'della specializzazione' : "o consegna di un elaborato", () => onScegli('esame'), 'f-esame')}
+        {voce('Lezione', MEDICO ? 'della specializzazione' : "dell'università", () => onScegli('lezione'), 'f-lezione')}
       </div>
     </Foglio>
   )
