@@ -1,10 +1,10 @@
 import type { PaginaDiario } from '../../dati/modello'
 
-export const UMORI = ['bene', 'cosi', 'pesante'] as const
+export const UMORI = ['bene', 'neutro', 'cosi', 'pesante'] as const
 export type Umore = (typeof UMORI)[number]
-export const TITOLI_UMORE: Record<Umore, string> = { bene: 'Bene', cosi: 'Così così', pesante: 'Pesante' }
+export const TITOLI_UMORE: Record<Umore, string> = { bene: 'Bene', neutro: 'Neutro', cosi: 'Così così', pesante: 'Pesante' }
 /** Colori tenui della palette dell'app. */
-export const COLORI_UMORE: Record<Umore, string> = { bene: '#9CCBB0', cosi: '#E9CF95', pesante: '#E2A891' }
+export const COLORI_UMORE: Record<Umore, string> = { bene: '#9CCBB0', neutro: '#CBD3DC', cosi: '#E9CF95', pesante: '#E2A891' }
 export const umoreDa = (u?: string): Umore | undefined => ((UMORI as readonly string[]).includes(u ?? '') ? (u as Umore) : undefined)
 
 export const COLORI_TACCUINO = ['#DCEBD9', '#D8E2EE', '#F0D8CC', '#EADFE6', '#F6EEDF', '#D6EAE8', '#E6E6F1', '#ECEAE6', '#3E7C77', '#2F4560', '#8A4F45', '#5A3E57']

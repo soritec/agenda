@@ -248,7 +248,7 @@ export interface Taccuino extends Base {
 /** Umore di un giorno segnato direttamente dal calendario (senza scrivere una pagina). Id = giorno. */
 export interface UmoreGiorno extends Base {
   giorno: string
-  /** 'bene' | 'cosi' | 'pesante' */
+  /** 'bene' | 'neutro' | 'cosi' | 'pesante' */
   umore: string
 }
 
@@ -289,7 +289,7 @@ export interface PaginaDiario extends Base {
   titolo: string
   /** Testo formattato (HTML ripulito: grassetto, corsivo, titoletti, elenchi, liste da spuntare, citazioni). */
   testo: string
-  /** 'bene' | 'cosi' | 'pesante' */
+  /** 'bene' | 'neutro' | 'cosi' | 'pesante' */
   umore?: string
   etichette?: string[]
 }
