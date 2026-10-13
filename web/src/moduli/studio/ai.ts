@@ -6,6 +6,31 @@
 const CHIAVE = 'agenda.chiaveGemini'
 const MODELLI = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
 const attendi = (ms: number) => new Promise((r) => setTimeout(r, ms))
+const API = 'https://generativelanguage.googleapis.com/v1beta'
+
+/** Versioni "flash" che la chiave può usare davvero (Google cambia spesso i nomi): prima quelle preferite, poi le altre. */
+let modelliTrovati: { chiave: string; elenco: Promise<string[]> } | undefined
+function modelliDisponibili(chiave: string): Promise<string[]> {
+  if (modelliTrovati?.chiave !== chiave) modelliTrovati = { chiave, elenco: (async () => {
+    try {
+      const r = await fetch(`${API}/models?pageSize=200`, { headers: { 'x-goog-api-key': chiave } })
+      if (!r.ok) return MODELLI
+      const dati = (await r.json()) as { models?: { name?: string; supportedGenerationMethods?: string[] }[] }
+      const nomi = (dati.models ?? [])
+        .filter((m) => m.supportedGenerationMethods?.includes('generateContent'))
+        .map((m) => (m.name ?? '').replace(/^models\//, ''))
+        .filter((n) => /flash/.test(n) && !/image|tts|audio|live|embed|preview|exp/.test(n))
+      if (!nomi.length) return MODELLI
+      return [...MODELLI.filter((m) => nomi.includes(m)), ...nomi.filter((n) => !MODELLI.includes(n))]
+    } catch { return MODELLI }
+  })() }
+  return modelliTrovati.elenco
+}
+
+/** Messaggio di Google, se c'è (per capire cosa non va). */
+async function messaggioGoogle(r: Response): Promise<string> {
+  try { return ((JSON.parse(await r.text()) as { error?: { message?: string } }).error?.message ?? '').slice(0, 200) } catch { return '' }
+}
 
 export const leggiChiave = () => { try { return localStorage.getItem(CHIAVE) ?? '' } catch { return '' } }
 export const salvaChiave = (k: string) => { try { if (k) localStorage.setItem(CHIAVE, k); else localStorage.removeItem(CHIAVE) } catch { /* niente */ } }
@@ -38,32 +63,35 @@ async function chiama(istruzione: string, m: Materiale, json: boolean): Promise<
   parti.push({ text: `${istruzione}\n\nRegola: non riportare mai dati che identificano persone o pazienti.${m.testo.trim() ? `\n\nMateriale:\n${m.testo}` : ''}` })
   const corpo = JSON.stringify({ contents: [{ role: 'user', parts: parti }], generationConfig: json ? { responseMimeType: 'application/json' } : undefined })
   let ultimo = 0
-  for (const modello of MODELLI) {
+  let ultimoMessaggio = ''
+  const modelli = await modelliDisponibili(chiave)
+  for (const modello of modelli) {
     // 503/500 = Google è sovraccarico (capita spesso con la versione gratuita): si riprova poco dopo, poi si passa al modello successivo.
     for (let tentativo = 0; tentativo < 3; tentativo++) {
       if (tentativo) await attendi(1500 * tentativo)
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modello}:generateContent`, {
+      const r = await fetch(`${API}/models/${modello}:generateContent`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': chiave }, body: corpo,
       })
       ultimo = r.status
       if (r.status === 404) break // modello non disponibile: si prova il successivo
       if (r.status === 400 || r.status === 403) {
-        const t = await r.text()
+        const t = await messaggioGoogle(r)
         if (/API key|API_KEY|permission/i.test(t)) throw new Error('La chiave non è valida: controllala.')
-        throw new Error('Gemini non è riuscito a leggere il materiale (forse un PDF troppo grande).')
+        throw new Error(`Gemini non è riuscito a leggere il materiale (forse un PDF troppo grande).${t ? ` Google dice: "${t}"` : ''}`)
       }
+      if (!r.ok) ultimoMessaggio = await messaggioGoogle(r)
       if (r.status === 429) break // limite di questo modello: ogni modello ha il suo, si prova il successivo
       if (r.status >= 500) continue
-      if (!r.ok) throw new Error(`Errore di Gemini (${r.status}).`)
+      if (!r.ok) throw new Error(`Errore di Gemini (${r.status}).${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
       const dati = (await r.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
       const testo = (dati.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim()
       if (!testo) throw new Error('Gemini non ha risposto: riprova.')
       return testo
     }
   }
-  if (ultimo === 429) throw new Error('Hai raggiunto il limite gratuito di Gemini per ora: riprova più tardi.')
-  if (ultimo >= 500) throw new Error('Gemini è sovraccarico in questo momento (succede con la versione gratuita): riprova tra qualche minuto.')
-  throw new Error(`Gemini non è disponibile (${ultimo}).`)
+  if (ultimo === 429) throw new Error(`Hai raggiunto il limite gratuito di Gemini per ora: riprova più tardi.${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
+  if (ultimo >= 500) throw new Error(`Gemini è sovraccarico in questo momento (succede con la versione gratuita): riprova tra qualche minuto.${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
+  throw new Error(`Gemini non è disponibile (${ultimo}).${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
 }
 
 export const elabora = (azione: AzioneAI, m: Materiale) => chiama(AZIONI_AI[azione].istruzione, m, false)

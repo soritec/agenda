@@ -232,6 +232,7 @@ function CollegamentiRapidi() {
         <a href="https://drive.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#1C7A5C' }}>▲</span> Google Drive</a>
         <a href="https://www.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#2D6AA6', fontWeight: 800 }}>G</span> Google</a>
         <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" rel="noreferrer"><span style={{ color: '#A4472A', fontWeight: 800 }}>P</span> PubMed</a>
+        <a href="https://notebooklm.google.com" target="_blank" rel="noreferrer"><span style={{ color: '#2F4560', fontWeight: 800 }}>N</span> NotebookLM</a>
         <a href="https://claude.ai" target="_blank" rel="noreferrer"><span style={{ color: '#C96442', fontWeight: 800 }}>✳</span> Claude</a>
       </div>
       <div className="aggiunta-veloce">
