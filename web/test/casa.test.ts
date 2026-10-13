@@ -53,3 +53,13 @@ describe('Casa', () => {
     expect(impegni.map((i) => [i.giorno, i.titolo, i.minutoInizio])).toEqual([['2026-10-16', 'Viewing: Sofia', 1110], ['2026-10-30', 'Se ne va Priya', undefined]])
   })
 })
+
+describe('Cambio euro/sterline', () => {
+  test('converte e legge il cambio scritto a mano', async () => {
+    const { converti, cambioDaTesto, testoCambio } = await import('../src/moduli/budget/cambio')
+    expect(converti(150000, 0.8446)).toBe(126690)
+    expect(cambioDaTesto('0,86')).toBe(0.86)
+    expect(cambioDaTesto('x')).toBeUndefined()
+    expect(testoCambio(0.84463)).toBe('0,8446')
+  })
+})

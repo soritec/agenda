@@ -1,9 +1,10 @@
 import { correzioniCatalogoV1 } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
-import { CATEGORIE_PREDEFINITE, idPredefinita } from '../moduli/budget/logica'
+import { CATEGORIE_PREDEFINITE, CATEGORIE_STUDENTE, idPredefinita } from '../moduli/budget/logica'
+import { PROFILO_PRINCIPALE, profiloAttivo } from './profili'
 import { ARGOMENTI_PREDEFINITI, idArgomento } from '../moduli/studio/logica'
-import { elenca, elencaTutti, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
+import { elenca, elencaTutti, elimina, leggiImpostazioni, salvaImpostazioni, salvaTanti } from './archivio'
 
 /**
  * Correzioni una tantum dei dati salvati, eseguite all'avvio. Ognuna ha un nome e si applica una sola volta
@@ -52,6 +53,18 @@ export async function eseguiManutenzione(): Promise<void> {
     const mancanti = CATEGORIE_PREDEFINITE.map((c, ordine) => ({ ...c, id: idPredefinita(c.nome), ordine })).filter((c) => !esistenti.has(c.id))
     if (mancanti.length) await salvaTanti('categorieBudget', mancanti)
     nuove.push('categorie-budget-v1')
+  }
+
+  if (profiloAttivo() !== PROFILO_PRINCIPALE && !fatte.has('categorie-budget-studente-v1')) {
+    // Negli altri profili le categorie di partenza sono quelle di chi studia; le altre predefinite, se mai usate, si tolgono.
+    const tutte = await elencaTutti('categorieBudget')
+    const usate = new Set([...(await elencaTutti('movimenti')), ...(await elencaTutti('ricorrenti'))].map((m) => m.categoriaId))
+    const volute = new Set(CATEGORIE_STUDENTE.map((c) => idPredefinita(c.nome)))
+    for (const c of tutte) if (c.eliminatoIl === undefined && c.id.startsWith('predefinita-') && !volute.has(c.id) && !usate.has(c.id)) await elimina('categorieBudget', c.id)
+    const esistenti = new Set(tutte.filter((c) => c.eliminatoIl === undefined).map((c) => c.id))
+    const mancanti = CATEGORIE_STUDENTE.map((c, ordine) => ({ ...c, id: idPredefinita(c.nome), ordine })).filter((c) => !esistenti.has(c.id))
+    if (mancanti.length) await salvaTanti('categorieBudget', mancanti)
+    nuove.push('categorie-budget-studente-v1')
   }
 
   if (!fatte.has('argomenti-studio-v1')) {

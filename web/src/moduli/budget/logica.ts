@@ -26,6 +26,29 @@ export const CATEGORIE_PREDEFINITE: Omit<CategoriaBudget, 'id' | 'creatoIl' | 'm
   { nome: 'Tasse universitarie', tipo: 'uscita', colore: '#3C3489', lavoro: true },
   { nome: 'Altre uscite', tipo: 'uscita', colore: '#D3D1C7' },
 ]
+/**
+ * Profili diversi da quello principale (es. chi studia all'estero): le categorie di partenza sono queste.
+ * Quelle di lavoro del profilo principale, se mai usate, si tolgono.
+ */
+export const CATEGORIE_STUDENTE: Omit<CategoriaBudget, 'id' | 'creatoIl' | 'modificatoIl' | 'ordine'>[] = [
+  { nome: 'Paghetta', tipo: 'entrata', colore: '#1D9E75' },
+  { nome: 'Regali', tipo: 'entrata', colore: '#5DCAA5' },
+  { nome: 'Rimborsi', tipo: 'entrata', colore: '#0F6E56' },
+  { nome: 'Lavoretti', tipo: 'entrata', colore: '#97C459' },
+  { nome: 'Borsa di studio', tipo: 'entrata', colore: '#3B6D11' },
+  { nome: 'Altre entrate', tipo: 'entrata', colore: '#C0DD97' },
+  { nome: 'Casa', tipo: 'uscita', colore: '#85B7EB' },
+  { nome: 'Spesa', tipo: 'uscita', colore: '#5DCAA5' },
+  { nome: 'Trasporti', tipo: 'uscita', colore: '#B4B2A9' },
+  { nome: 'Uscite e cene', tipo: 'uscita', colore: '#ED93B1' },
+  { nome: 'Università e libri', tipo: 'uscita', colore: '#AFA9EC' },
+  { nome: "Voli per l'Italia", tipo: 'uscita', colore: '#F0997B' },
+  { nome: 'Telefono', tipo: 'uscita', colore: '#FAC775' },
+  { nome: 'Vestiti e cura', tipo: 'uscita', colore: '#F4C0D1' },
+  { nome: 'Abbonamenti', tipo: 'uscita', colore: '#EF9F27' },
+  { nome: 'Salute', tipo: 'uscita', colore: '#F5C4B3' },
+  { nome: 'Altre uscite', tipo: 'uscita', colore: '#D3D1C7' },
+]
 export const idPredefinita = (nome: string) => `predefinita-${nome.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')}`
 
 /** Importo scritto dall'utente ("45", "45,50", "1.234,5", "12.5") → centesimi. */

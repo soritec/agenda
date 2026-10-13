@@ -18,6 +18,14 @@ function valutaSalvata(): Valuta {
 let valutaAttiva: Valuta = valutaSalvata()
 let fEuro = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: valutaAttiva })
 export const valuta = (): Valuta => valutaAttiva
+const formatiValuta = new Map<string, Intl.NumberFormat>()
+/** Importo in una valuta precisa (es. la paghetta in euro su un profilo in sterline). */
+export function importoIn(centesimi: number, v: string): string {
+  let f = formatiValuta.get(v)
+  if (!f) { f = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: v }); formatiValuta.set(v, f) }
+  return f.format(centesimi / 100)
+}
+export const simboloDi = (v: string): string => (v === 'GBP' ? '£' : v === 'EUR' ? '€' : v)
 export const simboloValuta = (): string => (valutaAttiva === 'GBP' ? '£' : '€')
 /** Imposta la valuta del profilo; restituisce true se è cambiata (la pagina va ridisegnata). */
 export function ricordaValuta(v: Valuta | undefined, profilo: string): boolean {

@@ -404,6 +404,11 @@ export interface Movimento extends Base {
   daIncassare?: boolean
   /** Per risparmi e prelievi: l'obiettivo a cui vanno (assente = risparmi generici). */
   obiettivoId?: string
+  /** Importo scritto in un'altra valuta (es. paghetta in euro su un profilo in sterline): `importoCent` è già convertito. */
+  valutaOriginale?: string
+  importoOriginaleCent?: number
+  /** Quanto vale 1 unità della valuta originale nella valuta del profilo. */
+  cambio?: number
 }
 
 /** Obiettivo di risparmio (es. "Vacanza estate", 2000 € entro giugno 2027). */
@@ -429,6 +434,11 @@ export interface Ricorrente extends Base {
   /** Mesi ("2026-11") in cui questa volta non vale. */
   saltati?: string[]
   obiettivoId?: string
+  /** Importo scritto in un'altra valuta (es. paghetta in euro su un profilo in sterline): `importoCent` è già convertito. */
+  valutaOriginale?: string
+  importoOriginaleCent?: number
+  /** Quanto vale 1 unità della valuta originale nella valuta del profilo. */
+  cambio?: number
 }
 
 export interface Collegamento extends Base {

@@ -1101,3 +1101,9 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .cella .voci > .rimovibile > .x-elimina.x-sempre { display: none; position: absolute; width: 18px; height: 18px; margin: 0; border: 2px solid var(--superficie); background: var(--pericolo); color: #fff; opacity: 1; }
 .cella .voci > .rimovibile[data-premuto="si"] > .x-elimina.x-sempre { display: flex; }
 @media (hover: hover) { .cella .voci > .rimovibile:hover > .x-elimina.x-sempre { display: flex; } }
+.risultato-ai { position: relative; }
+.chiudi-risultato { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 14px; border: none; background: var(--superficie); color: var(--testo-2); font-size: 18px; cursor: pointer; z-index: 1; }
+.chiudi-risultato:hover { color: var(--pericolo); }
+.risultato-ai .testo-ai { padding-right: 30px; }
+.riga-cambio { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.riga-cambio input { width: 84px; min-height: 36px; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); text-align: right; font-variant-numeric: tabular-nums; }

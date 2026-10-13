@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { PROFILO_PRINCIPALE, profiloAttivo } from '../../../dati/profili'
+import { cambioDaTesto, cambioDelGiorno, converti, testoCambio } from '../cambio'
 import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva } from '../../../dati/archivio'
@@ -110,6 +112,11 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
 
   const vociFiltrate = filtro === 'tutti' ? voci : voci.filter((v) => (filtro === 'risparmi' ? v.tipo === 'risparmio' || v.tipo === 'prelievo' : v.tipo === filtro))
   const elencoVoci = tutti ? vociFiltrate : vociFiltrate.slice(0, 8)
+  /** "1500,00 € cambiati" per gli importi scritti in un'altra valuta. */
+  const originaleDi = (v: { origine: string; id: string }) => {
+    const x = v.origine === 'movimento' ? dati.movimenti.find((m) => m.id === v.id) : v.origine === 'ricorrente' ? dati.ricorrenti.find((m) => m.id === v.id) : undefined
+    return x?.valutaOriginale && x.importoOriginaleCent ? `${F.importoIn(x.importoOriginaleCent, x.valutaOriginale)} cambiati` : ''
+  }
 
   return (
     <div className="schermata" style={{ maxWidth: 980 }}>
@@ -140,7 +147,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
       </div>
       <div className="aggiunta-veloce">
         <input value={testo} onChange={(e) => setTesto(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') aggiungiVeloce() }}
-          placeholder="Oppure scrivi: Spesa 45, Sostituzione 180…" aria-label="Movimento veloce" enterKeyHint="done" />
+          placeholder={`Oppure scrivi: Spesa 45, ${profiloAttivo() === PROFILO_PRINCIPALE ? 'Sostituzione 180' : 'Trasporti 12'}…`} aria-label="Movimento veloce" enterKeyHint="done" />
         <button type="button" className="pulsante primario" disabled={!leggiMovimentoVeloce(testo, dati.categorie).importoCent} onClick={aggiungiVeloce}>Aggiungi</button>
       </div>
 
@@ -193,7 +200,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                         {v.origine === 'ricorrente' && <span className="etichetta-piccola">↻ {dati.ricorrenti.find((x) => x.id === v.id)?.frequenza === 'anno' ? 'ogni anno' : 'ogni mese'}</span>}
                       </span>
                       <span className="secondario piccolo">
-                        {[dataBreve(v.giorno), c && c.nome !== v.titolo ? c.nome : '', v.origine === 'turno' ? 'dal turno' : '', v.origine === 'tassa' ? 'da Tasse' : '',
+                        {[dataBreve(v.giorno), c && c.nome !== v.titolo ? c.nome : '', v.origine === 'turno' ? 'dal turno' : '', v.origine === 'tassa' ? 'da Tasse' : '', originaleDi(v),
                           v.daIncassare ? 'da incassare' : '', futuro ? 'in programma' : ''].filter(Boolean).join(' · ')}
                       </span>
                     </button>
@@ -282,18 +289,38 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
 function FormMovimento({ m, categorie, onChiudi }: { m: Modifica & { tipo: TipoMovimento }; categorie: CategoriaBudget[]; onChiudi: () => void }) {
   const r = m.ricorrente, mov = m.movimento
   const [tipo, setTipo] = useState<TipoMovimento>(m.tipo)
+  // Sul profilo in sterline si può scrivere un importo in euro (es. la paghetta), convertito con il cambio del giorno.
+  const valutaProfilo = F.valuta()
+  const altraValuta = valutaProfilo === 'GBP' ? 'EUR' : 'GBP'
+  const sceltaValuta = valutaProfilo === 'GBP'
+  const originale = mov ?? r
+  const [valutaMov, setValutaMov] = useState<string>(originale?.valutaOriginale ?? valutaProfilo)
+  const [cambioTesto, setCambioTesto] = useState(testoCambio(originale?.cambio))
+  const [cercaCambio, setCercaCambio] = useState(false)
   const delTipo = categorie.filter((c) => c.tipo === tipo)
   const [b, setB] = useState({
-    importo: testoImporto(mov?.importoCent ?? r?.importoCent ?? m.iniziale?.importoCent ?? 0).replace(/^0$/, ''),
+    importo: testoImporto(originale?.importoOriginaleCent ?? mov?.importoCent ?? r?.importoCent ?? m.iniziale?.importoCent ?? 0).replace(/^0$/, ''),
     categoriaId: mov?.categoriaId ?? r?.categoriaId ?? m.iniziale?.categoriaId ?? '',
     giorno: mov?.giorno ?? r?.inizio ?? chiaveGiorno(oggi()),
     nota: mov?.nota ?? r?.descrizione ?? m.iniziale?.nota ?? '',
     ripeti: (r?.frequenza ?? 'no') as 'no' | 'mese' | 'anno',
     daIncassare: Boolean(mov?.daIncassare),
   })
-  const importoCent = centesimiDa(b.importo)
+  const inAltraValuta = valutaMov !== valutaProfilo
+  const scritto = centesimiDa(b.importo)
+  const cambio = inAltraValuta ? cambioDaTesto(cambioTesto) : 1
+  const importoCent = scritto && cambio ? converti(scritto, cambio) : undefined
   const categoria = categorie.find((c) => c.id === b.categoriaId && c.tipo === tipo)
   const valido = !!importoCent && !!categoria && !!giornoDaChiave(b.giorno)
+
+  // Il cambio del giorno si cerca da solo quando si sceglie l'altra valuta o si cambia giorno (se non scritto a mano).
+  const giornoCambio = useRef<string>(originale?.cambio ? b.giorno : '')
+  useEffect(() => {
+    if (!inAltraValuta || giornoCambio.current === b.giorno || !giornoDaChiave(b.giorno)) return
+    giornoCambio.current = b.giorno
+    setCercaCambio(true)
+    void cambioDelGiorno(valutaMov, valutaProfilo, b.giorno, chiaveGiorno(oggi())).then((c) => { if (c) setCambioTesto(testoCambio(c)); setCercaCambio(false) })
+  }, [inAltraValuta, b.giorno, valutaMov, valutaProfilo])
 
   function scegliCategoria(c: CategoriaBudget) {
     // Le entrate da lavoro extra partono "da incassare" (si cambia con l'interruttore).
@@ -302,7 +329,10 @@ function FormMovimento({ m, categorie, onChiudi }: { m: Modifica & { tipo: TipoM
 
   async function conferma() {
     if (!valido) return
-    const comuni = { tipo, importoCent: importoCent!, categoriaId: categoria!.id }
+    const comuni = {
+      tipo, importoCent: importoCent!, categoriaId: categoria!.id,
+      valutaOriginale: inAltraValuta ? valutaMov : undefined, importoOriginaleCent: inAltraValuta ? scritto : undefined, cambio: inAltraValuta ? cambio : undefined,
+    }
     if (b.ripeti !== 'no') {
       await salva('ricorrenti', { ...r, ...comuni, descrizione: b.nota.trim() || categoria!.nome, frequenza: b.ripeti, inizio: b.giorno })
       if (mov) await elimina('movimenti', mov.id)
@@ -324,12 +354,30 @@ function FormMovimento({ m, categorie, onChiudi }: { m: Modifica & { tipo: TipoM
             </button>
           ))}
         </div>
+        {sceltaValuta && (
+          <div className="segmenti compatti" role="radiogroup" aria-label="Valuta" style={{ alignSelf: 'flex-start' }}>
+            {[valutaProfilo, altraValuta].map((v) => (
+              <button key={v} type="button" role="radio" aria-checked={valutaMov === v} className={valutaMov === v ? 'attivo' : ''}
+                onClick={() => { setValutaMov(v); giornoCambio.current = '' }}>{v === 'EUR' ? '€ Euro' : '£ Sterline'}</button>
+            ))}
+          </div>
+        )}
         <label className={`campo-importo ${tipo}`}>
           <span>{tipo === 'entrata' ? '+' : '−'}</span>
-          <input inputMode="decimal" autoFocus={!mov && !r} value={b.importo} placeholder="0" aria-label="Importo in euro" onChange={(e) => setB({ ...b, importo: e.target.value })}
+          <input inputMode="decimal" autoFocus={!mov && !r} value={b.importo} placeholder="0" aria-label="Importo" onChange={(e) => setB({ ...b, importo: e.target.value })}
             onKeyDown={(e) => { if (e.key === 'Enter') void conferma() }} />
-          <span>{F.simboloValuta()}</span>
+          <span>{F.simboloDi(valutaMov)}</span>
         </label>
+        {inAltraValuta && (
+          <div className="riga-cambio">
+            <span>1 {F.simboloDi(valutaMov)} =</span>
+            <input inputMode="decimal" value={cambioTesto} placeholder={cercaCambio ? '…' : '0,86'} aria-label="Cambio" onChange={(e) => { setCambioTesto(e.target.value); giornoCambio.current = b.giorno }} />
+            <span>{F.simboloValuta()}</span>
+            <span className="secondario piccolo">
+              {cercaCambio ? 'cerco il cambio del giorno…' : importoCent ? `≈ ${F.importo(importoCent)}` : cambio ? '' : 'senza rete: scrivi il cambio'}
+            </span>
+          </div>
+        )}
         <div className="campo">
           <span>Categoria</span>
           <div className="riga-azioni" role="group" aria-label="Categoria">

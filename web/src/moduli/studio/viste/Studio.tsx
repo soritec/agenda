@@ -348,6 +348,7 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
       {errore && <Avviso>{errore}</Avviso>}
       {risultato && (
         <div className="risultato-ai">
+          <button type="button" className="chiudi-risultato" aria-label="Chiudi la risposta" title="Chiudi la risposta" onClick={() => setRisultato(undefined)}>×</button>
           <div className="testo-ai">{risultato.testo}</div>
           <div className="riga-azioni">
             {risultato.azione === 'flashcard' && (
@@ -361,6 +362,8 @@ function AssistenteAI({ argomenti, risorse }: { argomenti: ArgomentoStudio[]; ri
             )}
             <button type="button" className="pulsante piccolo" onClick={() => void navigator.clipboard?.writeText(risultato.testo).then(() => mostraAvviso('Copiato'))}>Copia</button>
             <button type="button" className="pulsante piccolo" onClick={() => void esportaPdf()}>Esporta in PDF</button>
+            <button type="button" className="pulsante primario piccolo" style={{ marginLeft: 'auto' }}
+              onClick={() => { setRisultato(undefined); setTesto(''); setPdf(undefined); setErrore(undefined) }}>Nuova richiesta</button>
           </div>
         </div>
       )}
