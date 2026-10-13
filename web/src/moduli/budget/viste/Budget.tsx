@@ -328,7 +328,7 @@ function FormMovimento({ m, categorie, onChiudi }: { m: Modifica & { tipo: TipoM
           <span>{tipo === 'entrata' ? '+' : '−'}</span>
           <input inputMode="decimal" autoFocus={!mov && !r} value={b.importo} placeholder="0" aria-label="Importo in euro" onChange={(e) => setB({ ...b, importo: e.target.value })}
             onKeyDown={(e) => { if (e.key === 'Enter') void conferma() }} />
-          <span>€</span>
+          <span>{F.simboloValuta()}</span>
         </label>
         <div className="campo">
           <span>Categoria</span>
@@ -450,7 +450,7 @@ export function CategorieBudget() {
                 <span className="secondario piccolo">tetto</span>
                 <input inputMode="decimal" placeholder="—" defaultValue={c.tettoCent ? testoImporto(c.tettoCent) : ''} aria-label={`Tetto mensile di ${c.nome}`}
                   onBlur={(e) => void salva('categorieBudget', { ...c, tettoCent: centesimiDa(e.target.value) })} />
-                <span className="secondario piccolo">€</span>
+                <span className="secondario piccolo">{F.simboloValuta()}</span>
               </label>
             ) : (
               <label className="secondario piccolo" style={{ display: 'inline-flex', gap: 4, alignItems: 'center', whiteSpace: 'nowrap' }}>
@@ -542,7 +542,7 @@ function FormRisparmio({ m, obiettivi, onChiudi, onNuovoObiettivo }: { m: Modifi
           <IconaSalvadanaio dimensione={30} />
           <input inputMode="decimal" autoFocus={!mov && !r} value={b.importo} placeholder="0" aria-label="Importo in euro" onChange={(e) => setB({ ...b, importo: e.target.value })}
             onKeyDown={(e) => { if (e.key === 'Enter') void conferma() }} />
-          <span>€</span>
+          <span>{F.simboloValuta()}</span>
         </label>
         <div className="campo">
           <span>{tipo === 'risparmio' ? 'Per un obiettivo (facoltativo)' : 'Da quale obiettivo (facoltativo)'}</span>
@@ -596,7 +596,7 @@ function FormObiettivo({ o, onChiudi }: { o?: ObiettivoRisparmio; onChiudi: () =
       <div className="modulo">
         <Campo etichetta="Nome"><input value={nome} autoFocus={!o} placeholder="es. Vacanza estate, Fondo emergenze" onChange={(e) => setNome(e.target.value)} /></Campo>
         <div className="campi-affiancati">
-          <Campo etichetta="Quanto (€)"><input inputMode="decimal" value={importo} placeholder="es. 2000" onChange={(e) => setImporto(e.target.value)} /></Campo>
+          <Campo etichetta={`Quanto (${F.simboloValuta()})`}><input inputMode="decimal" value={importo} placeholder="es. 2000" onChange={(e) => setImporto(e.target.value)} /></Campo>
           <Campo etichetta="Entro (facoltativo)"><input type="month" value={entro} onChange={(e) => setEntro(e.target.value)} /></Campo>
         </div>
         <span className="secondario piccolo">Quando metti da parte dei soldi, scegli questo obiettivo: la barra mostra a che punto sei e quanto serve al mese.</span>

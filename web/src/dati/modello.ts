@@ -450,12 +450,87 @@ export interface Impostazioni {
   anniSpecializzazione?: number
   /** Obiettivo di studio settimanale, in minuti. */
   obiettivoStudioMinuti?: number
+  /** Valuta degli importi di questo profilo (predefinita: euro). */
+  valuta?: 'EUR' | 'GBP'
   /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */
   modificatoIl?: number
 }
 
 export const IMPOSTAZIONI_PREDEFINITE: Impostazioni = {
   sabatoFestivo: true,
+}
+
+/* Casa condivisa (es. una casa in affitto con coinquiline). Importi nella valuta del profilo. */
+
+/** Dati generali della casa: un solo record con id "casa". */
+export interface Casa extends Base {
+  /** Affitto totale pagato al proprietario. */
+  affittoTotaleCent: number
+  /** Quanto ogni coinquilina versa ogni mese per le bills. */
+  quotaBolletteCent: number
+  /** Giorno del mese in cui si paga l'affitto. */
+  giornoAffitto?: number
+}
+
+export interface Stanza extends Base {
+  /** Chi ci abita (per la propria stanza può restare vuoto). */
+  nome: string
+  /** La stanza di chi usa il profilo: paga il resto dell'affitto. */
+  propria?: boolean
+  affittoCent: number
+  colore: string
+  ordine: number
+  /** Arrivo dell'attuale occupante ("2026-12-01"). */
+  dal?: string
+  /** Partenza prevista e data del preavviso. */
+  esceIl?: string
+  preavvisoIl?: string
+  /** Chi arriverà dopo la partenza (scelta da "Cerca coinquilina"). */
+  prossima?: { nome: string; dal: string; candidataId?: string }
+}
+
+/** Bill mensile (Electricity, Water…). */
+export interface Bolletta extends Base {
+  nome: string
+  /** Importo abituale; quello di un mese preciso sta in `pagamentiCasa`. */
+  importoCent: number
+  /** Giorno del mese in cui scade. */
+  giorno: number
+  colore: string
+  icona: string
+  ordine: number
+}
+
+/** Stato di un mese: affitto ricevuto, bill pagata (con importo del mese), conguaglio fatto. Id = tipo:riferimento:mese. */
+export interface PagamentoCasa extends Base {
+  /** 'affitto' | 'bolletta' | 'conguaglio' */
+  tipo: string
+  riferimentoId: string
+  /** "2026-10" */
+  mese: string
+  importoCent?: number
+  fatto?: boolean
+  fattoIl?: string
+}
+
+export interface CosaCasa extends Base {
+  testo: string
+  giorno?: string
+  fatto?: boolean
+}
+
+/** Candidata per una stanza (trovata per esempio su SpareRoom). */
+export interface Candidata extends Base {
+  nome: string
+  generalita?: string
+  /** Inizio della viewing (ms). */
+  viewing?: number
+  /** 'buono' | 'forse' | 'piuNo' | 'no' */
+  valutazione: string
+  /** 'attesa' | 'risposto' | 'fissata' | 'fatta' */
+  stato: string
+  stanzaId?: string
+  scelta?: boolean
 }
 
 export interface Collezioni {
@@ -493,6 +568,12 @@ export interface Collezioni {
   abitudini: Abitudine
   segniAbitudine: SegnoAbitudine
   postit: PostIt
+  casa: Casa
+  stanze: Stanza
+  bollette: Bolletta
+  pagamentiCasa: PagamentoCasa
+  coseCasa: CosaCasa
+  candidate: Candidata
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate']

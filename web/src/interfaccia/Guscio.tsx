@@ -4,10 +4,12 @@ import { BachecaPostIt } from '../moduli/oggi/PostIt'
 import { Visualizzatore } from './Visualizzatore'
 import { useStatoSincronizzazione } from '../dati/sincronizzazione'
 import { coloreStato, testoStato } from './Impostazioni'
-import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat } from './icone'
+import { IconaAgenda, IconaBudget, IconaCerca, IconaImpostazioni, IconaJournaling, IconaOggi, IconaSpecializzazione, IconaStudio, IconaTask, IconaTurni, IconaPostIt, IconaChat, IconaCasa } from './icone'
 import { Avatar, useProfili } from './profili'
 import { useCondivisi } from '../dati/condiviso'
-import { cambiaProfilo } from '../dati/profili'
+import { cambiaProfilo, MODULI_SU_SCELTA, profiloAttivo } from '../dati/profili'
+import { useImpostazioni } from '../dati/hooks'
+import { ricordaValuta } from '../nucleo/formati'
 
 export const SEZIONI = [
   { id: 'oggi', titolo: 'Oggi', Icona: IconaOggi },
@@ -17,6 +19,7 @@ export const SEZIONI = [
   { id: 'specializzazione', titolo: 'Specializzazione', Icona: IconaSpecializzazione },
   { id: 'studio', titolo: 'Studio e risorse', Icona: IconaStudio },
   { id: 'budget', titolo: 'Budget', Icona: IconaBudget },
+  { id: 'casa', titolo: 'Casa', Icona: IconaCasa },
   { id: 'journaling', titolo: 'Journaling e habit tracker', Icona: IconaJournaling },
   { id: 'postit', titolo: 'Raccolta post-it', Icona: IconaPostIt },
   { id: 'chat', titolo: 'Chat', Icona: IconaChat },
@@ -37,7 +40,12 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
   const nonLetti = (messaggi ?? []).filter((m) => m.a === attivo.id && !m.letto).length
     + (promemoria ?? []).filter((p) => p.a === attivo.id && !p.fatto && !p.vistoIl).length
   // Solo le sezioni scelte per questo profilo (la chat c'è se ci sono almeno due profili).
-  const sezioni = SEZIONI.filter((s) => (!attivo.moduli || attivo.moduli.includes(s.id) || s.id === 'oggi') && (s.id !== 'chat' || profili.length > 1))
+  const sezioni = SEZIONI.filter((s) => (s.id === 'oggi' || (attivo.moduli ? attivo.moduli.includes(s.id) : !MODULI_SU_SCELTA.includes(s.id))) && (s.id !== 'chat' || profili.length > 1))
+  // Valuta del profilo: se sul dispositivo era diversa (es. scelta su un altro dispositivo), si ridisegna tutto.
+  const impostazioni = useImpostazioni()
+  useEffect(() => {
+    if (impostazioni && ricordaValuta(impostazioni.valuta, profiloAttivo())) location.reload()
+  }, [impostazioni])
   const badge = (id: string) => (id === 'chat' && nonLetti > 0 ? <span className="badge-menu">{nonLetti}</span> : null)
   // Sull'iPhone la barra in basso scorre: si porta in vista la sezione attiva quando cambia.
   useEffect(() => {

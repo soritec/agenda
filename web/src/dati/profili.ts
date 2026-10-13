@@ -22,4 +22,7 @@ export const fileDati = (id = profiloAttivo()) => (id === PROFILO_PRINCIPALE ? '
 export const FILE_CONDIVISO = 'condiviso.cifrato.json'
 
 /** Moduli di partenza per un profilo nuovo (si cambiano dalle Impostazioni). */
-export const MODULI_NUOVO_PROFILO = ['oggi', 'agenda', 'task', 'studio', 'budget', 'journaling', 'postit', 'chat', 'cerca']
+export const MODULI_NUOVO_PROFILO = ['oggi', 'agenda', 'task', 'studio', 'budget', 'casa', 'journaling', 'postit', 'chat', 'cerca']
+
+/** Sezioni pensate per un profilo preciso: non compaiono se il profilo non le ha scelte. */
+export const MODULI_SU_SCELTA = ['casa']

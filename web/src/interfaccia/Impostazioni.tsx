@@ -7,6 +7,9 @@ import {
 } from '../dati/sincronizzazione'
 import { Avviso, Campo, mostraAvviso } from './componenti'
 import { GestioneProfili } from './GestioneProfili'
+import { useImpostazioni } from '../dati/hooks'
+import { salvaImpostazioni } from '../dati/archivio'
+import { profiloAttivo } from '../dati/profili'
 
 const PAGINA_TOKEN = 'https://github.com/settings/personal-access-tokens/new'
 
@@ -35,6 +38,7 @@ export function Impostazioni() {
         {stato.tipo === 'non-collegato' ? <Collegamento /> : <StatoCollegato stato={stato} />}
       </section>
       <GestioneProfili />
+      <SceltaValuta />
       <Backup />
     </div>
   )
@@ -191,6 +195,27 @@ function Backup() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void ripristina(f); e.target.value = '' }} />
         </div>
       </div>
+    </section>
+  )
+}
+
+/** Valuta degli importi di questo profilo (Budget, Casa, compensi). */
+function SceltaValuta() {
+  const impostazioni = useImpostazioni()
+  const attuale = impostazioni?.valuta ?? 'EUR'
+  async function scegli(v: F.Valuta) {
+    await salvaImpostazioni({ valuta: v })
+    if (F.ricordaValuta(v, profiloAttivo())) location.reload()
+  }
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <h2 className="titolo-sezione">Valuta di questo profilo</h2>
+      <div className="segmenti" role="radiogroup" aria-label="Valuta" style={{ maxWidth: 360 }}>
+        {([['EUR', 'Euro €'], ['GBP', 'Sterlina £']] as const).map(([v, t]) => (
+          <button key={v} type="button" role="radio" aria-checked={attuale === v} className={attuale === v ? 'attivo' : ''} onClick={() => void scegli(v)}>{t}</button>
+        ))}
+      </div>
+      <span className="secondario piccolo">Gli importi già scritti restano gli stessi numeri: cambia solo il simbolo.</span>
     </section>
   )
 }

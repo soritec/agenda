@@ -6,7 +6,28 @@ const fOra = new Intl.DateTimeFormat(LOCALE, { timeZone: FUSO_ORARIO, hour: '2-d
 const fBreve = new Intl.DateTimeFormat(LOCALE, { timeZone: FUSO_ORARIO, weekday: 'short', day: 'numeric', month: 'short' })
 const fEstesa = new Intl.DateTimeFormat(LOCALE, { timeZone: FUSO_ORARIO, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const fMese = new Intl.DateTimeFormat(LOCALE, { timeZone: FUSO_ORARIO, month: 'long', year: 'numeric' })
-const fEuro = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'EUR' })
+export type Valuta = 'EUR' | 'GBP'
+/** Valuta del profilo attivo: letta subito dalla memoria del dispositivo (vedi `ricordaValuta`), così gli importi non "saltano" all'apertura. */
+const CHIAVE_VALUTA = 'agenda.valuta'
+function valutaSalvata(): Valuta {
+  try {
+    const profilo = localStorage.getItem('agenda.profilo') || 'principale'
+    return localStorage.getItem(`${CHIAVE_VALUTA}.${profilo}`) === 'GBP' ? 'GBP' : 'EUR'
+  } catch { return 'EUR' }
+}
+let valutaAttiva: Valuta = valutaSalvata()
+let fEuro = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: valutaAttiva })
+export const valuta = (): Valuta => valutaAttiva
+export const simboloValuta = (): string => (valutaAttiva === 'GBP' ? '£' : '€')
+/** Imposta la valuta del profilo; restituisce true se è cambiata (la pagina va ridisegnata). */
+export function ricordaValuta(v: Valuta | undefined, profilo: string): boolean {
+  const nuova: Valuta = v === 'GBP' ? 'GBP' : 'EUR'
+  try { localStorage.setItem(`${CHIAVE_VALUTA}.${profilo}`, nuova) } catch { /* niente memoria: vale solo per questa apertura */ }
+  if (nuova === valutaAttiva) return false
+  valutaAttiva = nuova
+  fEuro = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: nuova })
+  return true
+}
 
 /** "08:30" */
 export const ora = (istante: number): string => fOra.format(istante)
@@ -26,5 +47,5 @@ export function durata(minuti: number): string {
   return `${segno}${ore} h ${resto} min`
 }
 
-/** Importo in euro da centesimi, es. "12.345,67 €". */
+/** Importo da centesimi nella valuta del profilo, es. "12.345,67 €" o "850,00 £". */
 export const importo = (centesimi: number): string => fEuro.format(centesimi / 100)

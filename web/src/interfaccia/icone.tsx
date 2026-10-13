@@ -137,3 +137,12 @@ export const IconaSveglia = (p: P) => (
 export const IconaStampa = (p: P) => (
   <Icona {...p}><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></Icona>
 )
+export const IconaFulmine = (p: P) => <Icona {...p}><path d="M13 3L5.5 13.5H12L11 21l7.5-10.5H12z" /></Icona>
+export const IconaFiamma = (p: P) => <Icona {...p}><path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-3.5-9.5C12 7.5 11 9.5 11 11c-1-.5-2-1.8-2.2-3C7 9.8 6 12.2 6 15a6 6 0 0 0 6 6z" /></Icona>
+export const IconaGoccia = (p: P) => <Icona {...p}><path d="M12 3.5s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" /></Icona>
+export const IconaWifi = (p: P) => <Icona {...p}><path d="M3.5 9.5a12 12 0 0 1 17 0M6.5 12.7a7.5 7.5 0 0 1 11 0M9.5 15.8a3.3 3.3 0 0 1 5 0" /><circle cx="12" cy="19" r="0.6" /></Icona>
+export const IconaPalazzo = (p: P) => <Icona {...p}><path d="M4 20.5h16M6 20.5V8l6-4 6 4v12.5M10 20.5v-4h4v4M9 11h.01M15 11h.01M9 14h.01M15 14h.01" /></Icona>
+export const IconaLetto = (p: P) => <Icona {...p}><path d="M3.5 18.5V7M3.5 14h17v4.5M20.5 14v-2.5a2.5 2.5 0 0 0-2.5-2.5h-7v5" /><circle cx="7" cy="11" r="1.6" /></Icona>
+export const IconaPorta = (p: P) => <Icona {...p}><path d="M6 20.5V4.5h9v16M4 20.5h13M12 12.5h.01M15 7h3.5v13.5" /></Icona>
+export const IconaPersona = (p: P) => <Icona {...p}><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></Icona>
+export const IconaPuntini = (p: P) => <Icona {...p}><circle cx="6" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="18" cy="12" r="1" /></Icona>

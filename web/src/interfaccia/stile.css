@@ -1040,3 +1040,52 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 /* Budget: filtro dei movimenti */
 .intestazione-movimenti { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .segmenti.compatti button { min-height: 30px; padding: 4px 10px; font-size: 13px; }
+
+/* Casa */
+.f-casa { background: #8FA9B8; }
+.colore-casa { background: #E6EEF2; color: #2F4A58; box-shadow: inset 0 0 0 1px #C9D8E0; }
+@media (prefers-color-scheme: dark) { .colore-casa { background: #22313A; color: #CFE0EA; box-shadow: none; } }
+.casa .sezione-casa { display: flex; flex-direction: column; gap: 8px; }
+.testa-sezione-casa { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.stanze { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stanza { background: #F2EFE9; border: 1px solid #E2DDD3; border-radius: var(--raggio); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.testa-stanza { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.nome-stanza { background: none; border: none; padding: 0; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; text-align: left; min-width: 0; overflow-wrap: anywhere; }
+.importo-stanza { font-size: 20px; font-weight: 700; }
+.pallino-casa { width: 22px; height: 22px; border-radius: 50%; border: 1.75px solid currentColor; background: transparent; padding: 0; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: inherit; }
+.pallino-casa.fatto { background: currentColor; }
+.pallino-casa.fatto::after { content: ''; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.bills { display: flex; flex-direction: column; gap: 6px; }
+.bill { display: flex; align-items: center; gap: 10px; border-radius: var(--raggio); padding: 8px 10px 8px 12px; }
+.bill.pagata .corpo-bill { opacity: 0.7; }
+.corpo-bill { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 2px 0; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.x-bill { width: 28px; height: 28px; border: none; background: none; color: inherit; opacity: 0.55; font-size: 19px; cursor: pointer; border-radius: 14px; flex-shrink: 0; }
+.x-bill:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+.conti-casa { display: flex; flex-direction: column; gap: 2px; }
+.riga-conto { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 14.5px; }
+.riga-conto.totale { border-top: 1px solid var(--linea); margin-top: 4px; padding-top: 9px; font-size: 15.5px; }
+.conguagli { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.conguaglio { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1px solid var(--linea-forte); background: var(--superficie); cursor: pointer; font: inherit; color: var(--testo); }
+.conguaglio .pallino-casa { width: 18px; height: 18px; }
+.conguaglio.fatto { opacity: 0.6; }
+.partenza { align-items: flex-start !important; }
+.barra-partenza { display: block; height: 6px; border-radius: 3px; background: var(--superficie-2); overflow: hidden; margin-top: 6px; }
+.barra-partenza > span { display: block; height: 100%; opacity: 0.55; }
+.etichetta-valutazione { border: none; border-radius: 999px; padding: 4px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.passi-candidata { display: flex; flex-wrap: wrap; gap: 5px; }
+.passi-candidata button { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--linea-forte); background: transparent; color: var(--testo-2); cursor: pointer; }
+.passi-candidata button.fatto { background: #D8E2EE; border-color: #D8E2EE; color: #2F4560; }
+.passi-candidata button.attuale { background: #2F4560; border-color: #2F4560; color: #fff; font-weight: 600; }
+.passi-candidata .scegli-candidata { margin-left: auto; border-color: var(--accento); color: var(--accento); font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  .stanza { background: #2A2824; border-color: #3A372F; }
+  .stanza .nome-stanza { filter: brightness(1.8); }
+  .passi-candidata button.fatto { background: #26313D; border-color: #26313D; color: #CFDAE6; }
+}
+@media (max-width: 640px) {
+  .stanze { grid-template-columns: minmax(0, 1fr); }
+  .stanza { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 10px; }
+  .stanza .testa-stanza { flex: 1 1 100%; }
+  .casa .aggiunta-veloce { flex-wrap: wrap; }
+}
+.corpo-bill .crescente { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }

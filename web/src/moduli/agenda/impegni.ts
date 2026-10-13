@@ -1,5 +1,5 @@
 import { componenti, giornoDi, istante } from '../../nucleo/calendario'
-import type { Assegnazione, Attivita, JournalClub, NotaGiorno, PianoStudio, SessionePiano, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
+import type { Assegnazione, Attivita, Candidata, Stanza, JournalClub, NotaGiorno, PianoStudio, SessionePiano, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
 import { vociDelMese, spostaMese, type DatiBudget } from '../budget/logica'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
 import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
@@ -8,14 +8,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'promemoria', 'tassa'] as const
+export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'promemoria', 'tassa', 'casa'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenze',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenza' }
+export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenza', casa: 'Casa' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -59,6 +59,9 @@ export interface DatiAgenda {
   note?: NotaGiorno[]
   journal?: JournalClub[]
   piani?: PianoStudio[]
+  /** Casa: viewing delle candidate, partenze e arrivi delle coinquiline. */
+  candidate?: Candidata[]
+  stanze?: Stanza[]
   /** Promemoria ricevuti (dalla chat). */
   promemoria?: { id: string; giorno: string; testo: string; fatto?: boolean; modificatoIl: number; da?: string }[]
   sessioniPiano?: SessionePiano[]
@@ -152,6 +155,24 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       dettaglio: [p.nome, s.paginaDa !== undefined ? `p. ${s.paginaDa}–${s.paginaA}` : '', `${s.minuti} min`].filter(Boolean).join(' · '),
       colore: 'colore-studio', link: '#/studio', concluso: Boolean(s.fatta), modificatoIl: s.modificatoIl,
     })
+  }
+  for (const c of d.candidate ?? []) {
+    if (!c.viewing || c.valutazione === 'no') continue
+    const g = chiaveGiorno(giornoDi(c.viewing))
+    if (!dentro(g)) continue
+    const inizio = minutoDi(c.viewing)
+    out.push({
+      chiave: `casa:viewing:${c.id}`, fonte: 'casa', id: c.id, giorno: g, titolo: `Viewing: ${c.nome}`, dettaglio: c.generalita,
+      minutoInizio: inizio, minutoFine: Math.min(1439, inizio + 30), colore: 'colore-casa', link: '#/casa', concluso: c.stato === 'fatta' || g < oggi, modificatoIl: c.modificatoIl,
+    })
+  }
+  for (const s of d.stanze ?? []) {
+    if (s.esceIl && dentro(s.esceIl)) {
+      out.push({ chiave: `casa:esce:${s.id}`, fonte: 'casa', id: s.id, giorno: s.esceIl, titolo: `Se ne va ${s.nome || 'una coinquilina'}`, colore: 'colore-casa', link: '#/casa', concluso: s.esceIl < oggi, modificatoIl: s.modificatoIl })
+    }
+    if (s.prossima && dentro(s.prossima.dal)) {
+      out.push({ chiave: `casa:arriva:${s.id}`, fonte: 'casa', id: s.id, giorno: s.prossima.dal, titolo: `Arriva ${s.prossima.nome}`, colore: 'colore-casa', link: '#/casa', concluso: s.prossima.dal < oggi, modificatoIl: s.modificatoIl })
+    }
   }
   for (const p of d.promemoria ?? []) {
     if (!dentro(p.giorno)) continue

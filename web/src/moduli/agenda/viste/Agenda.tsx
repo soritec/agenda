@@ -88,6 +88,8 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   const journal = useCollezione('journalClub')
   const piani = useCollezione('pianiStudio')
   const { profili: tuttiProfili, attivo: profilo } = useProfili()
+  const candidate = useCollezione('candidate')
+  const stanze = useCollezione('stanze')
   const promemoriaTutti = useCondivisi('promemoria')
   const promemoria = useMemo(() => (promemoriaTutti ?? []).filter((p) => p.a === profilo.id).map((p) => ({ ...p, da: tuttiProfili.find((x) => x.id === p.da)?.nome })), [promemoriaTutti, profilo.id, tuttiProfili])
   const sessioniPiano = useCollezione('sessioniPiano')
@@ -106,11 +108,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria }
+  const dati = { turni, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -288,7 +290,7 @@ interface Rimozione {
   elimina: (i: Impegno) => void
 }
 /** Le scadenze delle tasse si tolgono dalla loro sezione. */
-const eliminabile = (i: Impegno) => i.fonte !== 'tassa' && i.fonte !== 'promemoria'
+const eliminabile = (i: Impegno) => i.fonte !== 'tassa' && i.fonte !== 'promemoria' && i.fonte !== 'casa'
 
 function XElimina({ i, rimozione, inRiga }: { i: Impegno; rimozione: Rimozione; inRiga?: boolean }) {
   if (!eliminabile(i)) return null

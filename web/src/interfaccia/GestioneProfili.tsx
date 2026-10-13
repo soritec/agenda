@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { eliminaCondiviso, ripristinaCondiviso, salvaCondiviso, type Profilo } from '../dati/condiviso'
-import { cambiaProfilo, MODULI_NUOVO_PROFILO, PROFILO_PRINCIPALE } from '../dati/profili'
+import { cambiaProfilo, MODULI_NUOVO_PROFILO, MODULI_SU_SCELTA, PROFILO_PRINCIPALE } from '../dati/profili'
 import { mostraAvviso } from './componenti'
 import { SEZIONI } from './Guscio'
 import { Avatar, COLORI_PROFILO, useProfili } from './profili'
@@ -50,12 +50,12 @@ export function GestioneProfili() {
                 <span className="secondario piccolo">Sezioni visibili in questo profilo:</span>
                 <div className="riga-azioni">
                   {SEZIONI.filter((s) => s.id !== 'oggi').map((s) => {
-                    const attiva = !p.moduli || p.moduli.includes(s.id)
+                    const attiva = p.moduli ? p.moduli.includes(s.id) : !MODULI_SU_SCELTA.includes(s.id)
                     return (
                       <button key={s.id} type="button" className={`pillola${attiva ? ' filtro-attivo' : ''}`}
                         onClick={() => {
                           const tutte = SEZIONI.map((x) => x.id as string)
-                          const ora = new Set(p.moduli ?? tutte)
+                          const ora = new Set(p.moduli ?? tutte.filter((x) => !MODULI_SU_SCELTA.includes(x)))
                           if (attiva) ora.delete(s.id); else ora.add(s.id)
                           void salvaProfilo(p, { moduli: tutte.filter((x) => ora.has(x)) })
                         }}>{s.titolo}</button>
