@@ -23,7 +23,7 @@ describe('File calendario (.ics)', () => {
     expect(ics).toContain('DTEND;VALUE=DATE:20261025')
   })
   test('caratteri speciali e righe lunghe', () => {
-    expect(escapeIcs('a, b; c\\d\ne')).toBe('a\\, b\; c\\\\d\\ne')
+    expect(escapeIcs('a, b; c\\d\ne')).toBe('a\\, b\\; c\\\\d\\ne')
     const lunga = `DESCRIPTION:${'à'.repeat(60)}`
     const piegata = piega(lunga)
     expect(piegata.split('\r\n ').every((p) => new TextEncoder().encode(p).length <= 75)).toBe(true)
