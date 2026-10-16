@@ -63,3 +63,19 @@ describe('Piani di studio', () => {
     expect(ai.map((x) => [x.giorno, x.titolo, x.minuti])).toEqual([['2026-10-05', 'Preeclampsia', 70], ['2026-10-15', 'Ripasso generale', 60]])
   })
 })
+
+describe('Ore al giorno per argomento', () => {
+  test('un libro con i suoi minuti si studia ogni giorno, in parallelo agli altri', async () => {
+    const { dividiPagine } = await import('../src/moduli/studio/piani')
+    const piano = {
+      inizio: '2026-10-12', fine: '2026-10-19', giorniSettimana: [1, 2, 3, 4, 5, 6, 7], minutiAlGiorno: 120,
+      argomenti: [{ id: 'L', nome: 'Treitel', paginaDa: 1, paginaA: 60, minutiAlGiorno: 60 }, { id: 'A', nome: 'Tort', paginaDa: 1, paginaA: 40 }],
+    }
+    const s = dividiPagine(piano, 'p')
+    const libro = s.filter((x) => x.argomentoId === 'L')
+    // 60 minuti al giorno = 20 pagine: tre giorni di fila, 60 minuti ciascuno.
+    expect(libro.map((x) => [x.giorno, x.paginaDa, x.paginaA, x.minuti])).toEqual([['2026-10-12', 1, 20, 60], ['2026-10-13', 21, 40, 60], ['2026-10-14', 41, 60, 60]])
+    expect(s.filter((x) => x.argomentoId === 'A').reduce((t, x) => t + (x.paginaA! - x.paginaDa! + 1), 0)).toBe(40)
+    expect(s.map((x) => x.giorno)).toEqual([...s.map((x) => x.giorno)].sort())
+  })
+})

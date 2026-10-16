@@ -1215,3 +1215,8 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .blocco:hover .maniglia-durata::after, .maniglia-durata:active::after { opacity: 0.45; }
 @media (hover: none) { .maniglia-durata { height: 14px; } .maniglia-durata::after { opacity: 0.35; } }
 .blocco[data-fine]::before { content: 'fino alle ' attr(data-fine); position: absolute; right: 4px; bottom: 10px; font-size: 10.5px; font-weight: 700; opacity: 0.8; pointer-events: none; }
+.contenitore-piano { position: relative; display: flex; }
+.contenitore-piano .scheda-piano { width: 100%; }
+.elimina-piano { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 12px; border: none; background: transparent; color: var(--testo-2); font-size: 16px; cursor: pointer; line-height: 1; }
+.elimina-piano:hover { color: var(--pericolo); background: var(--superficie-2); }
+.contenitore-piano .scheda-piano { padding-right: 30px; }

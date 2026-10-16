@@ -184,14 +184,26 @@ export async function generaFlashcard(m: Materiale, quante: number): Promise<{ d
 }
 
 /** Argomenti dal syllabus (testo o PDF): elenco di nomi brevi. */
-export async function estraiArgomenti(m: Materiale): Promise<string[]> {
-  const testo = await chiama(`Dal syllabus/programma fornito estrai l\'elenco degli argomenti da studiare, scritti ${LINGUA}, con nomi brevi (max 6 parole), nell'ordine del programma. Rispondi solo con un array JSON di stringhe.`, m, true)
+/** Argomenti e readings dal syllabus: per ognuno il nome e, se indicati, la lettura (libro, capitolo, articolo, caso) e le pagine. */
+export async function estraiArgomenti(m: Materiale): Promise<{ nome: string; fonte?: string; paginaDa?: number; paginaA?: number }[]> {
+  const testo = await chiama(
+    `Dal syllabus/programma fornito estrai, nell'ordine del programma, gli argomenti da studiare e le letture assegnate (readings: libri e capitoli, articoli, casi, documenti). Scrivi ${LINGUA}. `
+    + "Per ogni argomento o lettura: un nome breve (max 6 parole), la fonte da leggere se c'è (es. \"Treitel ch. 3\", \"Smith v Jones [2019] UKSC 4\") e le pagine se indicate. "
+    + 'Rispondi solo con un array JSON di oggetti {"nome": string, "fonte": string facoltativa, "paginaDa": numero facoltativo, "paginaA": numero facoltativo}.', m, true)
   try {
     const dati = JSON.parse(testo.replace(/^```(?:json)?\s*|\s*```$/g, '')) as unknown
-    const elenco = (Array.isArray(dati) ? dati : []).map(String).map((s) => s.trim()).filter(Boolean)
-    if (elenco.length) return [...new Set(elenco)].slice(0, 80)
+    const n = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) && x > 0 ? Math.round(x) : undefined)
+    const elenco = (Array.isArray(dati) ? dati : []).flatMap((x): { nome: string; fonte?: string; paginaDa?: number; paginaA?: number }[] => {
+      if (typeof x === 'string') return x.trim() ? [{ nome: x.trim() }] : []
+      const d = x as Record<string, unknown>
+      const nome = typeof d.nome === 'string' ? d.nome.trim() : ''
+      if (!nome) return []
+      const da = n(d.paginaDa), fino = n(d.paginaA)
+      return [{ nome, fonte: typeof d.fonte === 'string' && d.fonte.trim() ? d.fonte.trim() : undefined, paginaDa: da, paginaA: da && fino && fino >= da ? fino : undefined }]
+    })
+    if (elenco.length) return elenco.slice(0, 80)
   } catch { /* sotto */ }
-  throw new Error('Gemini non ha trovato argomenti: prova a incollare l\'elenco.')
+  throw new Error("Gemini non ha trovato argomenti: prova a incollare l'elenco.")
 }
 
 /** Chiede a Gemini di distribuire gli argomenti nei giorni: restituisce il testo JSON da validare con leggiPianoAI. */

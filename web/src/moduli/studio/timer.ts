@@ -19,6 +19,8 @@ export interface StatoTimer {
   sessionePianoId?: string
   etichetta?: string
   ciclo: number
+  /** La fase è pronta ma aspetta che l'utente la faccia partire. */
+  inAttesa?: boolean
 }
 
 const CHIAVE = 'agenda.timerStudio'
@@ -83,7 +85,7 @@ export function avviaSessione(id: string, etichetta: string, minuti: number) {
 }
 export function avvia() {
   if (stato.fase !== 'fermo' && stato.rimanenteMs !== undefined) {
-    imposta({ ...stato, fineIl: Date.now() + stato.rimanenteMs, rimanenteMs: undefined })
+    imposta({ ...stato, fineIl: Date.now() + stato.rimanenteMs, rimanenteMs: undefined, inAttesa: undefined })
     return
   }
   imposta({ ...stato, fase: 'studio', fineIl: Date.now() + stato.durataStudio * 60_000, rimanenteMs: undefined, ciclo: 1 })
@@ -100,22 +102,21 @@ export async function ferma() {
   }
   imposta({ ...stato, fase: 'fermo', fineIl: undefined, rimanenteMs: undefined, ciclo: 1, sessionePianoId: undefined, etichetta: undefined })
 }
-/** Da chiamare spesso: chiude le fasi finite (registrando lo studio) e passa alla successiva. */
+/**
+ * Da chiamare spesso: chiude la fase finita (registrando lo studio) e prepara la successiva SENZA farla partire:
+ * la pausa (o il nuovo ciclo di studio) comincia solo quando l'utente tocca il pulsante.
+ */
 export async function controlla(adesso = Date.now()) {
-  let s = stato, cambiato = false
-  while (s.fase !== 'fermo' && s.fineIl && adesso >= s.fineIl) {
-    cambiato = true
-    if (s.fase === 'studio') {
-      await registra(s.durataStudio, s.fineIl, s.argomentoId)
-      s = { ...s, fase: 'pausa', fineIl: s.fineIl + s.durataPausa * 60_000 }
-    } else {
-      s = { ...s, fase: 'studio', fineIl: s.fineIl + s.durataStudio * 60_000, ciclo: s.ciclo + 1 }
-    }
+  const s = stato
+  if (s.fase === 'fermo' || !s.fineIl || adesso < s.fineIl) return
+  if (s.fase === 'studio') {
+    await registra(s.durataStudio, s.fineIl, s.argomentoId)
+    imposta({ ...s, fase: 'pausa', fineIl: undefined, rimanenteMs: s.durataPausa * 60_000, inAttesa: true })
+  } else {
+    imposta({ ...s, fase: 'studio', fineIl: undefined, rimanenteMs: s.durataStudio * 60_000, ciclo: s.ciclo + 1, inAttesa: true })
   }
-  if (cambiato) {
-    imposta(s)
-    if (adesso - (s.fineIl ?? adesso) < 0) suona()
-  }
+  // Suona solo se la fase è appena finita (non se l'app era chiusa da molto).
+  if (adesso - s.fineIl < 60_000) suona()
 }
 /** Millisecondi rimasti e frazione della fase ancora da fare (1 = appena iniziata). */
 export function rimanente(s: StatoTimer, adesso = Date.now()) {

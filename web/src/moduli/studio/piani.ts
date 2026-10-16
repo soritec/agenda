@@ -31,11 +31,29 @@ export function dividiPagine(p: Pick<PianoStudio, 'inizio' | 'fine' | 'giorniSet
   if (!giorni.length) return []
   const ripassoFinale = giorni.length >= 4 ? giorni.at(-1)! : undefined
   if (ripassoFinale) giorni = giorni.slice(0, -1)
-  // Ogni argomento senza pagine vale come 2 ore di lavoro.
-  const unita = p.argomenti.map((a) => ({ a, pagine: pagineDi(a), carico: pagineDi(a) || 2 * PAGINE_ORA }))
+  const out: Nuova[] = []
+  // Argomenti/libri con i loro minuti al giorno: ogni giorno un pezzo, in parallelo agli altri, finché non sono finiti.
+  const paralleli = p.argomenti.filter((a) => a.minutiAlGiorno && a.minutiAlGiorno > 0)
+  for (const a of paralleli) {
+    const pagine = pagineDi(a)
+    const perGiorno = Math.max(1, Math.round((a.minutiAlGiorno! / 60) * PAGINE_ORA))
+    let pagina = a.paginaDa ?? 0
+    let resta = pagine || 2 * PAGINE_ORA
+    for (const g of giorni) {
+      if (resta <= 0) break
+      const pezzo = Math.min(resta, perGiorno)
+      out.push({
+        pianoId, giorno: g, tipo: 'studio', argomentoId: a.id, titolo: a.nome,
+        paginaDa: pagine ? pagina : undefined, paginaA: pagine ? pagina + pezzo - 1 : undefined, minuti: a.minutiAlGiorno!,
+      })
+      pagina += pezzo
+      resta -= pezzo
+    }
+  }
+  // Gli altri, uno dopo l'altro, divisi in parti uguali nei giorni. Ogni argomento senza pagine vale come 2 ore di lavoro.
+  const unita = p.argomenti.filter((a) => !paralleli.includes(a)).map((a) => ({ a, pagine: pagineDi(a), carico: pagineDi(a) || 2 * PAGINE_ORA }))
   const totale = unita.reduce((s, u) => s + u.carico, 0)
   const perGiorno = Math.max(1, Math.ceil(totale / giorni.length))
-  const out: Nuova[] = []
   let gi = 0, spazio = perGiorno
   for (const u of unita) {
     let resta = u.carico
@@ -55,7 +73,7 @@ export function dividiPagine(p: Pick<PianoStudio, 'inizio' | 'fine' | 'giorniSet
     }
   }
   if (ripassoFinale) out.push({ pianoId, giorno: ripassoFinale, tipo: 'ripassoGenerale', titolo: 'Ripasso generale', minuti: p.minutiAlGiorno })
-  return out
+  return out.sort((x, y) => x.giorno.localeCompare(y.giorno))
 }
 
 /** Ripassi brevi dopo 1, 7 e 30 giorni dall'ultima sessione di ogni argomento (solo prima della fine del piano). */

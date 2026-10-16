@@ -212,6 +212,8 @@ export interface ArgomentoPiano {
   fonte?: string
   paginaDa?: number
   paginaA?: number
+  /** Minuti al giorno solo per questo argomento/libro: si studia in parallelo agli altri, ogni giorno, finché non è finito. */
+  minutiAlGiorno?: number
 }
 
 /** Una sessione del piano in un giorno: studio di un argomento (pagine), ripasso o esame. */

@@ -39,13 +39,15 @@ describe('Timer di studio', () => {
     const inizio = T.leggiTimer().fineIl! - 30 * 60_000
     expect(T.rimanente(T.leggiTimer(), inizio + 15 * 60_000).frazione).toBeCloseTo(0.5)
     await T.controlla(inizio + 31 * 60_000)
-    expect(T.leggiTimer()).toMatchObject({ fase: 'pausa', ciclo: 1 })
+    // A fine sessione la pausa è pronta ma non parte da sola.
+    expect(T.leggiTimer()).toMatchObject({ fase: 'pausa', ciclo: 1, inAttesa: true, fineIl: undefined })
     await T.controlla(inizio + 41 * 60_000)
-    expect(T.leggiTimer()).toMatchObject({ fase: 'studio', ciclo: 2 })
-    T.metti_in_pausa()
+    expect(T.leggiTimer()).toMatchObject({ fase: 'pausa', inAttesa: true })
+    T.avvia()
+    expect(T.leggiTimer().fineIl).toBeDefined()
     await T.ferma()
     const sessioni = await elenca('sessioniStudio')
-    // Il secondo ciclo è stato fermato subito (nel tempo reale): niente minuti in più.
+    // Fermando durante la pausa non si aggiungono minuti di studio.
     expect(sessioni.map((s) => s.minuti)).toEqual([30])
     expect(T.leggiTimer().fase).toBe('fermo')
   })

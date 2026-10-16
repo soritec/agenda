@@ -161,7 +161,7 @@ function Timer({ argomenti }: { argomenti: ArgomentoStudio[] }) {
           strokeDasharray={C} strokeDashoffset={C * (1 - frazione)} transform="rotate(-90 95 95)" style={{ transition: 'stroke-dashoffset 0.5s linear' }} />
         <text x="95" y="96" textAnchor="middle" className="tempo-timer">{String(mm).padStart(2, '0')}:{String(ss).padStart(2, '0')}</text>
         <text x="95" y="120" textAnchor="middle" className="fase-timer">
-          {s.fase === 'fermo' ? 'pronto' : s.fase === 'pausa' ? 'pausa' : `studio · ${s.ciclo}° ciclo`}{s.fase !== 'fermo' && !corre ? ' (fermo)' : ''}
+          {s.inAttesa ? (s.fase === 'pausa' ? 'sessione finita' : 'pausa finita') : s.fase === 'fermo' ? 'pronto' : s.fase === 'pausa' ? 'pausa' : `studio · ${s.ciclo}° ciclo`}{s.fase !== 'fermo' && !corre && !s.inAttesa ? ' (fermo)' : ''}
         </text>
       </svg>
       {s.etichetta && s.fase !== 'fermo' && <span className="secondario piccolo" style={{ textAlign: 'center' }}>Sessione: <strong>{s.etichetta}</strong></span>}
@@ -192,7 +192,7 @@ function Timer({ argomenti }: { argomenti: ArgomentoStudio[] }) {
       <div className="riga-azioni centrata" style={{ marginTop: 4 }}>
         {corre
           ? <button type="button" className="pulsante" onClick={metti_in_pausa}>❚❚ Pausa</button>
-          : <button type="button" className="pulsante primario" onClick={avvia}>▶ {s.fase === 'fermo' ? 'Inizia' : 'Riprendi'}</button>}
+          : <button type="button" className="pulsante primario" onClick={avvia}>▶ {s.fase === 'fermo' ? 'Inizia' : s.inAttesa ? (s.fase === 'pausa' ? 'Inizia la pausa' : 'Riprendi a studiare') : 'Riprendi'}</button>}
         {s.fase !== 'fermo' && <button type="button" className="pulsante" onClick={() => void ferma()}>■ Stop</button>}
       </div>
       <label className="secondario piccolo" style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>

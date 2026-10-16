@@ -73,6 +73,17 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
   const mancate = delPiano.filter((s) => !s.fatta && s.giorno < oggiChiave && s.tipo !== 'ripasso').length
   const sessioneAperta = (sessioni ?? []).find((s) => s.id === aperta)
 
+  /** Elimina il piano con tutte le sue sessioni (con "Annulla"). */
+  async function eliminaPiano(p: PianoStudio) {
+    const sue = (sessioni ?? []).filter((s) => s.pianoId === p.id)
+    await elimina('pianiStudio', p.id)
+    for (const s of sue) await elimina('sessioniPiano', s.id)
+    if (scelto === p.id) setScelto(undefined)
+    mostraAvviso(`Piano eliminato: ${p.nome}`, () => void (async () => {
+      await ripristina('pianiStudio', p.id)
+      for (const s of sue) await ripristina('sessioniPiano', s.id)
+    })())
+  }
   async function sposta(s: SessionePiano) {
     if (!piano) return
     const giorni = giorniDelPiano(piano).filter((g) => g > s.giorno && g >= oggiChiave && !occupati.has(g))
@@ -98,11 +109,14 @@ export function PianiStudio({ risorse }: { risorse: Risorsa[] }) {
           const perc = r.paginePreviste ? Math.round((r.pagineFatte / r.paginePreviste) * 100) : r.sessioni ? Math.round((r.fatte / r.sessioni) * 100) : 0
           const attivo = p.id === piano?.id
           return (
-            <button key={p.id} type="button" className={`scheda-piano${attivo ? ' attivo' : ''}`} style={attivo ? { borderColor: p.colore, background: `${p.colore}1f` } : undefined} onClick={() => setScelto(p.id)}>
-              <strong style={{ color: attivo ? p.colore : undefined }}>{p.nome}</strong>
-              <span className="secondario piccolo">entro {F.dataBreve(ms(p.fine))} · {perc}%</span>
-              <span className="barra-mini" style={{ width: '100%' }}><i style={{ width: `${perc}%`, background: p.colore }} /></span>
-            </button>
+            <div key={p.id} className="contenitore-piano">
+              <button type="button" className={`scheda-piano${attivo ? ' attivo' : ''}`} style={attivo ? { borderColor: p.colore, background: `${p.colore}1f` } : undefined} onClick={() => setScelto(p.id)}>
+                <strong style={{ color: attivo ? p.colore : undefined }}>{p.nome}</strong>
+                <span className="secondario piccolo">{p.fine >= '2099' ? 'senza scadenza' : `entro ${F.dataBreve(ms(p.fine))}`} · {perc}%</span>
+                <span className="barra-mini" style={{ width: '100%' }}><i style={{ width: `${perc}%`, background: p.colore }} /></span>
+              </button>
+              <button type="button" className="elimina-piano" aria-label={`Elimina il piano ${p.nome}`} title="Elimina il piano" onClick={() => void eliminaPiano(p)}>×</button>
+            </div>
           )
         })}
         <button type="button" className="scheda-piano nuovo" onClick={() => setModifica({})}>+ Nuovo piano</button>
@@ -289,6 +303,16 @@ function SchedaSessione({ s, piano, sessioni, risorse, onChiudi }: { s: Sessione
         <strong style={{ fontSize: 17 }}>{s.titolo}</strong>
         <span className="secondario">{[F.dataEstesa(ms(s.giorno)), piano.nome, risorsa?.titolo ?? argomento?.fonte, pagine(s), durata(s.minuti)].filter(Boolean).join(' · ')}</span>
         {s.minutiFatti ? <span className="secondario piccolo">Studiato finora con il timer: {durata(s.minutiFatti)}</span> : null}
+        <div className="campi-affiancati">
+          <Campo etichetta="Minuti previsti">
+            <input type="number" inputMode="numeric" min={5} max={720} step={5} defaultValue={s.minuti}
+              onBlur={(e) => { const n = Math.round(Number(e.target.value)); if (n >= 5 && n <= 720 && n !== s.minuti) void salva('sessioniPiano', { ...s, minuti: n }) }} />
+          </Campo>
+          <Campo etichetta="Minuti studiati (a mano)">
+            <input type="number" inputMode="numeric" min={0} max={720} step={5} defaultValue={s.minutiFatti ?? ''} placeholder="0"
+              onBlur={(e) => { const v = e.target.value.trim(); const n = v === '' ? undefined : Math.round(Number(v)); if (n === undefined || (n >= 0 && n <= 720)) if (n !== s.minutiFatti) void salva('sessioniPiano', { ...s, minutiFatti: n || undefined }) }} />
+          </Campo>
+        </div>
         <button type="button" className="pulsante primario" onClick={() => { avviaSessione(s.id, s.titolo, s.minuti); onChiudi(); mostraAvviso('Timer avviato') }}>▶ Avvia il timer</button>
         {s.paginaDa !== undefined && !s.fatta && (
           <Campo etichetta={`Fino a che pagina hai studiato? (da ${s.paginaDa})`}><input inputMode="numeric" value={paginaA} onChange={(e) => setPaginaA(e.target.value)} /></Campo>
@@ -342,7 +366,7 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
     setInCorso('estrai')
     try {
       const nomi = await estraiArgomenti({ testo: b.syllabus, pdf: pdfSyllabus ? [{ nome: pdfSyllabus.name, blob: pdfSyllabus }] : [] })
-      setArgomenti([...argomenti, ...nomi.filter((n) => !argomenti.some((a) => a.nome.toLowerCase() === n.toLowerCase())).map((nome) => ({ id: nuovoId(), nome }))])
+      setArgomenti([...argomenti, ...nomi.filter((x) => !argomenti.some((a) => a.nome.toLowerCase() === x.nome.toLowerCase())).map((x) => ({ id: nuovoId(), ...x }))])
     } catch (e) { setErrore(e instanceof Error ? e.message : 'Qualcosa non ha funzionato.') } finally { setInCorso(undefined) }
   }
   /** Salva il piano e rifà le sessioni non ancora fatte (quelle fatte restano). */
@@ -401,7 +425,7 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
           <Campo etichetta="Esame o scadenza"><input type="date" value={b.fine} onChange={(e) => setB({ ...b, fine: e.target.value })} /></Campo>
           <Campo etichetta="Al giorno">
             <select value={b.minuti} onChange={(e) => setB({ ...b, minuti: Number(e.target.value) })}>
-              {[30, 60, 90, 120, 150, 180, 240, 300].map((m) => <option key={m} value={m}>{durata(m)}</option>)}
+              {[30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480, 540, 600].map((m) => <option key={m} value={m}>{durata(m)}</option>)}
             </select>
           </Campo>
         </div>
@@ -424,7 +448,7 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
               <input type="file" accept="application/pdf" className="file-nascosto" onChange={(e) => setPdfSyllabus(e.target.files?.[0])} />
             </label>
             <button type="button" className="pillola" disabled={!leggiChiave() || (!b.syllabus.trim() && !pdfSyllabus) || !!inCorso} onClick={() => void estrai()}>
-              {inCorso === 'estrai' ? 'Gemini sta leggendo…' : '✦ Estrai gli argomenti con Gemini'}
+              {inCorso === 'estrai' ? 'Gemini sta leggendo…' : '✦ Estrai argomenti e readings con Gemini'}
             </button>
           </div>
         </div>
@@ -442,6 +466,9 @@ function FormPiano({ p, risorse, sessioni, occupati, onChiudi }: {
               <span className="pagine">
                 p. <input inputMode="numeric" value={a.paginaDa ?? ''} aria-label="Da pagina" onChange={(e) => aggiorna(i, { paginaDa: numero(e.target.value) })} />
                 – <input inputMode="numeric" value={a.paginaA ?? ''} aria-label="A pagina" onChange={(e) => aggiorna(i, { paginaA: numero(e.target.value) })} />
+              </span>
+              <span className="pagine" title="Minuti al giorno solo per questo: si studia ogni giorno insieme agli altri">
+                <input inputMode="numeric" value={a.minutiAlGiorno ?? ''} placeholder="—" aria-label="Minuti al giorno per questo argomento" onChange={(e) => aggiorna(i, { minutiAlGiorno: numero(e.target.value) })} /> min/giorno
               </span>
               <button type="button" className="elimina-task" aria-label={`Togli ${a.nome}`} onClick={() => setArgomenti(argomenti.filter((_, j) => j !== i))}>×</button>
             </div>
