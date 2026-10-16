@@ -71,15 +71,23 @@ describe('Quiz di Gemini', () => {
     const chiamate: string[] = []
     vi.stubGlobal('fetch', async (url: string) => {
       chiamate.push(url)
-      if (url.includes('gemini-2.5-flash:')) return new Response('overloaded', { status: 503 })
+      if (url.includes('gemini-2.5-flash-lite:')) return new Response('overloaded', { status: 503 })
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Riassunto' }] } }] }), { status: 200 })
     })
     const { elabora } = await import('../src/moduli/studio/ai')
     const risultato = elabora('riassumi', { testo: 'materiale' })
     await vi.runAllTimersAsync()
     expect(await risultato).toBe('Riassunto')
-    expect(chiamate.filter((u) => u.includes('gemini-2.5-flash:'))).toHaveLength(3)
+    expect(chiamate.filter((u) => u.includes('gemini-2.5-flash-lite:'))).toHaveLength(3)
     vi.unstubAllGlobals()
     vi.useRealTimers()
+  })
+
+  test('limite gratuito: messaggio del giorno o del minuto', async () => {
+    const { leggiErroreGoogle, testoLimite } = await import('../src/moduli/studio/ai')
+    const giorno = JSON.stringify({ error: { message: 'Quota exceeded', details: [{ '@type': 'QuotaFailure', violations: [{ quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier' }] }, { '@type': 'RetryInfo', retryDelay: '37s' }] } })
+    expect(leggiErroreGoogle(giorno)).toMatchObject({ giornaliero: true, secondi: 37 })
+    expect(testoLimite({ giornaliero: true })).toContain('domani')
+    expect(testoLimite({ giornaliero: false, secondi: 37 })).toContain('tra 37 secondi')
   })
 })

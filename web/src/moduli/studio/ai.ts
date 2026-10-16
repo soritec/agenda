@@ -30,7 +30,25 @@ function modelliDisponibili(chiave: string): Promise<string[]> {
 
 /** Messaggio di Google, se c'è (per capire cosa non va). */
 async function messaggioGoogle(r: Response): Promise<string> {
-  try { return ((JSON.parse(await r.text()) as { error?: { message?: string } }).error?.message ?? '').slice(0, 200) } catch { return '' }
+  return leggiErroreGoogle(await r.text().catch(() => '')).messaggio
+}
+
+/** Errore di Google: messaggio e, per i limiti (429), se è quello del giorno e fra quanti secondi riprovare. */
+export function leggiErroreGoogle(testo: string): { messaggio: string; giornaliero: boolean; secondi?: number } {
+  try {
+    const e = (JSON.parse(testo) as { error?: { message?: string; details?: { '@type'?: string; retryDelay?: string; violations?: { quotaId?: string }[] }[] } }).error
+    const dettagli = e?.details ?? []
+    const giornaliero = dettagli.some((d) => d.violations?.some((v) => /PerDay/i.test(v.quotaId ?? ''))) || /per day|daily/i.test(e?.message ?? '')
+    const ritardo = dettagli.find((d) => d.retryDelay)?.retryDelay
+    const secondi = ritardo ? Math.ceil(Number.parseFloat(ritardo)) : undefined
+    return { messaggio: (e?.message ?? '').slice(0, 200), giornaliero, secondi: Number.isFinite(secondi) ? secondi : undefined }
+  } catch { return { messaggio: '', giornaliero: false } }
+}
+
+/** Testo semplice per l'utente quando si supera il limite gratuito. */
+export function testoLimite(l: { giornaliero: boolean; secondi?: number }): string {
+  if (l.giornaliero) return 'Hai usato tutte le richieste gratuite di Gemini di oggi: riprova domani. Per non avere questo limite si può attivare il pagamento a consumo su aistudio.google.com.'
+  return `Troppe richieste a Gemini in poco tempo (limite della versione gratuita): riprova ${l.secondi ? `tra ${l.secondi} secondi` : 'tra un minuto'}.`
 }
 
 export const leggiChiave = () => { try { return localStorage.getItem(CHIAVE) ?? '' } catch { return '' } }
@@ -75,7 +93,7 @@ const base64 = async (b: Blob) => {
 }
 
 /** `cerca` = Gemini può cercare su Google (per informazioni aggiornate; in quel caso niente risposta JSON forzata). */
-async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = false): Promise<string> {
+async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = false, leggero = false): Promise<string> {
   const chiave = leggiChiave()
   if (!chiave) throw new Error('Inserisci prima la tua chiave Gemini.')
   const parti: unknown[] = []
@@ -88,7 +106,10 @@ async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = f
   })
   let ultimo = 0
   let ultimoMessaggio = ''
-  const modelli = await modelliDisponibili(chiave)
+  let limite: { giornaliero: boolean; secondi?: number } | undefined
+  // Per le richieste semplici si prova prima la versione "lite", che ha limiti gratuiti più alti.
+  const tutti = await modelliDisponibili(chiave)
+  const modelli = leggero ? [...tutti.filter((x) => /lite/.test(x)), ...tutti.filter((x) => !/lite/.test(x))] : tutti
   for (const modello of modelli) {
     // 503/500 = Google è sovraccarico (capita spesso con la versione gratuita): si riprova poco dopo, poi si passa al modello successivo.
     for (let tentativo = 0; tentativo < 3; tentativo++) {
@@ -103,7 +124,11 @@ async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = f
         if (/API key|API_KEY|permission/i.test(t)) throw new Error('La chiave non è valida: controllala.')
         throw new Error(`Gemini non è riuscito a leggere il materiale (forse un PDF troppo grande).${t ? ` Google dice: "${t}"` : ''}`)
       }
-      if (!r.ok) ultimoMessaggio = await messaggioGoogle(r)
+      if (!r.ok) {
+        const e = leggiErroreGoogle(await r.text().catch(() => ''))
+        ultimoMessaggio = e.messaggio
+        if (r.status === 429) limite = { giornaliero: (limite?.giornaliero ?? false) || e.giornaliero, secondi: e.secondi ?? limite?.secondi }
+      }
       if (r.status === 429) break // limite di questo modello: ogni modello ha il suo, si prova il successivo
       if (r.status >= 500) continue
       if (!r.ok) throw new Error(`Errore di Gemini (${r.status}).${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
@@ -113,12 +138,12 @@ async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = f
       return testo
     }
   }
-  if (ultimo === 429) throw new Error(`Hai raggiunto il limite gratuito di Gemini per ora: riprova più tardi.${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
+  if (ultimo === 429) throw new Error(testoLimite(limite ?? { giornaliero: false }))
   if (ultimo >= 500) throw new Error(`Gemini è sovraccarico in questo momento (succede con la versione gratuita): riprova tra qualche minuto.${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
   throw new Error(`Gemini non è disponibile (${ultimo}).${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
 }
 
-export const elabora = (azione: AzioneAI, m: Materiale) => chiama(AZIONI_AI[azione].istruzione, m, false)
+export const elabora = (azione: AzioneAI, m: Materiale) => chiama(AZIONI_AI[azione].istruzione, m, false, false, true)
 
 export interface DomandaQuiz { domanda: string; opzioni: string[]; corretta: number; spiegazione?: string; fonte?: string }
 
@@ -148,7 +173,7 @@ export async function generaQuiz(m: Materiale, quante: number): Promise<DomandaQ
 export async function generaFlashcard(m: Materiale, quante: number): Promise<{ domanda: string; risposta: string; fonte?: string }[]> {
   const testo = await chiama(
     `Crea ${quante} flashcard scritte ${LINGUA} sui concetti chiave del materiale (definizioni, soglie, numeri, raccomandazioni). `
-    + 'Rispondi solo con un array JSON di oggetti: {"domanda": string, "risposta": string breve, "fonte": titolo della fonte}.', m, true)
+    + 'Rispondi solo con un array JSON di oggetti: {"domanda": string, "risposta": string breve, "fonte": titolo della fonte}.', m, true, false, true)
   let dati: unknown
   try { dati = JSON.parse(testo.replace(/^```(?:json)?\s*|\s*```$/g, '')) } catch { dati = [] }
   const elenco = (Array.isArray(dati) ? dati : []) as { domanda?: unknown; risposta?: unknown; fonte?: unknown }[]
