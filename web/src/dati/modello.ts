@@ -497,6 +497,8 @@ export interface Stanza extends Base {
   /** Partenza prevista e data del preavviso. */
   esceIl?: string
   preavvisoIl?: string
+  /** Cose da fare per la partenza, da spuntare. */
+  uscita?: { voce: string; fatto?: boolean }[]
   /** Chi arriverà dopo la partenza (scelta da "Cerca coinquilina"). */
   prossima?: { nome: string; dal: string; candidataId?: string }
 }
@@ -515,7 +517,7 @@ export interface Bolletta extends Base {
 
 /** Stato di un mese: affitto ricevuto, bill pagata (con importo del mese), conguaglio fatto. Id = tipo:riferimento:mese. */
 export interface PagamentoCasa extends Base {
-  /** 'affitto' | 'bolletta' | 'conguaglio' */
+  /** 'affitto' | 'bolletta' | 'conguaglio' | 'proprietario' */
   tipo: string
   riferimentoId: string
   /** "2026-10" */

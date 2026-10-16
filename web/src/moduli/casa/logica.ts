@@ -1,4 +1,5 @@
 import type { Bolletta, Candidata, Casa, PagamentoCasa, Stanza } from '../../dati/modello'
+import type { Voce } from '../budget/logica'
 import { aggiungiGiorni, giorniNelMese } from '../../nucleo/calendario'
 import { giorniTra } from '../agenda/impegni'
 import { chiaveGiorno, giornoDaChiave } from '../turni/supporto'
@@ -29,6 +30,9 @@ export const testoBolletta = (sfondo: string) => COLORI_BOLLETTA.find(([s]) => s
 /** Colori dei nomi nelle stanze (solo il testo è colorato). */
 export const COLORI_STANZA = ['#2F4560', '#2E6B66', '#8A4F45', '#5A3E57', '#6B5317', '#45456A']
 
+/** Cose da fare quando una coinquilina lascia la casa (si possono aggiungere altre voci). */
+export const VOCI_USCITA = ['Chiavi restituite', 'Stanza pulita e controllata', 'Conguaglio delle bills', 'Sua parte del deposito restituita']
+
 export const VALUTAZIONI = ['buono', 'forse', 'piuNo', 'no'] as const
 export type Valutazione = (typeof VALUTAZIONI)[number]
 export const TITOLI_VALUTAZIONE: Record<Valutazione, string> = { buono: 'Buon fit', forse: 'Forse', piuNo: 'Più no che sì', no: 'Assolutamente no' }
@@ -39,7 +43,9 @@ export type StatoCandidata = (typeof STATI_CANDIDATA)[number]
 export const TITOLI_STATO_CANDIDATA: Record<StatoCandidata, string> = { attesa: 'In attesa di risposta', risposto: 'Risposto', fissata: 'Viewing arranged', fatta: 'Viewing completed' }
 export const statoCandidataDa = (v?: string): StatoCandidata => ((STATI_CANDIDATA as readonly string[]).includes(v ?? '') ? (v as StatoCandidata) : 'attesa')
 
-export const idPagamento = (tipo: 'affitto' | 'bolletta' | 'conguaglio', riferimentoId: string, mese: string) => `${tipo}:${riferimentoId}:${mese}`
+/** 'proprietario' = l'affitto del mese pagato al proprietario (riferimento: 'casa'). */
+export type TipoPagamento = 'affitto' | 'bolletta' | 'conguaglio' | 'proprietario'
+export const idPagamento = (tipo: TipoPagamento, riferimentoId: string, mese: string) => `${tipo}:${riferimentoId}:${mese}`
 
 /** Quanto resta da pagare per la propria stanza: affitto totale meno le stanze delle altre. */
 export function quotaPropria(casa: Pick<Casa, 'affittoTotaleCent'>, stanze: Stanza[]): number {
@@ -106,4 +112,38 @@ export function contiMese(bills: { importoCent: number }[], stanze: Stanza[], qu
 export function ordinaCandidate(c: Candidata[]): Candidata[] {
   return [...c].sort((a, b) => VALUTAZIONI.indexOf(valutazioneDa(a.valutazione)) - VALUTAZIONI.indexOf(valutazioneDa(b.valutazione))
     || (a.viewing ?? Infinity) - (b.viewing ?? Infinity) || b.creatoIl - a.creatoIl)
+}
+
+/**
+ * Voci del Budget calcolate dalla Casa per un mese: affitto pagato al proprietario e bills (uscite),
+ * affitto + quota bills ricevuti dalle coinquiline (entrate, "da incassare" finché non arrivano), conguaglio.
+ */
+export function vociCasaDelMese(d: { casa?: Casa; stanze: Stanza[]; bollette: Bolletta[]; pagamenti: PagamentoCasa[] }, mese: string, categorie: { uscita: string; entrata: string }): Voce[] {
+  if (!d.casa || d.stanze.length === 0) return []
+  const pag = new Map(d.pagamenti.map((p) => [p.id, p]))
+  const giornoDel = (g: number) => `${mese}-${String(Math.min(g, Number(fineMese(mese).slice(8)))).padStart(2, '0')}`
+  const voci: Voce[] = []
+  const giornoAffitto = giornoDel(d.casa.giornoAffitto ?? 1)
+  if (d.casa.affittoTotaleCent > 0) {
+    voci.push({ chiave: `casa:affitto:${mese}`, origine: 'casa', id: 'affitto', tipo: 'uscita', importoCent: d.casa.affittoTotaleCent, giorno: giornoAffitto, categoriaId: categorie.uscita, titolo: 'Affitto' })
+  }
+  const bills = bolletteDelMese(d.bollette, pag, mese)
+  for (const { b, importoCent } of bills) {
+    if (importoCent > 0) voci.push({ chiave: `casa:bill:${b.id}:${mese}`, origine: 'casa', id: b.id, tipo: 'uscita', importoCent, giorno: giornoDel(b.giorno), categoriaId: categorie.uscita, titolo: b.nome })
+  }
+  const conti = contiMese(bills, d.stanze, d.casa.quotaBolletteCent)
+  for (const s of d.stanze.filter((x) => !x.propria)) {
+    const nome = occupante(s, fineMese(mese)) || 'coinquilina'
+    const ricevuto = pag.get(idPagamento('affitto', s.id, mese))?.fatto
+    voci.push({ chiave: `casa:da:${s.id}:${mese}`, origine: 'casa', id: s.id, tipo: 'entrata', importoCent: s.affittoCent + d.casa.quotaBolletteCent, giorno: giornoAffitto, categoriaId: categorie.entrata, titolo: `Affitto e bills da ${nome}`, daIncassare: !ricevuto || undefined })
+    if (conti.differenzaCent !== 0 && conti.totaleCent > 0) {
+      const fatto = pag.get(idPagamento('conguaglio', s.id, mese))?.fatto
+      voci.push({
+        chiave: `casa:cong:${s.id}:${mese}`, origine: 'casa', id: s.id, tipo: conti.differenzaCent > 0 ? 'uscita' : 'entrata', importoCent: Math.abs(conti.differenzaCent), giorno: fineMese(mese),
+        categoriaId: conti.differenzaCent > 0 ? categorie.uscita : categorie.entrata, titolo: conti.differenzaCent > 0 ? `Conguaglio bills a ${nome}` : `Conguaglio bills da ${nome}`,
+        daIncassare: conti.differenzaCent < 0 && !fatto ? true : undefined,
+      })
+    }
+  }
+  return voci
 }

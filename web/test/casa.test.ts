@@ -63,3 +63,21 @@ describe('Cambio euro/sterline', () => {
     expect(testoCambio(0.84463)).toBe('0,8446')
   })
 })
+
+describe('Casa nel Budget', () => {
+  test('affitto, bills, quote delle coinquiline e conguaglio', async () => {
+    const { vociCasaDelMese } = await import('../src/moduli/casa/logica')
+    const casa = { ...b, id: 'casa', affittoTotaleCent: 255000, quotaBolletteCent: 15000, giornoAffitto: 1 }
+    const bollette: Bolletta[] = [{ ...b, id: 'w', nome: 'Water', importoCent: 40500, giorno: 20, colore: '', icona: 'acqua', ordine: 0 }]
+    const pagamenti: PagamentoCasa[] = [{ ...b, id: idPagamento('affitto', 'A', '2026-10'), tipo: 'affitto', riferimentoId: 'A', mese: '2026-10', fatto: true }]
+    const voci = vociCasaDelMese({ casa, stanze: [mia, s1, s2], bollette, pagamenti }, '2026-10', { uscita: 'u', entrata: 'e' })
+    expect(voci.map((v) => [v.tipo, v.titolo, v.importoCent, v.giorno, Boolean(v.daIncassare)])).toEqual([
+      ['uscita', 'Affitto', 255000, '2026-10-01', false],
+      ['uscita', 'Water', 40500, '2026-10-20', false],
+      ['entrata', 'Affitto e bills da A', 100000, '2026-10-01', false],
+      ['uscita', 'Conguaglio bills a A', 1500, '2026-10-31', false],
+      ['entrata', 'Affitto e bills da B', 105000, '2026-10-01', true],
+      ['uscita', 'Conguaglio bills a B', 1500, '2026-10-31', false],
+    ])
+  })
+})

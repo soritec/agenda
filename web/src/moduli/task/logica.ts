@@ -1,9 +1,9 @@
 import type { Attivita } from '../../dati/modello'
 import { giornoDaChiave, chiaveGiorno } from '../turni/supporto'
 
-export const AREE = ['personale', 'lavoro', 'specializzazione', 'studio', 'altro'] as const
+export const AREE = ['personale', 'lavoro', 'specializzazione', 'studio', 'casa', 'altro'] as const
 export type Area = (typeof AREE)[number]
-export const TITOLI_AREA: Record<Area, string> = { personale: 'Personale', lavoro: 'Lavoro', specializzazione: 'Specializzazione', studio: 'Studio', altro: 'Altro' }
+export const TITOLI_AREA: Record<Area, string> = { personale: 'Personale', lavoro: 'Lavoro', specializzazione: 'Specializzazione', studio: 'Studio', casa: 'Casa', altro: 'Altro' }
 export const areaDa = (grezzo: string): Area => ((AREE as readonly string[]).includes(grezzo) ? (grezzo as Area) : 'altro')
 
 /** In ordine di importanza; 'nessuna' è quella di partenza (anche per i vecchi 'normale'). */

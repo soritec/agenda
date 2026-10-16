@@ -12,8 +12,9 @@ import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/c
 import { IconaAvanti, IconaIndietro, IconaSalvadanaio } from '../../../interfaccia/icone'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import {
-  CATEGORIA_RISPARMI, centesimiDa, leggiMovimentoVeloce, statoRisparmi, type TipoVoce, prossimeScadenze, riepilogo, spostaMese, vociDelMese, type DatiBudget, type TipoMovimento, type Voce,
+  CATEGORIA_RISPARMI, centesimiDa, idPredefinita, leggiMovimentoVeloce, statoRisparmi, type TipoVoce, prossimeScadenze, riepilogo, spostaMese, vociDelMese, type DatiBudget, type TipoMovimento, type Voce,
 } from '../logica'
+import { vociCasaDelMese } from '../../casa/logica'
 
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 const dataBreve = (g: string) => F.dataBreve(msGiorno(g))
@@ -30,10 +31,17 @@ function useDatiBudget() {
   const turni = useCollezione('turni')
   const tasse = useCollezione('tasse')
   const obiettivi = useCollezione('obiettiviRisparmio')
+  const casa = useCollezione('casa')
+  const stanze = useCollezione('stanze')
+  const bollette = useCollezione('bollette')
+  const pagamentiCasa = useCollezione('pagamentiCasa')
   const dati: DatiBudget = useMemo(() => ({
     categorie: [...(categorie ?? [])].sort((a, b) => a.ordine - b.ordine), movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [], turni: turni ?? [], tasse: tasse ?? [],
     obiettivi: [...(obiettivi ?? [])].sort((a, b) => a.creatoIl - b.creatoIl),
-  }), [categorie, movimenti, ricorrenti, turni, tasse, obiettivi])
+    // La Casa (affitto, bills, quote delle coinquiline) entra da sola nel budget.
+    altreVoci: (mese: string) => vociCasaDelMese({ casa: casa?.[0], stanze: stanze ?? [], bollette: bollette ?? [], pagamenti: pagamentiCasa ?? [] }, mese,
+      { uscita: idPredefinita('Casa'), entrata: idPredefinita('Altre entrate') }),
+  }), [categorie, movimenti, ricorrenti, turni, tasse, obiettivi, casa, stanze, bollette, pagamentiCasa])
   return { dati, pronto: Boolean(categorie && movimenti && ricorrenti) }
 }
 
@@ -84,6 +92,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
   function apri(v: Voce) {
     if (v.origine === 'turno') { location.hash = `#/turni/${v.id}`; return }
     if (v.origine === 'tassa') { location.hash = '#/specializzazione/tasse'; return }
+    if (v.origine === 'casa') { location.hash = `#/casa?mese=${v.giorno.slice(0, 7)}`; return }
     if (v.origine === 'movimento') setModifica({ tipo: v.tipo, movimento: dati.movimenti.find((m) => m.id === v.id) })
     else setModifica({ tipo: v.tipo, ricorrente: dati.ricorrenti.find((x) => x.id === v.id) })
   }
@@ -200,7 +209,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                         {v.origine === 'ricorrente' && <span className="etichetta-piccola">↻ {dati.ricorrenti.find((x) => x.id === v.id)?.frequenza === 'anno' ? 'ogni anno' : 'ogni mese'}</span>}
                       </span>
                       <span className="secondario piccolo">
-                        {[dataBreve(v.giorno), c && c.nome !== v.titolo ? c.nome : '', v.origine === 'turno' ? 'dal turno' : '', v.origine === 'tassa' ? 'da Tasse' : '', originaleDi(v),
+                        {[dataBreve(v.giorno), c && c.nome !== v.titolo ? c.nome : '', v.origine === 'turno' ? 'dal turno' : '', v.origine === 'tassa' ? 'da Tasse' : '', v.origine === 'casa' ? 'dalla Casa' : '', originaleDi(v),
                           v.daIncassare ? 'da incassare' : '', futuro ? 'in programma' : ''].filter(Boolean).join(' · ')}
                       </span>
                     </button>

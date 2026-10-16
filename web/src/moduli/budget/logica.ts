@@ -97,7 +97,7 @@ export function giornoNelMese(r: Ricorrente, mese: string): string | undefined {
 /** Una voce del budget: movimento salvato, volta di una ricorrente o compenso di un turno. */
 export interface Voce {
   chiave: string
-  origine: 'movimento' | 'ricorrente' | 'turno' | 'tassa'
+  origine: 'movimento' | 'ricorrente' | 'turno' | 'tassa' | 'casa'
   id: string
   tipo: TipoVoce
   importoCent: number
@@ -115,6 +115,8 @@ export interface DatiBudget {
   turni?: Turno[]
   tasse?: Tassa[]
   obiettivi?: ObiettivoRisparmio[]
+  /** Voci calcolate da altre sezioni (es. la Casa: affitto, bills, quote delle coinquiline). */
+  altreVoci?: (mese: string) => Voce[]
 }
 
 const tipoDa = (t: string): TipoVoce => (t === 'entrata' || t === 'risparmio' || t === 'prelievo' ? t : 'uscita')
@@ -148,6 +150,7 @@ export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
     if (!giorno || meseDi(giorno) !== mese) continue
     voci.push({ chiave: `k:${t.id}`, origine: 'tassa', id: t.id, tipo: 'uscita', importoCent: t.importoCent, giorno, categoriaId: idPredefinita('Tasse universitarie'), titolo: t.descrizione })
   }
+  voci.push(...(d.altreVoci?.(mese) ?? []))
   return voci.sort((a, b) => b.giorno.localeCompare(a.giorno) || a.titolo.localeCompare(b.titolo))
 }
 

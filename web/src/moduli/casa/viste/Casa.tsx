@@ -3,13 +3,13 @@ import { componenti, istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaTanti } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
-import type { Bolletta, Candidata, Casa as DatiCasa, CosaCasa, PagamentoCasa, Stanza } from '../../../dati/modello'
+import type { Bolletta, Candidata, Casa as DatiCasa, PagamentoCasa, Stanza } from '../../../dati/modello'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { IconaFiamma, IconaFulmine, IconaGoccia, IconaImpostazioni, IconaLetto, IconaLink, IconaPalazzo, IconaPiu, IconaPorta, IconaPuntini, IconaWifi } from '../../../interfaccia/icone'
 import { centesimiDaTesto, chiaveGiorno, giornoDaChiave, oggi, testoDaCentesimi } from '../../turni/supporto'
 import {
   BOLLETTE_INIZIALI, bolletteDelMese, CASA_PREDEFINITA, COLORI_BOLLETTA, COLORI_STANZA, contiMese, fineMese, giornoDopo, giorniMancanti, idPagamento,
-  occupante, ordinaCandidate, passaggioDiStanza, quotaPropria, STATI_CANDIDATA, statoCandidataDa, testoBolletta, TITOLI_STATO_CANDIDATA,
+  occupante, ordinaCandidate, VOCI_USCITA, type TipoPagamento, passaggioDiStanza, quotaPropria, STATI_CANDIDATA, statoCandidataDa, testoBolletta, TITOLI_STATO_CANDIDATA,
   TITOLI_VALUTAZIONE, VALUTAZIONI, valutazioneDa,
 } from '../logica'
 
@@ -45,7 +45,6 @@ export function Casa({ meseParam }: { meseParam?: string }) {
   const stanzeTutte = useCollezione('stanze')
   const bollette = useCollezione('bollette')
   const pagamentiTutti = useCollezione('pagamentiCasa')
-  const cose = useCollezione('coseCasa')
   const candidate = useCollezione('candidate')
   const oggiChiave = chiaveGiorno(oggi())
   const mese = meseParam && /^\d{4}-\d{2}$/.test(meseParam) ? meseParam : oggiChiave.slice(0, 7)
@@ -73,7 +72,7 @@ export function Casa({ meseParam }: { meseParam?: string }) {
     }
   }, [stanzeTutte, oggiChiave])
 
-  async function segna(tipo: 'affitto' | 'bolletta' | 'conguaglio', riferimentoId: string, extra: Partial<PagamentoCasa> = {}) {
+  async function segna(tipo: TipoPagamento, riferimentoId: string, extra: Partial<PagamentoCasa> = {}) {
     const id = idPagamento(tipo, riferimentoId, mese)
     const p = pagamenti.get(id)
     const fatto = 'fatto' in extra ? extra.fatto : !p?.fatto
@@ -130,6 +129,16 @@ export function Casa({ meseParam }: { meseParam?: string }) {
           <h2 className="titolo-sezione">Stanze</h2>
           <span className="secondario piccolo">affitto totale {F.importo(casa.affittoTotaleCent)} · pagato da te{casa.giornoAffitto ? `, il ${casa.giornoAffitto}` : ''}</span>
         </div>
+        {(() => {
+          const p = pagamenti.get(idPagamento('proprietario', 'casa', mese))
+          return (
+            <button type="button" className={`affitto-mese${p?.fatto ? ' fatto' : ''}`} aria-pressed={Boolean(p?.fatto)} onClick={() => void segna('proprietario', 'casa')}>
+              <span className={`pallino-casa${p?.fatto ? ' fatto' : ''}`} aria-hidden="true" />
+              <span><strong>Affitto di {nomeMese(mese).split(' ')[0]}</strong> {p?.fatto ? `pagato il ${dataBreve(p.fattoIl)}` : 'da pagare al proprietario'}</span>
+              <span className="numeri" style={{ marginLeft: 'auto' }}>{F.importo(casa.affittoTotaleCent)}</span>
+            </button>
+          )
+        })()}
         <div className="stanze">
           {stanze.map((s) => {
             const p = pagamenti.get(idPagamento('affitto', s.id, mese))
@@ -234,7 +243,7 @@ export function Casa({ meseParam }: { meseParam?: string }) {
                     {[`esce il ${dataBreve(s.esceIl)}`, s.preavvisoIl ? `preavviso dato il ${dataBreve(s.preavvisoIl)}` : '', `stanza libera dal ${dataBreve(giornoDopo(s.esceIl!))}`,
                       s.prossima ? `arriva ${s.prossima.nome} il ${dataBreve(s.prossima.dal)}` : ''].filter(Boolean).join(' · ')}
                   </span>
-                  <span className="secondario piccolo">Ultimo mese: conguaglio delle bills, sua parte del deposito, chiavi.</span>
+                  <ListaUscita s={s} />
                   {totale > 0 && <span className="barra-partenza"><span style={{ width: `${fatto}%`, background: s.colore }} /></span>}
                 </button>
                 <span style={{ textAlign: 'right' }}>
@@ -268,12 +277,12 @@ export function Casa({ meseParam }: { meseParam?: string }) {
         </div>
       </section>
 
-      <CoseDaGestire cose={cose ?? []} oggiChiave={oggiChiave} />
+      <CoseDaGestire oggiChiave={oggiChiave} />
 
       {aperto?.cosa === 'casa' && <FormCasa casa={casa} stanze={stanze} onChiudi={() => setAperto(undefined)} />}
       {aperto?.cosa === 'stanza' && <FormStanza s={aperto.s} quotaPropriaCent={quotaPropria(casa, stanze)} numero={stanze.length} onChiudi={() => setAperto(undefined)} />}
       {aperto?.cosa === 'bolletta' && <FormBolletta b={aperto.b} importoMese={aperto.importoMese} mese={mese} pagamento={aperto.b ? pagamenti.get(idPagamento('bolletta', aperto.b.id, mese)) : undefined} numero={(bollette ?? []).length} onChiudi={() => setAperto(undefined)} />}
-      {aperto?.cosa === 'partenza' && <FormPartenza s={aperto.s} stanze={altre} oggiChiave={oggiChiave} onChiudi={() => setAperto(undefined)} />}
+      {aperto?.cosa === 'partenza' && <FormPartenza s={aperto.s} stanze={altre} onChiudi={() => setAperto(undefined)} />}
       {aperto?.cosa === 'candidata' && <FormCandidata c={aperto.c} stanze={altre} predefinita={stanzaCercata?.id} onChiudi={() => setAperto(undefined)} />}
       {aperto?.cosa === 'scegli' && <FormScegli c={aperto.c} stanze={altre} oggiChiave={oggiChiave} onChiudi={() => setAperto(undefined)} />}
     </div>
@@ -310,37 +319,67 @@ function SchedaCandidata({ c, stanza, onApri, onScegli }: { c: Candidata; stanza
   )
 }
 
-function CoseDaGestire({ cose, oggiChiave }: { cose: CosaCasa[]; oggiChiave: string }) {
+/** Cose da gestire per la casa: sono task con area "Casa", quindi compaiono anche nella sezione Task. */
+function CoseDaGestire({ oggiChiave }: { oggiChiave: string }) {
+  const attivita = useCollezione('attivita')
   const [testo, setTesto] = useState('')
   const [giorno, setGiorno] = useState('')
-  const elenco = [...cose].sort((a, b) => Number(Boolean(a.fatto)) - Number(Boolean(b.fatto)) || (a.giorno ?? '9').localeCompare(b.giorno ?? '9') || a.creatoIl - b.creatoIl)
+  const elenco = (attivita ?? []).filter((t) => t.area === 'casa')
+    .sort((a, b) => Number(Boolean(a.completataIl)) - Number(Boolean(b.completataIl)) || (a.scadenza ?? '9').localeCompare(b.scadenza ?? '9') || a.creatoIl - b.creatoIl)
   async function aggiungi() {
     if (!testo.trim()) return
-    await salva('coseCasa', { testo: testo.trim(), giorno: giorno || undefined })
+    await salva('attivita', { titolo: testo.trim(), scadenza: giorno || undefined, area: 'casa', priorita: 'nessuna' })
     setTesto(''); setGiorno('')
   }
   return (
     <section className="sezione-casa">
-      <h2 className="titolo-sezione">Cose da gestire</h2>
+      <div className="testa-sezione-casa">
+        <h2 className="titolo-sezione">Cose da gestire</h2>
+        <a className="link piccolo" href="#/task">anche in Task ›</a>
+      </div>
       <div className="lista">
         {elenco.map((c) => (
-          <div key={c.id} className={`riga${c.fatto ? ' conclusa' : ''}`} style={{ cursor: 'default' }}>
-            <input type="checkbox" checked={Boolean(c.fatto)} aria-label="Fatto" onChange={(e) => void salva('coseCasa', { ...c, fatto: e.target.checked || undefined })}
+          <div key={c.id} className={`riga${c.completataIl ? ' conclusa' : ''}`} style={{ cursor: 'default' }}>
+            <input type="checkbox" checked={Boolean(c.completataIl)} aria-label="Fatto" onChange={(e) => void salva('attivita', { ...c, completataIl: e.target.checked ? Date.now() : undefined })}
               style={{ width: 20, height: 20, accentColor: 'var(--primario)', flexShrink: 0 }} />
-            <span className="crescente" style={{ textDecoration: c.fatto ? 'line-through' : undefined }}>{c.testo}</span>
-            {c.giorno && <span className="piccolo" style={{ color: !c.fatto && c.giorno < oggiChiave ? 'var(--pericolo)' : 'var(--testo-2)' }}>{dataBreve(c.giorno)}</span>}
-            <button type="button" className="elimina-task" aria-label={`Elimina ${c.testo}`}
-              onClick={() => void elimina('coseCasa', c.id).then(() => mostraAvviso('Eliminato', () => void ripristina('coseCasa', c.id)))}>×</button>
+            <span className="crescente" style={{ textDecoration: c.completataIl ? 'line-through' : undefined }}>{c.titolo}</span>
+            {c.scadenza && <span className="piccolo" style={{ color: !c.completataIl && c.scadenza < oggiChiave ? 'var(--pericolo)' : 'var(--testo-2)' }}>{dataBreve(c.scadenza)}</span>}
+            <button type="button" className="elimina-task" aria-label={`Elimina ${c.titolo}`}
+              onClick={() => void elimina('attivita', c.id).then(() => mostraAvviso('Eliminato', () => void ripristina('attivita', c.id)))}>×</button>
           </div>
         ))}
       </div>
-      <div className="aggiunta-veloce">
+      <div className="aggiunta-veloce aggiunta-casa">
         <input value={testo} placeholder="es. Chiamare il landlord per la caldaia" aria-label="Nuova cosa da gestire"
           onChange={(e) => setTesto(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void aggiungi() }} />
-        <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} aria-label="Entro il (facoltativo)" style={{ flex: '0 0 150px' }} />
+        <label className="data-casa">
+          <span className="secondario piccolo">Entro il</span>
+          <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} aria-label="Entro il (facoltativo)" />
+        </label>
         <button type="button" className="pulsante primario" disabled={!testo.trim()} onClick={() => void aggiungi()}>Aggiungi</button>
       </div>
     </section>
+  )
+}
+
+/** Cose da fare per la partenza: si spuntano, si tolgono con la ×, se ne aggiungono altre. */
+function ListaUscita({ s }: { s: Stanza }) {
+  const [nuova, setNuova] = useState('')
+  const voci: { voce: string; fatto?: boolean }[] = s.uscita ?? VOCI_USCITA.map((voce) => ({ voce }))
+  const salvaVoci = (v: { voce: string; fatto?: boolean }[]) => salva('stanze', { ...s, uscita: v })
+  return (
+    <span className="lista-uscita" onClick={(e) => e.stopPropagation()}>
+      {voci.map((v, i) => (
+        <span key={`${v.voce}-${i}`} className={`voce-uscita${v.fatto ? ' fatta' : ''}`}>
+          <input type="checkbox" checked={Boolean(v.fatto)} aria-label={v.voce} onChange={(e) => void salvaVoci(voci.map((x, j) => (j === i ? { ...x, fatto: e.target.checked || undefined } : x)))} />
+          <span className="crescente">{v.voce}</span>
+          <button type="button" className="elimina-task" aria-label={`Togli ${v.voce}`} onClick={() => void salvaVoci(voci.filter((_, j) => j !== i))}>×</button>
+        </span>
+      ))}
+      <input className="data-piccola" value={nuova} placeholder="+ altra cosa da fare (Invio)" onChange={(e) => setNuova(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && nuova.trim()) { void salvaVoci([...voci, { voce: nuova.trim() }]); setNuova('') } }} />
+      <span className="secondario piccolo">{voci.filter((v) => v.fatto).length} di {voci.length} fatte</span>
+    </span>
   )
 }
 
@@ -456,13 +495,13 @@ function FormBolletta({ b: bolletta, importoMese, mese, pagamento, numero, onChi
   )
 }
 
-function FormPartenza({ s, stanze, oggiChiave, onChiudi }: { s?: Stanza; stanze: Stanza[]; oggiChiave: string; onChiudi: () => void }) {
-  const [b, setB] = useState({ stanzaId: s?.id ?? stanze.find((x) => !x.esceIl)?.id ?? stanze[0]?.id ?? '', esceIl: s?.esceIl ?? '', preavvisoIl: s?.preavvisoIl ?? oggiChiave })
+function FormPartenza({ s, stanze, onChiudi }: { s?: Stanza; stanze: Stanza[]; onChiudi: () => void }) {
+  const [b, setB] = useState({ stanzaId: s?.id ?? stanze.find((x) => !x.esceIl)?.id ?? stanze[0]?.id ?? '', esceIl: s?.esceIl ?? '', preavvisoIl: s?.preavvisoIl ?? '' })
   const stanza = stanze.find((x) => x.id === b.stanzaId)
   const valido = Boolean(stanza) && Boolean(giornoDaChiave(b.esceIl)) && (!b.preavvisoIl || b.preavvisoIl <= b.esceIl)
   async function conferma() {
     if (!valido || !stanza) return
-    await salva('stanze', { ...stanza, esceIl: b.esceIl, preavvisoIl: b.preavvisoIl || undefined })
+    await salva('stanze', { ...stanza, esceIl: b.esceIl, preavvisoIl: b.preavvisoIl || undefined, uscita: stanza.uscita ?? VOCI_USCITA.map((voce) => ({ voce })) })
     onChiudi()
   }
   return (
@@ -475,7 +514,7 @@ function FormPartenza({ s, stanze, oggiChiave, onChiudi }: { s?: Stanza; stanze:
         </Campo>
         <div className="campi-affiancati">
           <Campo etichetta="Esce il"><input type="date" value={b.esceIl} onChange={(e) => setB({ ...b, esceIl: e.target.value })} /></Campo>
-          <Campo etichetta="Preavviso dato il"><input type="date" value={b.preavvisoIl} onChange={(e) => setB({ ...b, preavvisoIl: e.target.value })} /></Campo>
+          <Campo etichetta="Preavviso dato il (facoltativo)"><input type="date" value={b.preavvisoIl} onChange={(e) => setB({ ...b, preavvisoIl: e.target.value })} /></Campo>
         </div>
         {b.esceIl && b.preavvisoIl > b.esceIl && <Avviso>Il preavviso deve venire prima della partenza.</Avviso>}
         {b.esceIl && <span className="secondario piccolo">La stanza sarà libera dal {dataBreve(giornoDopo(b.esceIl))}. La partenza compare anche in Agenda.</span>}

@@ -1183,3 +1183,18 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .riga-salvato { align-items: center !important; }
 @media (max-width: 640px) { .temi-notizie { grid-template-columns: minmax(0, 1fr); } }
 .testa-notizia .elimina-task { margin-top: -3px; }
+
+/* Il pulsante Post-it non deve coprire la fine della pagina. */
+.bacheca > .schermata { padding-bottom: 96px; }
+.aggiunta-casa { flex-wrap: wrap; align-items: center; }
+.data-casa { display: inline-flex; align-items: center; gap: 6px; }
+.data-casa input { flex: 0 0 auto; width: 160px; min-height: 44px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--linea-forte); background: var(--superficie); }
+.affitto-mese { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border-radius: var(--raggio); border: 1px solid var(--linea); background: var(--superficie); font: inherit; color: var(--testo); text-align: left; cursor: pointer; }
+.affitto-mese .pallino-casa { color: #3E7C77; }
+.affitto-mese.fatto { opacity: 0.75; }
+.lista-uscita { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.voce-uscita { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.voce-uscita input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primario); }
+.voce-uscita.fatta .crescente { text-decoration: line-through; opacity: 0.6; }
+.voce-uscita .elimina-task { width: 22px; height: 22px; font-size: 14px; }
+.lista-uscita .data-piccola { align-self: flex-start; min-width: 220px; }

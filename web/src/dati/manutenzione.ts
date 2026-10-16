@@ -83,5 +83,15 @@ export async function eseguiManutenzione(): Promise<void> {
     nuove.push('argomenti-studio-altri-v1')
   }
 
+  if (!fatte.has('cose-casa-in-task-v1')) {
+    // Le "cose da gestire" della casa diventano task con area Casa (id derivato: niente doppioni tra dispositivi).
+    const cose = (await elencaTutti('coseCasa')).filter((c) => c.eliminatoIl === undefined)
+    if (cose.length) {
+      await salvaTanti('attivita', cose.map((c) => ({ id: `casa-${c.id}`, titolo: c.testo, scadenza: c.giorno, area: 'casa', priorita: 'nessuna', completataIl: c.fatto ? c.modificatoIl : undefined, creatoIl: c.creatoIl })))
+      for (const c of cose) await elimina('coseCasa', c.id)
+    }
+    nuove.push('cose-casa-in-task-v1')
+  }
+
   if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })
 }
