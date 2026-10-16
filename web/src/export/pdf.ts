@@ -1,3 +1,4 @@
+import { mostraAvviso } from '../interfaccia/componenti'
 /**
  * PDF A4 di una tabella con riepilogo (es. i turni del mese), creato sul dispositivo.
  * La libreria si carica solo quando serve, così l'app resta leggera.
@@ -124,6 +125,15 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
 
 /** Condivide il file (iPhone: foglio di condivisione) oppure lo scarica. */
 export async function condividiOScarica(blob: Blob, nomeFile: string, titolo: string): Promise<'condiviso' | 'scaricato'> {
+  // Sul Mac il menu Condividi non offre né il Calendario né "Salva": il file si scarica (un .ics si apre poi con un doppio clic).
+  const touch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
+  if (!touch) {
+    scarica(blob, nomeFile)
+    mostraAvviso(blob.type === 'text/calendar'
+      ? `Scaricato "${nomeFile}": aprilo dalla cartella Download con un doppio clic e il Calendario ti chiederà dove aggiungerlo.`
+      : `Scaricato "${nomeFile}" nella cartella Download.`)
+    return 'scaricato'
+  }
   const file = new File([blob], nomeFile, { type: blob.type })
   if (navigator.canShare?.({ files: [file] })) {
     try {

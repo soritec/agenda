@@ -7,7 +7,7 @@ import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Evento, NotaGiorno } from '../../../dati/modello'
 import { creaIcs, type EventoIcs } from '../../../export/ics'
-import { condividiOScarica } from '../../../export/pdf'
+import { condividiOScarica, creaPdf, type Colore } from '../../../export/pdf'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro, IconaPin, IconaPiu, IconaTask } from '../../../interfaccia/icone'
 import { vai } from '../../../interfaccia/navigazione'
@@ -15,6 +15,7 @@ import { useTrascinamento, type Rilascio } from '../../../interfaccia/trascina'
 import { differenzaGiorni, piuGiorniData, turnoSpostato } from '../sposta'
 import { eliminaTurno, spostaTurno } from '../../turni/smonto'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
+import { NuovaSessioneDaAgenda } from '../../studio/viste/Piani'
 import { FormTask, segnaFatto } from '../../task/viste/Task'
 import { useCondivisi } from '../../../dati/condiviso'
 import { useProfili } from '../../../interfaccia/profili'
@@ -58,7 +59,7 @@ const orarioBreve = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padSt
 export const linkAgenda = (vista: Vista, giorno: string) => `#/agenda?vista=${vista}&giorno=${giorno}`
 
 /** Che cosa aggiungere e quando (dal "+"). */
-interface Aggiunta { giorno: string; minuto?: number; cosa?: 'evento' | 'esame' | 'lezione' | 'nota' }
+interface Aggiunta { giorno: string; minuto?: number; cosa?: 'evento' | 'esame' | 'lezione' | 'nota' | 'studio' }
 
 /** Tutti gli impegni in un solo calendario, a mese, due settimane o settimana. */
 export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { vistaParam?: string | null; giornoParam?: string | null; eventoAperto?: string; notaAperta?: string }) {
@@ -240,7 +241,13 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     if (notaAperta) vai(linkAgenda(vista, riferimento))
   }
   const mappaAttivita = useMemo(() => perId(attivita), [attivita])
-  const comuni = { visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }), aggiungiNota: (giorno: string) => setAggiunta({ giorno, cosa: 'nota' }), aggiungiTask: (giorno: string) => setTaskNuovo(giorno) }
+  async function ridimensiona(i: Impegno, minutoFine: number) {
+    const e = i.fonte === 'evento' ? eventi?.find((x) => x.id === i.id) : undefined
+    if (!e || e.minutoInizio === undefined || minutoFine <= e.minutoInizio || minutoFine === e.minutoFine) return
+    await salva('eventi', { ...e, minutoFine })
+    mostraAvviso(`Fino alle ${orarioBreve(minutoFine)}`, () => void salva('eventi', e))
+  }
+  const comuni = { ridimensiona: (i: Impegno, m: number) => void ridimensiona(i, m), visibili, oggiChiave, festivo, apri, rimozione, mappaAttivita, aggiungi: (giorno: string, minuto?: number) => setAggiunta({ giorno, minuto }), aggiungiNota: (giorno: string) => setAggiunta({ giorno, cosa: 'nota' }), aggiungiTask: (giorno: string) => setTaskNuovo(giorno) }
 
   return (
     <div className="schermata">
@@ -252,7 +259,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
           ))}
         </div>
         <div className="riga-azioni azioni">
-          <button type="button" className="pulsante" onClick={() => setEsporta(true)}>Calendario Apple</button>
+          <button type="button" className="pulsante" onClick={() => setEsporta(true)}>Esporta</button>
           <button type="button" className="pulsante tondo primario" aria-label="Aggiungi" onClick={() => setAggiunta({ giorno: vista === 'mese' ? scelto : riferimento })}><IconaPiu dimensione={18} /></button>
         </div>
       </header>
@@ -281,10 +288,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       {aggiunta?.cosa === 'evento' && <FormEvento giorno={aggiunta.giorno} minuto={aggiunta.minuto} onChiudi={() => setAggiunta(undefined)} />}
       {(aggiunta?.cosa === 'esame' || aggiunta?.cosa === 'lezione') && <FormAttivita tipo={aggiunta.cosa} giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {evento && <FormEvento key={evento.id} record={evento} giorno={evento.giorno} onChiudi={chiudiEvento} />}
+      {aggiunta?.cosa === 'studio' && <NuovaSessioneDaAgenda giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {aggiunta?.cosa === 'nota' && <FormNota giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {taskNuovo && <FormTask giorno={taskNuovo} onChiudi={() => setTaskNuovo(undefined)} />}
       {nota && <FormNota key={nota.id} record={nota} giorno={nota.giorno} onChiudi={chiudiNota} />}
-      {esporta && <EsportaCalendario anno={Number(riferimento.slice(0, 4))} mese={Number(riferimento.slice(5, 7))} dati={dati} nascoste={nascoste} onChiudi={() => setEsporta(false)} />}
+      {esporta && <EsportaCalendario anno={Number(riferimento.slice(0, 4))} mese={Number(riferimento.slice(5, 7))} dati={dati} nascoste={nascoste} visibile={vista === 'mese' ? undefined : { da, a, nome: etichetta }} festivo={festivo} onChiudi={() => setEsporta(false)} />}
     </div>
   )
 }
@@ -322,10 +330,12 @@ interface PropsVista {
   festivo: (g: string) => boolean
   apri: (i: Impegno, e?: MouseEvent) => void
   aggiungi: (giorno: string, minuto?: number) => void
+  /** Cambia la fine di un impegno trascinando il suo bordo in basso (vista settimana). */
+  ridimensiona?: (i: Impegno, minutoFine: number) => void
 }
 
 /** Il "+" chiede che cosa aggiungere; i turni si inseriscono nella loro sezione. */
-function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; onScegli: (c: 'evento' | 'esame' | 'lezione' | 'nota') => void; onChiudi: () => void }) {
+function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; onScegli: (c: 'evento' | 'esame' | 'lezione' | 'nota' | 'studio') => void; onChiudi: () => void }) {
   const voce = (titolo: string, dettaglio: string, azione: () => void, colore: string) => (
     <button type="button" className="scelta-rapida" onClick={azione}>
       <span className={`pallino-fonte ${colore}`} style={{ width: 10, height: 10, borderRadius: 5 }} />
@@ -342,6 +352,7 @@ function SceltaAggiunta({ aggiunta, onScegli, onChiudi }: { aggiunta: Aggiunta; 
         {voce('Impegno', 'visita, riunione, appuntamento…', () => onScegli('evento'), 'f-evento')}
         {MEDICO && voce('Turno', 'guardia, reparto, sala…', () => vai(`#/turni/nuovi?mese=${aggiunta.giorno.slice(0, 7)}&giorni=${aggiunta.giorno}`), 'f-turno')}
         {MEDICO && voce('Ferie o riposo', 'dal calendario dei turni', () => vai(`#/turni?mese=${aggiunta.giorno.slice(0, 7)}`), 'f-giornata')}
+        {voce('Sessione di studio', 'in un piano di studio o libera', () => onScegli('studio'), 'f-studio')}
         {voce('Task', 'cosa fare entro quel giorno', () => vai(`#/task/nuovo?giorno=${aggiunta.giorno}${aggiunta.minuto !== undefined ? `&minuto=${aggiunta.minuto}` : ''}`), 'f-task')}
         {voce('Esame', MEDICO ? 'della specializzazione' : "o consegna di un elaborato", () => onScegli('esame'), 'f-esame')}
         {voce('Lezione', MEDICO ? 'della specializzazione' : "dell'università", () => onScegli('lezione'), 'f-lezione')}
@@ -451,7 +462,7 @@ function VistaDueSettimane({ visibili, oggiChiave, festivo, apri, aggiungi, rimo
 
 const ALTEZZA_ORA = 48
 
-function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, aggiungiNota, aggiungiTask, rimozione, mappaAttivita, giorni }: PropsVista & { giorni: string[] }) {
+function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, aggiungiNota, aggiungiTask, rimozione, mappaAttivita, giorni, ridimensiona }: PropsVista & { giorni: string[] }) {
   // I task stanno in una tendina sopra le ore, non nella griglia.
   const visibili = tutte.filter((v) => v.fonte !== 'task')
   const taskPerGiorno = perGiorno(tutte.filter((v) => v.fonte === 'task'))
@@ -544,6 +555,9 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
                   )}
                   {alto > 54 && v.dettaglio && <span className="dettaglio">{v.dettaglio}</span>}
                   <XElimina i={v} rimozione={rimozione} />
+                  {v.fonte === 'evento' && v.minutoFine !== undefined && !b.continuaDopo && ridimensiona && (
+                    <ManigliaDurata altezzaOra={ALTEZZA_ORA} fine={v.minutoFine} inizio={v.minutoInizio ?? 0} onFine={(m) => ridimensiona(v, m)} />
+                  )}
                 </a>
               )
             })}
@@ -664,9 +678,44 @@ function FormEvento({ record, giorno, minuto, onChiudi }: { record?: Evento; gio
 
 /* Esportazione nel Calendario di Apple (file .ics) */
 
-function EsportaCalendario({ anno, mese, dati, nascoste, onChiudi }: {
-  anno: number; mese: number; dati: Parameters<typeof impegniTra>[0]; nascoste: Set<Fonte>; onChiudi: () => void
+/** Colori tenui delle fonti nel PDF (come nell'app). */
+const COLORI_PDF: Partial<Record<Fonte, Colore>> = {
+  nota: [255, 243, 205], turno: [214, 228, 234], giornata: [236, 234, 230], evento: [216, 226, 238], task: [234, 223, 240], studio: [214, 234, 232],
+  esame: [240, 216, 204], lezione: [216, 226, 238], journal: [234, 223, 230], promemoria: [251, 241, 222], tassa: [246, 238, 223], casa: [230, 238, 242], application: [233, 238, 241],
+}
+
+function EsportaCalendario({ anno, mese, dati, nascoste, visibile, festivo, onChiudi }: {
+  anno: number; mese: number; dati: Parameters<typeof impegniTra>[0]; nascoste: Set<Fonte>; visibile?: { da: string; a: string; nome: string }; festivo: (g: string) => boolean; onChiudi: () => void
 }) {
+  const [creo, setCreo] = useState(false)
+  async function pdf(periodo: 'mese' | 'visibile') {
+    const meseQui = `${anno}-${String(mese).padStart(2, '0')}`
+    const da = periodo === 'mese' || !visibile ? `${meseQui}-01` : visibile.da
+    const a = periodo === 'mese' || !visibile ? `${meseQui}-31` : visibile.a
+    const voci = impegniTra(dati, da, a).filter((i) => !nascoste.has(i.fonte))
+      .sort((x, y) => x.giorno.localeCompare(y.giorno) || (x.minutoInizio ?? -1) - (y.minutoInizio ?? -1))
+    if (!voci.length) { setErrore('Non c’è niente da esportare in questo periodo.'); return }
+    setCreo(true)
+    const conta = (f: Fonte[]) => voci.filter((v) => f.includes(v.fonte)).length
+    const riepilogo = ([
+      ['Impegni', conta(['evento'])], ['Turni', conta(['turno'])], ['Esami e lezioni', conta(['esame', 'lezione'])], ['Task', conta(['task'])], ['Studio', conta(['studio'])], ['Scadenze', conta(['tassa', 'application'])],
+    ] as const).filter(([, n]) => n > 0).slice(0, 5).map(([etichetta, n]) => ({ etichetta, valore: String(n) }))
+    const titoloPeriodo = periodo === 'mese' || !visibile ? nomeMese : visibile.nome
+    const blob = await creaPdf({
+      titolo: 'Agenda', sottotitolo: titoloPeriodo.charAt(0).toUpperCase() + titoloPeriodo.slice(1),
+      riepilogo: [{ etichetta: 'in tutto', valore: String(voci.length) }, ...riepilogo].slice(0, 6),
+      intestazioni: ['Giorno', 'Orario', 'Cosa', 'Tipo', 'Dettagli'],
+      righe: voci.map((v) => ({
+        celle: [F.dataBreve(istante(Number(v.giorno.slice(0, 4)), Number(v.giorno.slice(5, 7)), Number(v.giorno.slice(8, 10)), 12)), testoOrario(v), v.titolo, TITOLO_VOCE[v.fonte], v.dettaglio ?? ''],
+        colore: COLORI_PDF[v.fonte], evidenza: festivo(v.giorno) ? 'festivo' as const : undefined,
+      })),
+      colonneGrassetto: [0, 2], colonnaColore: 2, colonnaNote: 4,
+      piede: `Agenda · creato il ${F.dataBreve(Date.now())}`,
+    })
+    await condividiOScarica(blob, `Agenda ${titoloPeriodo}.pdf`, 'Agenda')
+    setCreo(false)
+    onChiudi()
+  }
   const [errore, setErrore] = useState<string>()
   const nomeMese = F.mese(istante(anno, mese, 1))
 
@@ -702,7 +751,13 @@ function EsportaCalendario({ anno, mese, dati, nascoste, onChiudi }: {
   }
 
   return (
-    <Foglio aperto titolo="Calendario Apple" onChiudi={onChiudi}>
+    <Foglio aperto titolo="Esporta" onChiudi={onChiudi}>
+      <h3 className="titolo-sezione" style={{ margin: 0 }}>PDF da stampare o condividere</h3>
+      <div className="scelte-rapide">
+        <button type="button" className="scelta-rapida" disabled={creo} onClick={() => void pdf('mese')}><span className="nome"><strong style={{ textTransform: 'capitalize' }}>{nomeMese}</strong><br /><span className="orario">{creo ? 'preparo il PDF…' : 'tutto il mese, giorno per giorno'}</span></span></button>
+        {visibile && <button type="button" className="scelta-rapida" disabled={creo} onClick={() => void pdf('visibile')}><span className="nome"><strong>{visibile.nome}</strong><br /><span className="orario">i giorni che stai guardando</span></span></button>}
+      </div>
+      <h3 className="titolo-sezione" style={{ margin: '8px 0 0' }}>Calendario Apple</h3>
       <p className="secondario" style={{ margin: 0 }}>
         Crea un file da aprire con il Calendario: gli impegni vengono aggiunti (se li esporti di nuovo, il Calendario aggiorna quelli che ha già).
         Esporta solo ciò che è acceso nei filtri.
@@ -716,6 +771,35 @@ function EsportaCalendario({ anno, mese, dati, nascoste, onChiudi }: {
   )
 }
 
+
+/** Bordo in basso di un impegno: trascinandolo cambia l'ora di fine (a quarti d'ora). */
+function ManigliaDurata({ altezzaOra, inizio, fine, onFine }: { altezzaOra: number; inizio: number; fine: number; onFine: (minuto: number) => void }) {
+  const stato = useRef<{ y0: number; blocco: HTMLElement; h0: number; nuovo: number } | undefined>(undefined)
+  function giu(e: React.PointerEvent<HTMLSpanElement>) {
+    e.stopPropagation(); e.preventDefault()
+    const blocco = (e.currentTarget.parentElement as HTMLElement)
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* niente */ }
+    stato.current = { y0: e.clientY, blocco, h0: blocco.getBoundingClientRect().height, nuovo: fine }
+  }
+  function muovi(e: React.PointerEvent<HTMLSpanElement>) {
+    const s = stato.current
+    if (!s) return
+    const delta = Math.round(((e.clientY - s.y0) / altezzaOra) * 4) * 15
+    s.nuovo = Math.max(inizio + 15, Math.min(23 * 60 + 59, fine + delta))
+    s.blocco.style.height = `${Math.max(20, s.h0 + ((s.nuovo - fine) / 60) * altezzaOra)}px`
+    s.blocco.dataset.fine = orarioBreve(s.nuovo)
+  }
+  function su(e: React.PointerEvent<HTMLSpanElement>) {
+    e.stopPropagation()
+    const s = stato.current
+    stato.current = undefined
+    if (s) delete s.blocco.dataset.fine
+    if (s && s.nuovo !== fine) onFine(s.nuovo)
+    else if (s) s.blocco.style.height = ''
+  }
+  return <span className="maniglia-durata" aria-label="Trascina per cambiare la durata" title="Trascina per cambiare la durata"
+    onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su} onClick={(e) => { e.preventDefault(); e.stopPropagation() }} />
+}
 
 /** "Task · 3": si apre con un tocco e mostra i task del giorno, da spuntare. */
 function TendinaTask({ voci, mappaAttivita, rimozione }: { voci: Impegno[]; mappaAttivita: Map<string, Attivita>; rimozione: Rimozione }) {

@@ -29,7 +29,7 @@ function data(ms: number): string {
 }
 
 export function escapeIcs(testo: string): string {
-  return testo.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  return testo.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 }
 
 /** Righe oltre 75 byte vanno spezzate (RFC 5545), con uno spazio all'inizio della continuazione. */

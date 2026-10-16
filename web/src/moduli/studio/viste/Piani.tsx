@@ -205,7 +205,7 @@ function ElencoArgomenti({ piano, sessioni, risorse }: { piano: PianoStudio; ses
 
 /* Sessione aggiunta a mano in un giorno */
 
-function FormSessione({ piano, giorno, onChiudi }: { piano: PianoStudio; giorno: string; onChiudi: () => void }) {
+function FormSessione({ piano, giorno, onChiudi, primaDiSalvare, intestazione }: { piano: PianoStudio; giorno: string; onChiudi: () => void; primaDiSalvare?: () => Promise<unknown>; intestazione?: React.ReactNode }) {
   const [b, setB] = useState({ argomentoId: '', titolo: '', tipo: 'studio' as 'studio' | 'ripasso', da: '', a: '', minuti: Math.min(piano.minutiAlGiorno, 60) })
   const argomento = piano.argomenti.find((x) => x.id === b.argomentoId)
   const titolo = argomento?.nome ?? b.titolo.trim()
@@ -213,6 +213,7 @@ function FormSessione({ piano, giorno, onChiudi }: { piano: PianoStudio; giorno:
   const valido = titolo !== ''
   async function conferma() {
     if (!valido) return
+    await primaDiSalvare?.()
     await salva('sessioniPiano', {
       pianoId: piano.id, giorno, tipo: b.tipo, argomentoId: argomento?.id, titolo: b.tipo === 'ripasso' ? `Ripasso: ${titolo}` : titolo,
       paginaDa: n(b.da), paginaA: n(b.a) ?? n(b.da), minuti: b.minuti,
@@ -223,7 +224,7 @@ function FormSessione({ piano, giorno, onChiudi }: { piano: PianoStudio; giorno:
     <Foglio aperto titolo="Nuova sessione" onChiudi={onChiudi}
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
       <div className="modulo">
-        <span className="secondario">{F.dataEstesa(ms(giorno))} · {piano.nome}</span>
+        {intestazione ?? <span className="secondario">{F.dataEstesa(ms(giorno))} · {piano.nome}</span>}
         <div className="segmenti">
           <button type="button" className={b.tipo === 'studio' ? 'attivo' : ''} onClick={() => setB({ ...b, tipo: 'studio' })}>Studio</button>
           <button type="button" className={b.tipo === 'ripasso' ? 'attivo' : ''} onClick={() => setB({ ...b, tipo: 'ripasso' })}>Ripasso</button>
@@ -240,10 +241,8 @@ function FormSessione({ piano, giorno, onChiudi }: { piano: PianoStudio; giorno:
         <div className="campi-affiancati">
           <Campo etichetta="Da pagina"><input inputMode="numeric" value={b.da} onChange={(e) => setB({ ...b, da: e.target.value })} /></Campo>
           <Campo etichetta="A pagina"><input inputMode="numeric" value={b.a} onChange={(e) => setB({ ...b, a: e.target.value })} /></Campo>
-          <Campo etichetta="Tempo">
-            <select value={b.minuti} onChange={(e) => setB({ ...b, minuti: Number(e.target.value) })}>
-              {[15, 30, 45, 60, 90, 120, 180, 240].map((m) => <option key={m} value={m}>{durata(m)}</option>)}
-            </select>
+          <Campo etichetta="Minuti">
+            <input type="number" inputMode="numeric" min={5} max={720} step={5} value={b.minuti} onChange={(e) => setB({ ...b, minuti: Math.max(5, Math.min(720, Math.round(Number(e.target.value) || 0))) })} />
           </Campo>
         </div>
       </div>
@@ -553,5 +552,34 @@ export function OggiNeiPiani() {
         </div>
       ))}
     </section>
+  )
+}
+
+/** Piano usato per le sessioni aggiunte dall'Agenda senza un piano (id fisso: niente doppioni tra dispositivi). */
+const PIANO_LIBERO = 'studio-libero'
+
+/** Nuova sessione di studio dall'Agenda: si sceglie il piano (o "Studio libero") e si compila come in Studio. */
+export function NuovaSessioneDaAgenda({ giorno, onChiudi }: { giorno: string; onChiudi: () => void }) {
+  const piani = useCollezione('pianiStudio')
+  const attivi = (piani ?? []).filter((p) => p.fine >= giorno || p.id === PIANO_LIBERO).sort((a, b) => a.fine.localeCompare(b.fine))
+  const [pianoId, setPianoId] = useState<string>()
+  if (!piani) return null
+  const scelto = attivi.find((p) => p.id === (pianoId ?? attivi.find((x) => x.id !== PIANO_LIBERO)?.id ?? PIANO_LIBERO))
+  const libero: PianoStudio = scelto ?? { id: PIANO_LIBERO, nome: 'Studio libero', colore: '#3E7C77', inizio: giorno, fine: '2099-12-31', minutiAlGiorno: 60, giorniSettimana: [1, 2, 3, 4, 5, 6, 7], argomenti: [], creatoIl: 0, modificatoIl: 0 }
+  const piano = scelto ?? libero
+  return (
+    <FormSessione key={piano.id} piano={piano} giorno={giorno} onChiudi={onChiudi}
+      primaDiSalvare={piano.id === PIANO_LIBERO && !piani.some((p) => p.id === PIANO_LIBERO) ? () => salva('pianiStudio', { ...libero, creatoIl: undefined, modificatoIl: undefined } as unknown as PianoStudio) : undefined}
+      intestazione={(
+        <>
+          <span className="secondario">{F.dataEstesa(ms(giorno))}</span>
+          <Campo etichetta="Piano di studio">
+            <select value={piano.id} onChange={(e) => setPianoId(e.target.value)}>
+              {attivi.filter((p) => p.id !== PIANO_LIBERO).map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              <option value={PIANO_LIBERO}>Studio libero (senza piano)</option>
+            </select>
+          </Campo>
+        </>
+      )} />
   )
 }
