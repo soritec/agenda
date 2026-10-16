@@ -1121,9 +1121,9 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .scadenza-application { font-size: 13px; font-weight: 600; color: var(--pericolo); margin-top: 4px; }
 .scadenza-application.passata { opacity: 0.7; }
 .pallini-application { display: flex; align-items: flex-start; margin: 14px 0 4px; overflow-x: auto; padding-bottom: 2px; }
-.passo-application { flex: 1 1 0; min-width: 66px; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--testo-2); }
+.passo-application { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--testo-2); }
 .passo-application::before { content: ''; position: absolute; top: 10px; right: 50%; width: 100%; height: 2px; background: var(--linea-forte); }
-.passo-application:first-child::before { display: none; }
+.pallini-application > .passo-application:first-child::before { display: none; }
 .passo-application .pallino { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--linea-forte); background: var(--superficie); display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
 .passo-application:hover .pallino { border-color: #3E7C77; }
 .passo-application .nome-passo { font-size: 11.5px; line-height: 1.2; text-align: center; padding: 0 2px; }
@@ -1198,3 +1198,15 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .voce-uscita.fatta .crescente { text-decoration: line-through; opacity: 0.6; }
 .voce-uscita .elimina-task { width: 22px; height: 22px; font-size: 14px; }
 .lista-uscita .data-piccola { align-self: flex-start; min-width: 220px; }
+.contenitore-passo { flex: 1 1 0; min-width: 66px; position: relative; display: flex; }
+.contenitore-passo .passo-application { width: 100%; }
+.contenitore-passo:first-child .passo-application::before { display: none; }
+.passo-application.no .pallino { background: var(--pericolo); border-color: var(--pericolo); }
+.menu-passo { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; flex-direction: column; min-width: 150px; padding: 4px; border-radius: 12px; background: var(--superficie); border: 1px solid var(--linea); box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
+.menu-passo button { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: none; background: none; border-radius: 8px; font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; color: var(--testo); }
+.menu-passo button:hover { background: var(--superficie-2); }
+.pallino-menu { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--linea-forte); flex-shrink: 0; }
+.pallino-menu.fatto { background: #3E7C77; border-color: #3E7C77; }
+.pallino-menu.no { background: var(--pericolo); border-color: var(--pericolo); }
+@media (max-width: 640px) { .contenitore-passo { min-width: 52px; } }
+.riga.application.conclusa { opacity: 0.8; }

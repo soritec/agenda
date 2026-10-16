@@ -36,7 +36,7 @@ export function fase(a: Pick<Application, 'fatti' | 'passi' | 'nonPassata'>): Fa
 /** Prossima data da tenere d'occhio: la deadline se non è ancora inviata, altrimenti la data del passo successivo. */
 export function prossimaScadenza(a: Application): { cosa: string; giorno: string; minuto?: number } | undefined {
   if (a.nonPassata || fase(a) === 'offerta') return undefined
-  if (a.fatti === 0) return a.deadline && !a.rolling ? { cosa: 'deadline', giorno: a.deadline } : undefined
+  if (a.fatti === 0) return a.deadline ? { cosa: 'deadline', giorno: a.deadline } : undefined
   const passo = a.passi[a.fatti]
   const d = passo ? a.datePassi?.[passo] : undefined
   return d && passo ? { cosa: passo, ...d } : undefined

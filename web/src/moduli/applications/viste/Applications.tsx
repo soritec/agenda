@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
@@ -93,7 +93,7 @@ function SchedaApplication({ a, oggiChiave, passiPredefiniti, onApri }: { a: App
       {(prossima || a.rolling) && (
         <span className={`scadenza-application${mancano !== undefined && mancano < 0 ? ' passata' : ''}`}>
           {prossima
-            ? `${prossima.cosa === 'deadline' ? 'Deadline' : prossima.cosa} ${dataBreve(prossima.giorno)}${prossima.minuto !== undefined ? `, ${orario(prossima.minuto)}` : ''} · ${mancano === 0 ? 'oggi' : mancano === 1 ? 'domani' : mancano! > 1 ? `tra ${mancano} giorni` : 'passata'}`
+            ? `${a.rolling && prossima.cosa === 'deadline' ? 'Rolling · ' : ''}${prossima.cosa === 'deadline' ? 'Deadline' : prossima.cosa} ${dataBreve(prossima.giorno)}${prossima.minuto !== undefined ? `, ${orario(prossima.minuto)}` : ''} · ${mancano === 0 ? 'oggi' : mancano === 1 ? 'domani' : mancano! > 1 ? `tra ${mancano} giorni` : 'passata'}`
             : 'Rolling: meglio inviarla presto'}
         </span>
       )}
@@ -116,20 +116,41 @@ function SchedaApplication({ a, oggiChiave, passiPredefiniti, onApri }: { a: App
   )
 }
 
-/** Barra dei passi: un tocco riempie il pallino (e quelli prima); ritoccando l'ultimo pieno si svuota. */
+/**
+ * Barra dei passi: un tocco riempie il pallino (e quelli prima); ritoccando l'ultimo pieno si svuota.
+ * Clic destro (o pressione prolungata sull'iPhone) su un passo: Passato / Non passato / Da fare.
+ */
 function Pallini({ a }: { a: Application }) {
+  const [menu, setMenu] = useState<number>()
+  const premuto = useRef<{ timer?: ReturnType<typeof setTimeout>; aperto?: boolean }>({})
+  const imposta = (i: number, esito: 'passato' | 'no' | 'vuoto') => {
+    setMenu(undefined)
+    void salva('applications', { ...a, fatti: esito === 'passato' ? Math.max(a.fatti, i + 1) : i, nonPassata: esito === 'no' ? true : undefined })
+  }
   return (
     <div className="pallini-application" role="group" aria-label="Passi della selezione">
       {a.passi.map((p, i) => {
         const stato = a.nonPassata && i === a.fatti ? ' no' : i < a.fatti ? ' fatto' : i === a.fatti ? ' prossimo' : ''
         const data = a.datePassi?.[p]
         return (
-          <button key={`${p}-${i}`} type="button" className={`passo-application${stato}`} aria-pressed={i < a.fatti} aria-label={p}
-            onClick={() => void salva('applications', { ...a, fatti: toccaPasso(a.fatti, i), nonPassata: undefined })}>
-            <span className="pallino" />
-            <span className="nome-passo">{p}</span>
-            {data && <span className="data-passo">{dataBreve(data.giorno)}</span>}
-          </button>
+          <div key={`${p}-${i}`} className="contenitore-passo">
+            <button type="button" className={`passo-application${stato}`} aria-pressed={i < a.fatti} aria-label={p} title="Clic destro: passato o non passato"
+              onContextMenu={(e) => { e.preventDefault(); setMenu(i) }}
+              onPointerDown={(e) => { if (e.pointerType === 'mouse') return; premuto.current.aperto = false; premuto.current.timer = setTimeout(() => { premuto.current.aperto = true; setMenu(i) }, 500) }}
+              onPointerUp={() => clearTimeout(premuto.current.timer)} onPointerLeave={() => clearTimeout(premuto.current.timer)}
+              onClick={() => { if (premuto.current.aperto) { premuto.current.aperto = false; return } void salva('applications', { ...a, fatti: toccaPasso(a.fatti, i), nonPassata: undefined }) }}>
+              <span className="pallino" />
+              <span className="nome-passo">{p}</span>
+              {data && <span className="data-passo">{dataBreve(data.giorno)}</span>}
+            </button>
+            {menu === i && (
+              <div className="menu-passo" role="menu" onPointerLeave={() => setMenu(undefined)}>
+                <button type="button" role="menuitem" onClick={() => imposta(i, 'passato')}><span className="pallino-menu fatto" /> Passato</button>
+                <button type="button" role="menuitem" onClick={() => imposta(i, 'no')}><span className="pallino-menu no" /> Non passato</button>
+                <button type="button" role="menuitem" onClick={() => imposta(i, 'vuoto')}><span className="pallino-menu" /> Da fare</button>
+              </div>
+            )}
+          </div>
         )
       })}
     </div>
@@ -241,7 +262,7 @@ function FormApplication({ a, passiPredefiniti, numero, onChiudi }: { a?: Applic
       if (m) datePassi[p] = { giorno: m[1]!, minuto: m[2] ? Number(m[2]) * 60 + Number(m[3]) : undefined }
     }
     await salva('applications', {
-      ...a, studio: b.studio.trim(), programma: b.programma, dettaglio: b.dettaglio.trim() || undefined, deadline: b.rolling ? undefined : b.deadline || undefined,
+      ...a, studio: b.studio.trim(), programma: b.programma, dettaglio: b.dettaglio.trim() || undefined, deadline: b.deadline || undefined,
       rolling: b.rolling || undefined, passi, fatti: a?.fatti ?? 0, nonPassata: b.nonPassata || undefined, datePassi: Object.keys(datePassi).length ? datePassi : undefined,
       colore: b.colore, note: b.note.trim() || undefined, link: b.link.trim() || undefined, tcCent: tc ?? undefined, nqCent: nq ?? undefined,
     })
@@ -259,7 +280,7 @@ function FormApplication({ a, passiPredefiniti, numero, onChiudi }: { a?: Applic
         </div>
         <div className="campi-affiancati">
           <Campo etichetta="Dettaglio (facoltativo)"><input value={b.dettaglio} placeholder="es. Winter, 2028 start" onChange={(e) => setB({ ...b, dettaglio: e.target.value })} /></Campo>
-          {!b.rolling && <Campo etichetta="Deadline"><input type="date" value={b.deadline} onChange={(e) => setB({ ...b, deadline: e.target.value })} /></Campo>}
+          {<Campo etichetta={b.rolling ? 'Deadline (facoltativa)' : 'Deadline'}><input type="date" value={b.deadline} onChange={(e) => setB({ ...b, deadline: e.target.value })} /></Campo>}
         </div>
         <label className="interruttore">
           <span>Rolling (valutano man mano che arrivano)</span>

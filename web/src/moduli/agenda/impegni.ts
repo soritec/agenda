@@ -161,7 +161,7 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
     })
   }
   for (const ap of d.applications ?? []) {
-    if (ap.deadline && !ap.rolling && dentro(ap.deadline)) {
+    if (ap.deadline && dentro(ap.deadline)) {
       out.push({
         chiave: `application:deadline:${ap.id}`, fonte: 'application', id: ap.id, giorno: ap.deadline, titolo: `Deadline: ${ap.studio}`,
         colore: 'colore-application', link: '#/applications', concluso: ap.fatti > 0 || Boolean(ap.nonPassata) || ap.deadline < oggi, modificatoIl: ap.modificatoIl,
