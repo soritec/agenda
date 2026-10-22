@@ -11,3 +11,4 @@ privato/
 # Configurazione locale di Claude Code
 .claude/
 *.tsbuildinfo
+web/public/notizie.json

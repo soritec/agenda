@@ -607,6 +607,10 @@ export interface Notizia extends Base {
   salvataIl?: string
   /** Trovata o scritta da Gemini (da verificare). */
   daGemini?: boolean
+  /** Arriva dalle notizie automatiche (giornali o Claude). */
+  daFeed?: boolean
+  /** Tolta dall'elenco (per le notizie automatiche, che non si possono cancellare dal file). */
+  nascosta?: boolean
 }
 
 export interface Collezioni {

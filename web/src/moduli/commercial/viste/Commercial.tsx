@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { istante } from '../../../nucleo/calendario'
 import { elenca, elimina, ripristina, salva, salvaTanti } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
@@ -9,7 +9,7 @@ import { leggiChiave, notizieDellaSettimana, spiegaNotizia } from '../../studio/
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import { lunediDi, spostaGiorni } from '../../agenda/impegni'
 import {
-  DATI_TEMA, delPeriodo, leggiNotizie, leggiSpiegazione, nuoveSoltanto, settimanaDi, storiaDellaSettimana, studiConApplication, TEMI, temaDa, type Tema,
+  DATI_TEMA, delPeriodo, unisciConFeed, leggiNotizie, leggiSpiegazione, nuoveSoltanto, settimanaDi, storiaDellaSettimana, studiConApplication, TEMI, temaDa, type Tema,
 } from '../logica'
 
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
@@ -17,6 +17,16 @@ const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c
 const fData = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', day: 'numeric', month: 'short' })
 const dataEn = (g: string) => fData.format(msGiorno(g))
 const elencoDa = (t: string) => t.split(',').map((x) => x.trim()).filter(Boolean)
+
+/** Toglie una notizia: le automatiche si nascondono (non si possono cancellare dal file), le proprie si eliminano. */
+async function togli(n: Notizia) {
+  if (n.daFeed) await salva('notizie', { ...n, nascosta: true })
+  else await elimina('notizie', n.id)
+}
+async function rimetti(n: Notizia) {
+  if (n.daFeed) await salva('notizie', { ...n, nascosta: undefined })
+  else await ripristina('notizie', n.id)
+}
 
 /** Salva o toglie il segnalibro (con "Annulla" quando si toglie). */
 export async function cambiaSegnalibro(n: Notizia) {
@@ -38,8 +48,31 @@ export function Segnalibro({ salvata, onClick, etichetta }: { salvata?: boolean;
 }
 
 /** Commercial awareness: notizie della settimana per tema, con riassunti, cifre, note per i colloqui e segnalibri. */
+/** Notizie automatiche: giornali (ogni giorno) e quelle scritte da Claude (ogni settimana). Senza rete restano quelle già viste. */
+function useNotizieAutomatiche() {
+  const [dati, setDati] = useState<{ notizie: Notizia[]; aggiornato?: string }>({ notizie: [] })
+  useEffect(() => {
+    let vivo = true
+    type File = { aggiornato?: string; notizie?: Notizia[] }
+    const leggi = (file: string): Promise<File> => fetch(`${import.meta.env.BASE_URL}${file}`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? (r.json() as Promise<File>) : {}))
+      .catch(() => ({}))
+    void Promise.all([leggi('notizie-claude.json'), leggi('notizie.json')]).then(([claude, giornali]) => {
+      if (!vivo) return
+      // Prima quelle di Claude (riassunti lunghi): a parità di articolo vincono loro.
+      const visti = new Set<string>()
+      const notizie = [...(claude.notizie ?? []), ...(giornali.notizie ?? [])].filter((n) => { const k = n.url ?? n.id; if (visti.has(k)) return false; visti.add(k); return true })
+      setDati({ notizie, aggiornato: giornali.aggiornato ?? claude.aggiornato })
+    })
+    return () => { vivo = false }
+  }, [])
+  return dati
+}
+
 export function Commercial({ settimanaParam }: { settimanaParam?: string | null }) {
-  const notizie = useCollezione('notizie')
+  const salvate = useCollezione('notizie')
+  const automatiche = useNotizieAutomatiche()
+  const notizie = useMemo(() => (salvate ? unisciConFeed(salvate, automatiche.notizie) : undefined), [salvate, automatiche.notizie])
   const applications = useCollezione('applications')
   const oggiChiave = chiaveGiorno(oggi())
   const { da, a } = settimanaDi(settimanaParam && giornoDaChiave(settimanaParam) ? settimanaParam : oggiChiave)
@@ -85,9 +118,10 @@ export function Commercial({ settimanaParam }: { settimanaParam?: string | null 
       <div className="riga-azioni">
         {leggiChiave()
           ? <button type="button" className="pulsante" disabled={cerco || da > oggiChiave} onClick={() => void cercaNotizie()}><IconaScintille dimensione={16} /> {cerco ? 'Searching the news… (up to a minute)' : "This week's news"}</button>
-          : <a className="pulsante" href="#/studio">Connect Gemini in Studio to fetch the news</a>}
+          : null}
         <button type="button" className="pulsante primario" onClick={() => setAperta({})}>+ Story</button>
       </div>
+      {automatiche.aggiornato && <span className="secondario piccolo">News updated automatically every day from BBC, The Guardian, City AM, Legal Cheek, ANSA, Il Post and Il Sole 24 Ore · last update {dataEn(automatiche.aggiornato.slice(0, 10))}</span>}
       {errore && <Avviso>{errore}</Avviso>}
       {settimana.some((n) => n.daGemini) && <span className="secondario piccolo">Stories found by Gemini: check them in the original article before quoting them.</span>}
 
@@ -217,7 +251,7 @@ function VoceNotizia({ n, studi, onModifica }: { n: Notizia; studi: string[]; on
         <button type="button" className="titolo-notizia" onClick={() => setAperta(!aperta)}>{n.titolo}</button>
         <Segnalibro salvata={n.salvata} onClick={() => void cambiaSegnalibro(n)} />
         <button type="button" className="elimina-task" aria-label={`Delete ${n.titolo}`}
-          onClick={() => void elimina('notizie', n.id).then(() => mostraAvviso(ita ? 'Notizia eliminata' : 'Story deleted', () => void ripristina('notizie', n.id)))}>×</button>
+          onClick={() => void togli(n).then(() => mostraAvviso(ita ? 'Notizia tolta' : 'Story removed', () => void rimetti(n)))}>×</button>
       </div>
       <Fonte n={n} />
       {n.riassunto && <p className="riassunto-notizia">{n.riassunto}</p>}
@@ -284,7 +318,7 @@ function FormNotizia({ n, tema, giornoPredefinito, onChiudi }: { n?: Notizia; te
         </div>
         {n && (
           <button type="button" className="pulsante pericolo"
-            onClick={() => void elimina('notizie', n.id).then(() => { onChiudi(); mostraAvviso('Story deleted', () => void ripristina('notizie', n.id)) })}>Delete</button>
+            onClick={() => void togli(n).then(() => { onChiudi(); mostraAvviso('Story removed', () => void rimetti(n)) })}>Delete</button>
         )}
       </div>
     </Foglio>

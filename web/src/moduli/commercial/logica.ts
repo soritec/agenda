@@ -24,8 +24,20 @@ export const settimanaDi = (giorno: string) => { const da = lunediDi(giorno); re
 
 export const delPeriodo = (notizie: Notizia[], da: string, a: string) => notizie.filter((n) => n.giorno >= da && n.giorno <= a)
 
-/** Storia della settimana: quella scelta, altrimenti nessuna. */
-export const storiaDellaSettimana = (notizie: Notizia[]) => notizie.find((n) => n.storiaSettimana)
+/** Storia della settimana: quella scelta dall'utente, altrimenti quella proposta dalle notizie automatiche. */
+export const storiaDellaSettimana = (notizie: Notizia[]) => notizie.find((n) => n.storiaSettimana && !n.daFeed) ?? notizie.find((n) => n.storiaSettimana)
+
+/**
+ * Notizie da mostrare: quelle salvate dall'utente (anche copie di notizie automatiche con segnalibro o note)
+ * più le notizie automatiche non ancora toccate. Le nascoste non compaiono.
+ */
+export function unisciConFeed(salvate: Notizia[], feed: Omit<Notizia, 'creatoIl' | 'modificatoIl'>[]): Notizia[] {
+  const ids = new Set(salvate.map((n) => n.id))
+  return [
+    ...salvate.filter((n) => !n.nascosta),
+    ...feed.filter((f) => !ids.has(f.id)).map((f) => ({ ...f, creatoIl: 0, modificatoIl: 0, daFeed: true })),
+  ]
+}
 
 /** Studi legali citati nella notizia a cui è stata mandata un'application. */
 export function studiConApplication(n: Pick<Notizia, 'studi' | 'titolo' | 'riassunto'>, applications: Pick<Application, 'studio'>[]): string[] {
