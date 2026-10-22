@@ -228,6 +228,17 @@ function primoMese(d: DatiBudget, oggi: string): string {
 }
 
 /**
+ * Quanto resta dai mesi precedenti (entrate − uscite − messo da parte, mese per mese, fino a quello prima di `mese`):
+ * è la base da cui parte "Ti restano", come i risparmi che si accumulano.
+ */
+export function riportoDaiMesiPrima(d: DatiBudget, mese: string, oggi: string): number {
+  let totale = 0
+  let m = primoMese(d, oggi)
+  for (let i = 0; m < mese && i < 600; i++, m = spostaMese(m, 1)) totale += riepilogo(d, m, oggi).restoCent
+  return totale
+}
+
+/**
  * Risparmi accumulati fino a oggi: totale e per obiettivo (messo da parte − ripreso).
  * Per ogni obiettivo con una data: quanto mettere da parte al mese per arrivarci.
  */

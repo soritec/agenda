@@ -97,3 +97,19 @@ describe('Risparmi', () => {
     expect(vociDelMese(d, '2026-10').find((v) => v.id === 'r')?.titolo).toBe('Messo da parte')
   })
 })
+
+describe('Ti restano con il riporto', () => {
+  test('parte da quanto è rimasto nei mesi precedenti', async () => {
+    const { riportoDaiMesiPrima } = await import('../src/moduli/budget/logica')
+    const b = { creatoIl: 0, modificatoIl: 0 }
+    const m = (id: string, tipo: string, importoCent: number, giorno: string) => ({ ...b, id, tipo, importoCent, giorno, categoriaId: 'x' })
+    const d = { categorie: [], ricorrenti: [], movimenti: [
+      m('1', 'entrata', 100000, '2026-08-01'), m('2', 'uscita', 30000, '2026-08-10'),
+      m('3', 'entrata', 100000, '2026-09-01'), m('4', 'uscita', 50000, '2026-09-10'), m('5', 'risparmio', 20000, '2026-09-20'),
+      m('6', 'uscita', 10000, '2026-10-05'),
+    ] }
+    // Agosto +700, settembre +300 (500 − 200 messi da parte): a ottobre si parte da 1000.
+    expect(riportoDaiMesiPrima(d, '2026-10', '2026-10-22')).toBe(100000)
+    expect(riportoDaiMesiPrima(d, '2026-08', '2026-10-22')).toBe(0)
+  })
+})

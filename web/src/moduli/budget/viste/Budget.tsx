@@ -12,7 +12,7 @@ import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/c
 import { IconaAvanti, IconaIndietro, IconaSalvadanaio } from '../../../interfaccia/icone'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import {
-  CATEGORIA_RISPARMI, centesimiDa, idPredefinita, leggiMovimentoVeloce, statoRisparmi, type TipoVoce, prossimeScadenze, riepilogo, spostaMese, vociDelMese, type DatiBudget, type TipoMovimento, type Voce,
+  CATEGORIA_RISPARMI, centesimiDa, idPredefinita, leggiMovimentoVeloce, riportoDaiMesiPrima, statoRisparmi, type TipoVoce, prossimeScadenze, riepilogo, spostaMese, vociDelMese, type DatiBudget, type TipoMovimento, type Voce,
 } from '../logica'
 import { vociCasaDelMese } from '../../casa/logica'
 
@@ -61,6 +61,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
   const [obiettivoAperto, setObiettivoAperto] = useState<{ o?: ObiettivoRisparmio }>()
 
   const r = riepilogo(dati, mese, oggiChiave)
+  const riporto = riportoDaiMesiPrima(dati, mese, oggiChiave)
   const precedente = riepilogo(dati, spostaMese(mese, -1), oggiChiave)
   const anno = Array.from({ length: Number(mese.slice(5, 7)) }, (_, i) => riepilogo(dati, `${mese.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`, oggiChiave))
     .reduce((s, x) => s + x.restoCent, 0)
@@ -143,8 +144,11 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
           <span className="secondario piccolo">{r.extraCent ? `di cui ${euro(r.extraCent)} extra` : ' '}</span></div>
         <div className="tessera"><span className="secondario piccolo">Uscite</span><span className="valore negativo">{euro(r.usciteCent)}</span>
           <span className="secondario piccolo">{variazione !== undefined ? `${variazione > 0 ? '+' : variazione < 0 ? '−' : ''}${Math.abs(variazione)}% rispetto al mese prima` : ' '}</span></div>
-        <div className="tessera"><span className="secondario piccolo">Ti restano</span><span className="valore">{euro(r.restoCent)}</span>
-          <span className="secondario piccolo">{r.risparmiatoCent > 0 ? `esclusi i ${euro(r.risparmiatoCent)} messi da parte` : r.risparmiatoCent < 0 ? `con ${euro(-r.risparmiatoCent)} ripresi dai risparmi` : `nell'anno: ${euro(anno)}`}</span></div>
+        <div className="tessera"><span className="secondario piccolo">Ti restano</span><span className="valore">{euro(riporto + r.restoCent)}</span>
+          <span className="secondario piccolo">{[
+            riporto ? `${euro(riporto)} dai mesi prima` : '',
+            r.risparmiatoCent > 0 ? `esclusi i ${euro(r.risparmiatoCent)} messi da parte` : r.risparmiatoCent < 0 ? `con ${euro(-r.risparmiatoCent)} ripresi dai risparmi` : '',
+          ].filter(Boolean).join(' · ') || `nell'anno: ${euro(anno)}`}</span></div>
         <div className="tessera tessera-risparmi"><span className="piccolo"><IconaSalvadanaio dimensione={15} /> Risparmi</span><span className="valore">{euro(risparmi.totaleCent)}</span>
           <span className="piccolo">{r.risparmiatoCent ? `${r.risparmiatoCent > 0 ? '+' : '−'}${euro(Math.abs(r.risparmiatoCent))} questo mese` : 'non contano in "Ti restano"'}</span></div>
       </div>
@@ -162,8 +166,9 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
 
       <div className="colonne">
         <div className="principale">
-          <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <h2 className="titolo-sezione">Spese per categoria</h2>
+          <details className="scheda tendina-budget">
+            <summary className="titolo-sezione">Spese per categoria <span className="secondario piccolo" style={{ fontWeight: 400 }}>{r.perCategoria.filter((x) => x.cent > 0).length} categorie · {euro(r.usciteCent)}</span></summary>
+            <div className="corpo-tendina-budget">
             {r.perCategoria.length === 0 && <span className="secondario piccolo">Nessuna spesa in questo mese.</span>}
             {r.perCategoria.map(({ categoria: c, cent, tettoCent }) => {
               const oltre = tettoCent !== undefined && cent > tettoCent
@@ -183,11 +188,13 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                 </div>
               )
             })}
-          </section>
+            </div>
+          </details>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <details className="scheda tendina-budget">
+            <summary className="titolo-sezione">Movimenti del mese <span className="secondario piccolo" style={{ fontWeight: 400 }}>{voci.length} {voci.length === 1 ? 'movimento' : 'movimenti'}</span></summary>
+            <div className="corpo-tendina-budget">
             <div className="intestazione-movimenti">
-              <h2 className="titolo-sezione">Movimenti del mese</h2>
               <div className="segmenti compatti" role="radiogroup" aria-label="Mostra">
                 {([['tutti', 'Tutti'], ['entrata', 'Entrate'], ['uscita', 'Uscite'], ['risparmi', 'Risparmi']] as const).map(([k, t]) => (
                   <button key={k} type="button" role="radio" aria-checked={filtro === k} className={filtro === k ? 'attivo' : ''} onClick={() => setFiltro(k)}>{t}</button>
@@ -222,7 +229,8 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
               })}
             </div>
             {vociFiltrate.length > 8 && <button type="button" className="pulsante" onClick={() => setTutti(!tutti)}>{tutti ? 'Mostra meno' : `Mostra tutti (${vociFiltrate.length})`}</button>}
-          </section>
+            </div>
+          </details>
         </div>
 
         <aside className="laterale-destra">
