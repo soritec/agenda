@@ -1,0 +1,30 @@
+# Ogni mattina salva nel repository le notizie dei giornali (RSS) per Commercial awareness:
+# così le trova anche l'aggiornamento settimanale scritto da Claude, che dal cloud non può aprire i siti dei giornali.
+name: Notizie
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  notizie:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/notizie.ts
+      - name: Salva se sono cambiate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/notizie.json
+          git diff --cached --quiet || (git commit -m "Aggiorna le notizie dei giornali" && git push)
