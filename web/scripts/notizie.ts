@@ -2,7 +2,7 @@
  * Raccoglie le notizie dai feed RSS dei giornali e scrive public/notizie.json (letto dalla sezione Commercial awareness).
  * Gira durante la pubblicazione (ogni giorno, vedi .github/workflows/pubblica.yml). Se un giornale non risponde, si salta.
  */
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { FEED, leggiFeed, scegliNotizie, type NotiziaFeed } from '../src/moduli/commercial/rss.ts'
 
 const oggi = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(Date.now())
@@ -17,5 +17,6 @@ for (const feed of FEED) {
   } catch (e) { console.warn(`${feed.url}: ${(e as Error).message}`) }
 }
 const notizie = scegliNotizie(tutte, oggi)
+mkdirSync(new URL('../public/', import.meta.url), { recursive: true })
 writeFileSync(new URL('../public/notizie.json', import.meta.url), JSON.stringify({ aggiornato: new Date().toISOString(), notizie }))
 console.log(`Scritte ${notizie.length} notizie`)
