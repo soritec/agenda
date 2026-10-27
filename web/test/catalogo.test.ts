@@ -13,3 +13,12 @@ describe('Catalogo delle sigle (ginecologia e ostetricia)', () => {
     expect(vociMancanti([]).some((v) => v.sigla === 'VACCINI')).toBe(true)
   })
 })
+
+describe('testi superati del catalogo', () => {
+  test('aggiorna solo i testi vecchi, non quelli scritti a mano', async () => {
+    const { INFO_PRIMA, infoSuperate, CATALOGO_SCUOLA } = await import('../src/moduli/turni/catalogoScuola')
+    const vecchio = { sigla: 'Rg', info: INFO_PRIMA.Rg![0] }
+    const mio = { sigla: 'Rg', info: 'scritto da me' }
+    expect(infoSuperate([vecchio, mio])).toEqual([{ sigla: 'Rg', info: CATALOGO_SCUOLA.find((v) => v.sigla === 'Rg')!.info }])
+  })
+})

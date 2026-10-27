@@ -27,6 +27,23 @@ const AMB_OST = 'Ambulatori di ostetricia: piano terra, settore C.'
 const AMB_GIN = (amb: string) => `Ambulatori di ginecologia: piano terra, settore A${amb}. Presentarsi alle 8:00–8:20; di solito finisce verso le 13–13:30, spesso anche il pomeriggio dalle 14–14:30.`
 const SALA_GIN = 'Sala operatoria: piano -1, blocco F. Presentarsi alle 7:45 già cambiati (tutina azzurra, cuffia, mascherina); zoccoli nel blocco F, tutine dal distributore al piano -1 nel corridoio delle sale.'
 
+const INFO_REPARTO_OST = "3° piano, settore C. Arrivare alle 7:45: poi si scende alle consegne con quelli della guardia (sala consegne, piano 0, settore C). Conviene portarsi il pranzo."
+const INFO_REPARTO_GIN = 'Reparto: 7° piano, settore B. Arrivare alle 7 (dipende dagli strutturati: qualcuno è più flessibile). In settimana di solito si resta fino alle 18:30–19, perché si aspetta che finisca la sala; nel weekend si esce prima, verso pranzo o il primo pomeriggio. Una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.'
+
+/** Testi delle versioni precedenti del catalogo, per sigla: se il turno tipo ha ancora quello, si aggiorna. */
+export const INFO_PRIMA: Record<string, string[]> = {
+  R: ['3° piano, settore C. Alle 8 in guardia per le consegne della sala parto, in reparto verso le 8:30. Conviene portarsi il pranzo.'],
+  Rg: ['7° piano, settore B. In reparto alle 7:00–7:30, si può restare fino alle 20; una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.'],
+}
+
+/** Turni tipo con un testo superato del catalogo, con il testo nuovo (quelli scritti dall'utente non si toccano). */
+export function infoSuperate<T extends { sigla: string; info?: string }>(modelli: T[]): T[] {
+  return modelli.flatMap((m) => {
+    const voce = CATALOGO_SCUOLA.find((v) => v.sigla === m.sigla)
+    return voce?.info && m.info && INFO_PRIMA[m.sigla]?.includes(m.info) ? [{ ...m, info: voce.info }] : []
+  })
+}
+
 export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'G', nome: 'Guardia giorno (triage)', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia 8–20. ${TRIAGE} ${GUARDIA}` },
   { sigla: 'N', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8. ${TRIAGE} ${GUARDIA}` },
@@ -34,10 +51,10 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'GN', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8. ${TRIAGE} ${GUARDIA}` },
   { sigla: 'GSP', nome: 'Guardia giorno sala parto', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia sala parto 8–20. ${SALA_PARTO} ${GUARDIA}` },
   { sigla: 'NSP', nome: 'Guardia notte sala parto', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia sala parto 20–8. ${SALA_PARTO} ${GUARDIA}` },
-  { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: AMB, info: '3° piano, settore C. Alle 8 in guardia per le consegne della sala parto, in reparto verso le 8:30. Conviene portarsi il pranzo.' },
+  { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: AMB, info: INFO_REPARTO_OST },
   { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: AMB, info: 'Reparto maternità: 3° piano, settore B. Alle 8 in guardia per le consegne, in reparto verso le 8:30; di solito una settimana da lunedì a domenica.' },
   { sigla: 'DSO', nome: 'Day Service Ostetrico', tipo: 'reparto', orari: AMB },
-  { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: AMB, info: '7° piano, settore B. In reparto alle 7:00–7:30, si può restare fino alle 20; una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.' },
+  { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: AMB, info: INFO_REPARTO_GIN },
   { sigla: 'F', nome: 'Amb. Gravidanza Fisiologica', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Fisiologia medici: martedì e venerdì mattina.` },
   { sigla: 'Gem', nome: 'Amb. Gemelli', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'PP', nome: 'Amb. Parto Prematuro', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },

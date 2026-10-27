@@ -1,4 +1,4 @@
-import { GUARDIA_PRIMA, correzioniCatalogoV1, infoMancanti, vociMancanti } from '../moduli/turni/catalogoScuola'
+import { GUARDIA_PRIMA, correzioniCatalogoV1, infoMancanti, infoSuperate, vociMancanti } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
 import { CATEGORIE_PREDEFINITE, CATEGORIE_STUDENTE, idPredefinita } from '../moduli/budget/logica'
@@ -119,6 +119,13 @@ export async function eseguiManutenzione(): Promise<void> {
     const conInfo = infoMancanti(modelli)
     if (conInfo.length) await salvaTanti('modelliTurno', conInfo)
     nuove.push('catalogo-ginecologia-v2')
+  }
+
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('catalogo-ginecologia-v3')) {
+    // Reparti di ostetricia e ginecologia: orari di arrivo aggiornati.
+    const aggiornati = infoSuperate(await elenca('modelliTurno'))
+    if (aggiornati.length) await salvaTanti('modelliTurno', aggiornati)
+    nuove.push('catalogo-ginecologia-v3')
   }
 
   if (!fatte.has('risparmi-col-mese-v1')) {
