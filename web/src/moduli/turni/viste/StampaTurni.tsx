@@ -108,7 +108,8 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const caselle = [
     { etichetta: 'ore lavorate', valore: F.durata(riepilogo.minutiTotali) },
     { etichetta: 'turni', valore: String(riepilogo.numeroTurni) },
-    { etichetta: 'notti', valore: String(riepilogo.notti) },
+    { etichetta: 'guardie di giorno', valore: String(riepilogo.guardieGiorno) },
+    { etichetta: 'guardie di notte', valore: String(riepilogo.notti) },
     { etichetta: 'festivi', valore: String(riepilogo.turniFestivi) },
     ...TIPI_GIORNATA.map((tipo) => ({ tipo, n: [...giornateMese.values()].filter((x) => x === tipo).length }))
       .filter((x) => x.n > 0)

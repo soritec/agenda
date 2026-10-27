@@ -21,6 +21,8 @@ export interface RiepilogoMensile {
   minutiPerTipo: Map<TipoTurno, number>
   turniPerTipo: Map<TipoTurno, number>
   notti: number
+  /** Guardie di giorno (tipo guardiaDiurna). */
+  guardieGiorno: number
   turniFestivi: number
   minutiInGiorniFestivi: number
   compensoCent: number
@@ -40,7 +42,7 @@ export function calcolaRiepilogo(turni: DatiTurno[], anno: number, mese: number,
   const r: RiepilogoMensile = {
     anno, mese, numeroTurni: 0, minutiTotali: 0,
     minutiPerSede: new Map(), minutiPerTipo: new Map(), turniPerTipo: new Map(),
-    notti: 0, turniFestivi: 0, minutiInGiorniFestivi: 0, compensoCent: 0,
+    notti: 0, guardieGiorno: 0, turniFestivi: 0, minutiInGiorniFestivi: 0, compensoCent: 0,
   }
 
   for (const turno of turni) {
@@ -53,6 +55,7 @@ export function calcolaRiepilogo(turni: DatiTurno[], anno: number, mese: number,
     somma(r.turniPerTipo, turno.tipo, 1)
     if (turno.compensoCent !== undefined) r.compensoCent += turno.compensoCent
     if (turno.tipo === 'guardiaNotturna') r.notti += 1
+    if (turno.tipo === 'guardiaDiurna') r.guardieGiorno += 1
     if (turno.tipo === 'festivo' || eFestivo(turno.inizio, { sabatoFestivo })) r.turniFestivi += 1
     r.minutiInGiorniFestivi += minutiFestivi(turno, sabatoFestivo)
   }

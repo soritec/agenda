@@ -100,6 +100,7 @@ describe('Riepilogo mensile', () => {
     expect(r.minutiTotali).toBe((12 + 6 + 12 + 6) * 60)
     expect(r.minutiPerSede.get(sedeA)).toBe(24 * 60)
     expect(r.notti).toBe(1)
+    expect(r.guardieGiorno).toBe(1)
     expect(r.turniPerTipo.get('guardiaNotturna')).toBe(1)
     expect(r.turniFestivi).toBe(3)
     expect(r.minutiInGiorniFestivi).toBe((4 + 8 + 12) * 60)

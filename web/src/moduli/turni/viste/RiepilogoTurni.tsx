@@ -88,7 +88,8 @@ export function RiepilogoTurni({ anno, mese }: { anno: number; mese: number }) {
         </div>
         <div className="tessere">
           <div className="tessera"><span className="valore">{riepilogo.numeroTurni}</span><span className="secondario piccolo">turni</span></div>
-          <div className="tessera"><span className="valore">{riepilogo.notti}</span><span className="secondario piccolo">notti</span></div>
+          <div className="tessera"><span className="valore">{riepilogo.guardieGiorno}</span><span className="secondario piccolo">guardie di giorno</span></div>
+          <div className="tessera"><span className="valore">{riepilogo.notti}</span><span className="secondario piccolo">guardie di notte</span></div>
           <div className="tessera"><span className="valore">{riepilogo.turniFestivi}</span><span className="secondario piccolo">festivi</span></div>
           <div className="tessera"><span className="valore">{F.durata(riepilogo.minutiInGiorniFestivi)}</span><span className="secondario piccolo">in giorni festivi</span></div>
         </div>
