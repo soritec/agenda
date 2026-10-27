@@ -7,6 +7,7 @@ import {
 } from '../dati/sincronizzazione'
 import { Avviso, Campo, mostraAvviso } from './componenti'
 import { GestioneProfili } from './GestioneProfili'
+import { aggiornaApp, versioneInUso } from './versione'
 import { useImpostazioni } from '../dati/hooks'
 import { salvaImpostazioni } from '../dati/archivio'
 import { profiloAttivo } from '../dati/profili'
@@ -39,6 +40,12 @@ export function Impostazioni() {
       </section>
       <GestioneProfili />
       <SceltaValuta />
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <h2 className="titolo-sezione">Versione dell'app</h2>
+        <span>Pubblicata il <strong>{versioneInUso()}</strong></span>
+        <span className="secondario piccolo">Se su due dispositivi le date sono diverse, quello con la data più vecchia va aggiornato.</span>
+        <button type="button" className="pulsante" style={{ alignSelf: 'flex-start' }} onClick={() => aggiornaApp(String(Date.now()))}>Aggiorna l'app</button>
+      </section>
       <Backup />
     </div>
   )

@@ -31,3 +31,8 @@ export function useVersioneNuova(): string | undefined {
 export function aggiornaApp(versione: string) {
   location.href = `${location.pathname}?v=${encodeURIComponent(versione)}${location.hash}`
 }
+
+/** Data e ora della versione in uso (per confrontarla tra i dispositivi). */
+export const versioneInUso = (): string => {
+  try { return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(Date.parse(__VERSIONE__)) } catch { return '—' }
+}
