@@ -224,8 +224,8 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
               <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span className="secondario piccolo">Questo mese</span>
                 <span className="numeri" style={{ fontWeight: 600 }}>
-                  {F.durata(riepilogo.minutiTotali)} · {riepilogo.numeroTurni} turni · {riepilogo.notti} notti · {riepilogo.turniFestivi} festivi
-                  {giornateMese.map((x) => ` · ${x.numero} ${TITOLI_GIORNATA[x.tipo].toLowerCase()}`).join('')}
+                  {F.durata(riepilogo.minutiTotali)} · {riepilogo.numeroTurni} turni · {riepilogo.guardieGiorno} guardie di giorno · {riepilogo.notti} guardie di notte · {riepilogo.turniFestivi} festivi
+                  {giornateMese.filter((x) => x.tipo !== 'smontoNotte').map((x) => ` · ${x.numero} ${TITOLI_GIORNATA[x.tipo].toLowerCase()}`).join('')}
                 </span>
               </span>
               <IconaAvanti dimensione={16} />
