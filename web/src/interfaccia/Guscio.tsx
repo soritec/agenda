@@ -9,6 +9,7 @@ import { Avatar, useProfili } from './profili'
 import { useCondivisi } from '../dati/condiviso'
 import { cambiaProfilo, MODULI_SU_SCELTA, profiloAttivo } from '../dati/profili'
 import { useImpostazioni } from '../dati/hooks'
+import { aggiornaApp, useVersioneNuova } from './versione'
 import { ricordaValuta } from '../nucleo/formati'
 
 export const SEZIONI = [
@@ -54,8 +55,15 @@ export function Guscio({ attiva, children }: { attiva: Sezione | 'impostazioni';
   useEffect(() => {
     barra.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' })
   }, [attiva])
+  const versioneNuova = useVersioneNuova()
   return (
     <div className="guscio">
+      {versioneNuova && (
+        <div className="avviso-versione" role="status">
+          <span>È disponibile una versione nuova dell'app.</span>
+          <button type="button" className="pulsante primario piccolo" onClick={() => aggiornaApp(versioneNuova)}>Aggiorna</button>
+        </div>
+      )}
       <nav className="laterale" aria-label="Sezioni">
         {profili.length > 1 && (
           <div className="scelta-profilo">
