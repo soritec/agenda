@@ -7,7 +7,7 @@ import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { IconaAvanti } from '../../../interfaccia/icone'
 import { TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import { classeSigla, minutiDaOrario, orarioDaMinuti, perId } from '../supporto'
-import { vociMancanti } from '../catalogoScuola'
+import { infoMancanti, vociMancanti } from '../catalogoScuola'
 
 type Modifica = { tipo: 'modello'; record?: ModelloTurno } | { tipo: 'sede'; record?: Sede }
 
@@ -32,6 +32,8 @@ export function ImpostazioniTurni() {
   const mappaSedi = perId(sedi)
   const elencoModelli = [...(modelli ?? [])].sort((a, b) => a.ordine - b.ordine || a.nome.localeCompare(b.nome))
   const mancanti = modelli ? vociMancanti(modelli) : []
+  const daCompletare = modelli ? infoMancanti(modelli) : []
+  const senzaInfo = elencoModelli.filter((m) => !m.info && !daCompletare.some((x) => x.id === m.id))
 
   async function caricaSigleScuola() {
     const base = elencoModelli.length
@@ -67,6 +69,7 @@ export function ImpostazioniTurni() {
                     {m.tuttoIlGiorno ? 'Tutto il giorno' : `${orarioDaMinuti(m.minutoInizio)} – ${orarioDaMinuti(m.minutoFine)}`}{TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)] ? ` · ${TITOLI_TIPO_TURNO[tipoTurnoDa(m.tipo)]}` : ''}
                     {m.sedeId && mappaSedi.get(m.sedeId) ? ` · ${mappaSedi.get(m.sedeId)!.nome}` : ''}
                   </span>
+                  {m.info && <span className="secondario piccolo info-modello">{m.info}</span>}
                 </span>
                 <IconaAvanti dimensione={14} />
               </button>
@@ -77,12 +80,20 @@ export function ImpostazioniTurni() {
         </div>
         <div className="riga-azioni">
           <button type="button" className="pulsante primario" onClick={() => setModifica({ tipo: 'modello' })}>+ Nuovo turno tipo</button>
+          {daCompletare.length > 0 && (
+            <button type="button" className="pulsante" onClick={() => void salvaTanti('modelliTurno', daCompletare).then((x) => mostraAvviso(`Informazioni aggiunte a ${x.length} turni tipo`))}>
+              Aggiungi le informazioni del vademecum ({daCompletare.length})
+            </button>
+          )}
           {mancanti.length > 0 && (
             <button type="button" className="pulsante" onClick={() => void caricaSigleScuola()}>
               Aggiungi le sigle della scuola ({mancanti.length})
             </button>
           )}
         </div>
+        {senzaInfo.length > 0 && (
+          <span className="secondario piccolo">Senza "dove e quando": {senzaInfo.map((m) => m.sigla).join(', ')}. Il vademecum non ne parla: puoi scriverlo tu aprendo il turno tipo.</span>
+        )}
       </Sezione>
 
       <Sezione titolo="Casa">

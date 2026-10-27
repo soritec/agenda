@@ -18,18 +18,22 @@ const ORA = 60
 const AMB: [number, number] = [8 * ORA, 18 * ORA]
 const SALA: [number, number] = [7 * ORA, 18 * ORA]
 
-const GUARDIA = 'Presentarsi 10–15 minuti prima in sala parto per le consegne.'
+const GUARDIA = "Presentarsi 10 minuti prima in sala consegne: piano 0, settore C (si entra dall'ingresso degli ambulatori di ostetricia). Se la sala parto è molto piena, le consegne si danno direttamente in sala parto (lo scrivono sul gruppo specializzandi). Sala parto e pronto soccorso: 1° piano, settore C (la sala parto si è spostata a settembre: non seguire il vademecum)."
+const TRIAGE = 'Chi ruota in ginecologia: triage del pronto soccorso ostetrico-ginecologico con uno specializzando del IV anno (si visitano le pazienti che arrivano in PS).'
+const SALA_PARTO = "Chi ruota in ostetricia: sala parto in affiancamento alle ostetriche, con gli strutturati e lo specializzando grande; si può entrare a vedere qualche parto solo con il permesso dell'ostetrica."
+/** Testi delle guardie nelle versioni precedenti del catalogo (per aggiornarli). */
+export const GUARDIA_PRIMA = 'Presentarsi 10–15 minuti prima in sala parto per le consegne.'
 const AMB_OST = 'Ambulatori di ostetricia: piano terra, settore C.'
 const AMB_GIN = (amb: string) => `Ambulatori di ginecologia: piano terra, settore A${amb}. Presentarsi alle 8:00–8:20; di solito finisce verso le 13–13:30, spesso anche il pomeriggio dalle 14–14:30.`
 const SALA_GIN = 'Sala operatoria: piano -1, blocco F. Presentarsi alle 7:45 già cambiati (tutina azzurra, cuffia, mascherina); zoccoli nel blocco F, tutine dal distributore al piano -1 nel corridoio delle sale.'
 
 export const CATALOGO_SCUOLA: VoceCatalogo[] = [
-  { sigla: 'G', nome: 'Guardia giorno', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia 8–20 (triage o sala parto). ${GUARDIA}` },
-  { sigla: 'N', nome: 'Guardia notte', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8 (triage o sala parto). ${GUARDIA}` },
-  { sigla: 'GG', nome: 'Guardia giorno (triage)', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Triage del PS ostetrico-ginecologico, 8–20. ${GUARDIA}` },
-  { sigla: 'GN', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Triage del PS ostetrico-ginecologico, 20–8. ${GUARDIA}` },
-  { sigla: 'GSP', nome: 'Guardia giorno sala parto', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Sala parto, 8–20, affiancati all'ostetrica. ${GUARDIA}` },
-  { sigla: 'NSP', nome: 'Guardia notte sala parto', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Sala parto, 20–8, affiancati all'ostetrica. ${GUARDIA}` },
+  { sigla: 'G', nome: 'Guardia giorno (triage)', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia 8–20. ${TRIAGE} ${GUARDIA}` },
+  { sigla: 'N', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8. ${TRIAGE} ${GUARDIA}` },
+  { sigla: 'GG', nome: 'Guardia giorno (triage)', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia 8–20. ${TRIAGE} ${GUARDIA}` },
+  { sigla: 'GN', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8. ${TRIAGE} ${GUARDIA}` },
+  { sigla: 'GSP', nome: 'Guardia giorno sala parto', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia sala parto 8–20. ${SALA_PARTO} ${GUARDIA}` },
+  { sigla: 'NSP', nome: 'Guardia notte sala parto', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia sala parto 20–8. ${SALA_PARTO} ${GUARDIA}` },
   { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: AMB, info: '3° piano, settore C. Alle 8 in guardia per le consegne della sala parto, in reparto verso le 8:30. Conviene portarsi il pranzo.' },
   { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: AMB, info: 'Reparto maternità: 3° piano, settore B. Alle 8 in guardia per le consegne, in reparto verso le 8:30; di solito una settimana da lunedì a domenica.' },
   { sigla: 'DSO', nome: 'Day Service Ostetrico', tipo: 'reparto', orari: AMB },
@@ -103,7 +107,15 @@ export function correzioniCatalogoV1<T extends { sigla: string; nome: string; ti
 }
 
 /** Le informazioni del catalogo per i turni tipo che non le hanno ancora (confronto per sigla, senza maiuscole). */
-export function infoMancanti<T extends { sigla: string; info?: string }>(modelli: T[]): T[] {
-  const perSigla = new Map(CATALOGO_SCUOLA.filter((v) => v.info).map((v) => [v.sigla.toLowerCase(), v.info!]))
-  return modelli.flatMap((m) => { const info = perSigla.get(m.sigla.trim().toLowerCase()); return info && !m.info ? [{ ...m, info }] : [] })
+export function infoMancanti<T extends { sigla: string; nome?: string; info?: string }>(modelli: T[]): T[] {
+  // Confronto tollerante: senza maiuscole, spazi, punti e trattini (es. "E. terr" = "E terr"), poi per nome.
+  const chiave = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+  const conInfo = CATALOGO_SCUOLA.filter((v) => v.info)
+  const perSigla = new Map(conInfo.map((v) => [chiave(v.sigla), v.info!]))
+  const perNome = new Map(conInfo.map((v) => [chiave(v.nome), v.info!]))
+  return modelli.flatMap((m) => {
+    if (m.info) return []
+    const info = perSigla.get(chiave(m.sigla)) ?? (m.nome ? perNome.get(chiave(m.nome)) : undefined)
+    return info ? [{ ...m, info }] : []
+  })
 }

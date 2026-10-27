@@ -30,6 +30,7 @@ import { Calcolatori } from './moduli/calcolatori/Calcolatori'
 import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
 import { Tasse } from './moduli/specializzazione/viste/Tasse'
+import { FileTurni } from './moduli/specializzazione/viste/FileTurni'
 import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni, IconaPin } from './interfaccia/icone'
@@ -59,6 +60,7 @@ export function App() {
     else if (sotto === 'esami') pagina = <EsamiOLezioni key="esame" tipo="esame" />
     else if (sotto === 'lezioni') pagina = <EsamiOLezioni key="lezione" tipo="lezione" />
     else if (sotto === 'tasse') pagina = <Tasse />
+    else if (sotto === 'fileturni') pagina = <FileTurni />
     else if (sotto === 'ecm') pagina = <CorsiEcm />
     else if (sotto === 'journal') pagina = <JournalClubPagina />
     else if (sotto === 'procedura' && percorso[2]) pagina = <SchedaProcedura id={percorso[2]} />

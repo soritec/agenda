@@ -1,4 +1,4 @@
-import { correzioniCatalogoV1, infoMancanti, vociMancanti } from '../moduli/turni/catalogoScuola'
+import { GUARDIA_PRIMA, correzioniCatalogoV1, infoMancanti, vociMancanti } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
 import { CATEGORIE_PREDEFINITE, CATEGORIE_STUDENTE, idPredefinita } from '../moduli/budget/logica'
@@ -110,6 +110,15 @@ export async function eseguiManutenzione(): Promise<void> {
       if (nuovi.length) await salvaTanti('modelliTurno', nuovi)
     }
     nuove.push('catalogo-ginecologia-v1')
+  }
+
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('catalogo-ginecologia-v2')) {
+    // Seconda passata, con un confronto più tollerante (maiuscole, spazi, punti e nomi);
+    // le guardie con il vecchio testo prendono le indicazioni aggiornate.
+    const modelli = (await elenca('modelliTurno')).map((m) => (m.info?.includes(GUARDIA_PRIMA) ? { ...m, info: undefined } : m))
+    const conInfo = infoMancanti(modelli)
+    if (conInfo.length) await salvaTanti('modelliTurno', conInfo)
+    nuove.push('catalogo-ginecologia-v2')
   }
 
   if (!fatte.has('risparmi-col-mese-v1')) {

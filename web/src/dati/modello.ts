@@ -473,6 +473,8 @@ export interface Impostazioni {
   /** Matricole da avere sempre sotto mano (sezione Servizi di ateneo). */
   matricolaOspedale?: string
   matricolaUniversita?: string
+  /** Come compare il proprio nome nei file dei turni (es. il cognome), per leggerli in automatico. */
+  nomeNeiTurni?: string
   /** Passi predefiniti delle nuove application. */
   passiApplication?: string[]
   /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */

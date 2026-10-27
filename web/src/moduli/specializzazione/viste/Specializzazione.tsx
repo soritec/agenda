@@ -5,7 +5,7 @@ import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/arc
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Collegamento, EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
-import { IconaArticolo, IconaAttestato, IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLogbook, IconaMicroscopio } from '../../../interfaccia/icone'
+import { IconaArticolo, IconaAttestato, IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLogbook, IconaMicroscopio, IconaCalendario } from '../../../interfaccia/icone'
 import { assegnazioneDelMese } from '../../turni/assegnazioni'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../../turni/rotazione'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
@@ -19,6 +19,7 @@ const dataBreve = (giorno: string) => {
 
 /** Specializzazione: anno di corso, rotazione e un riquadro per ogni sezione. */
 export function Specializzazione() {
+  const fileTurni = (useCollezione('allegati') ?? []).filter((a) => a.collegatoA === 'file-turni').sort((a, b) => b.creatoIl - a.creatoIl)
   const impostazioni = useImpostazioni()
   const procedure = useCollezione('procedure')
   const esami = useCollezione('esami')
@@ -111,6 +112,11 @@ export function Specializzazione() {
         <a className="riquadro-sezione" href="#/specializzazione/journal">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#8C4F7A', background: '#F3E3EE' }}><IconaArticolo dimensione={18} /></span>Journal club</span>
           <span className="dettaglio">{prossimoJournal ? <><strong style={{ color: 'var(--testo)' }}>{prossimoJournal.titolo}</strong><br />{dataBreve(prossimoJournal.giorno)}</> : 'Nessun articolo in programma'}</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/fileturni">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#3E6E78', background: '#E1EEF0' }}><IconaCalendario dimensione={18} /></span>File dei turni</span>
+          <span className="valore">{fileTurni.length || '—'}</span>
+          <span className="dettaglio">{fileTurni[0] ? `ultimo: ${fileTurni[0].nome}` : 'PDF dei turni e delle guardie'}</span>
         </a>
         <a className="riquadro-sezione in-arrivo" href="#/specializzazione/ricerca">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#6B6862', background: '#EEECE8' }}><IconaMicroscopio dimensione={18} /></span>Ricerca</span>
