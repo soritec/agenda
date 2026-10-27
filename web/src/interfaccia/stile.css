@@ -1226,3 +1226,11 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .tendina-budget > summary::after { margin-left: auto; }
 .corpo-tendina-budget { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .tendina-budget .intestazione-movimenti { justify-content: flex-end; }
+.piu-meno { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grande-risparmio.togli { background: #ECEFF3; color: #34495E; }
+@media (prefers-color-scheme: dark) { .grande-risparmio.togli { background: #2A3038; color: #D3DCE6; } }
+@media (max-width: 640px) { .piu-meno { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.matricole { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.matricola { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-radius: var(--raggio); background: var(--superficie); border: 1px solid var(--linea); }
+.matricola input { flex: 1; min-width: 0; min-height: 36px; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--linea-forte); background: var(--superficie); font-size: 15px; }
+.valore-matricola { font-size: 19px; letter-spacing: 0.02em; margin-right: auto; overflow-wrap: anywhere; }

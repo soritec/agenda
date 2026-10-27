@@ -85,12 +85,14 @@ describe('Risparmi', () => {
       { ...b, id: 'p', tipo: 'prelievo', importoCent: 40000, giorno: '2026-09-20', categoriaId: 'risparmi' },
       { ...b, id: 'v', tipo: 'risparmio', importoCent: 120000, giorno: '2026-08-01', categoriaId: 'risparmi', obiettivoId: 'o1' },
     ]
-    const ricorrenti: Ricorrente[] = [{ ...b, id: 'r', tipo: 'risparmio', importoCent: 20000, categoriaId: 'risparmi', descrizione: '', frequenza: 'mese', inizio: '2026-09-01' }]
+    const ricorrenti: Ricorrente[] = [{ ...b, id: 'r', tipo: 'risparmio', importoCent: 20000, categoriaId: 'risparmi', descrizione: '', frequenza: 'mese', inizio: '2026-09-01', colMese: true }]
     const d = { categorie, movimenti, ricorrenti, obiettivi: [{ ...b, id: 'o1', nome: 'Vacanza', importoCent: 200000, entro: '2027-06' }] }
     const r = riepilogo(d, '2026-10', '2026-10-11')
     expect(r.risparmiatoCent).toBe(20000)
     expect(r.entrateCent - r.usciteCent).toBe(150000)
+    // Il fisso mensile è preso dai soldi del mese: toglie 200 da "Ti restano".
     expect(r.restoCent).toBe(130000)
+    expect(riepilogo({ ...d, ricorrenti: ricorrenti.map((x) => ({ ...x, colMese: undefined })) }, '2026-10', '2026-10-11').restoCent).toBe(150000)
     const s = statoRisparmi(d, '2026-10-11')
     expect(s.totaleCent).toBe(120000 + 20000 + 20000 - 40000)
     expect(s.obiettivi[0]).toMatchObject({ raccoltoCent: 120000, mancanoCent: 80000, alMeseCent: 8900 })
@@ -108,8 +110,11 @@ describe('Ti restano con il riporto', () => {
       m('3', 'entrata', 100000, '2026-09-01'), m('4', 'uscita', 50000, '2026-09-10'), m('5', 'risparmio', 20000, '2026-09-20'),
       m('6', 'uscita', 10000, '2026-10-05'),
     ] }
-    // Agosto +700, settembre +300 (500 − 200 messi da parte): a ottobre si parte da 1000.
-    expect(riportoDaiMesiPrima(d, '2026-10', '2026-10-22')).toBe(100000)
+    // Agosto +700, settembre +500: i 200 messi da parte sono risparmi a sé e non tolgono niente.
+    expect(riportoDaiMesiPrima(d, '2026-10', '2026-10-22')).toBe(120000)
+    // Se invece sono presi dai soldi del mese, settembre lascia 300.
+    const d2 = { ...d, movimenti: d.movimenti.map((x) => (x.id === '5' ? { ...x, colMese: true } : x)) }
+    expect(riportoDaiMesiPrima(d2, '2026-10', '2026-10-22')).toBe(100000)
     expect(riportoDaiMesiPrima(d, '2026-08', '2026-10-22')).toBe(0)
   })
 })

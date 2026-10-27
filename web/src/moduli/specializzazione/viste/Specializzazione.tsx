@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
-import { elimina, ripristina, salva } from '../../../dati/archivio'
+import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Collegamento, EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
@@ -123,6 +123,12 @@ export function Specializzazione() {
           <h2 className="titolo-sezione">Servizi di ateneo</h2>
           <button type="button" className="link" onClick={() => setModificaLink({})}>Aggiungi</button>
         </div>
+        {impostazioni && (
+          <div className="matricole">
+            <Matricola etichetta="Matricola ospedaliera" valore={impostazioni.matricolaOspedale} onSalva={(v) => void salvaImpostazioni({ matricolaOspedale: v })} />
+            <Matricola etichetta="Matricola universitaria" valore={impostazioni.matricolaUniversita} onSalva={(v) => void salvaImpostazioni({ matricolaUniversita: v })} />
+          </div>
+        )}
         <div className="lista">
           {link.length === 0 && <div className="vuoto piccolo">Aggiungi i link che usi: segreteria online, e-learning, posta…</div>}
           {link.map((l) => (
@@ -138,6 +144,31 @@ export function Specializzazione() {
       </section>
 
       {modificaLink && <FormCollegamento record={modificaLink.record} ordine={link.length} onChiudi={() => setModificaLink(undefined)} />}
+    </div>
+  )
+}
+
+/** Matricola sempre in vista: tocco su "Copia" per incollarla nei moduli, "Modifica" per cambiarla. */
+function Matricola({ etichetta, valore, onSalva }: { etichetta: string; valore?: string; onSalva: (v: string | undefined) => void }) {
+  const [modifica, setModifica] = useState(!valore)
+  const [testo, setTesto] = useState(valore ?? '')
+  const conferma = () => { const v = testo.trim(); onSalva(v || undefined); setModifica(!v) }
+  return (
+    <div className="matricola">
+      <span className="secondario piccolo">{etichetta}</span>
+      {modifica ? (
+        <span className="riga-azioni" style={{ gap: 6, flexWrap: 'nowrap' }}>
+          <input value={testo} placeholder="Scrivi la matricola" aria-label={etichetta} onChange={(e) => setTesto(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') conferma() }} />
+          <button type="button" className="pillola" disabled={!testo.trim() && !valore} onClick={conferma}>Salva</button>
+        </span>
+      ) : (
+        <span className="riga-azioni" style={{ gap: 6, flexWrap: 'nowrap' }}>
+          <strong className="numeri valore-matricola">{valore}</strong>
+          <button type="button" className="pillola piccola" onClick={() => void navigator.clipboard?.writeText(valore ?? '').then(() => mostraAvviso(`${etichetta} copiata`))}>Copia</button>
+          <button type="button" className="link piccolo" onClick={() => { setTesto(valore ?? ''); setModifica(true) }}>Modifica</button>
+        </span>
+      )}
     </div>
   )
 }

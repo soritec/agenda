@@ -147,16 +147,17 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
         <div className="tessera"><span className="secondario piccolo">Ti restano</span><span className="valore">{euro(riporto + r.restoCent)}</span>
           <span className="secondario piccolo">{[
             riporto ? `${euro(riporto)} dai mesi prima` : '',
-            r.risparmiatoCent > 0 ? `esclusi i ${euro(r.risparmiatoCent)} messi da parte` : r.risparmiatoCent < 0 ? `con ${euro(-r.risparmiatoCent)} ripresi dai risparmi` : '',
+            r.spostatoCent > 0 ? `${euro(r.spostatoCent)} spostati nei risparmi` : r.spostatoCent < 0 ? `${euro(-r.spostatoCent)} ripresi dai risparmi` : '',
           ].filter(Boolean).join(' · ') || `nell'anno: ${euro(anno)}`}</span></div>
         <div className="tessera tessera-risparmi"><span className="piccolo"><IconaSalvadanaio dimensione={15} /> Risparmi</span><span className="valore">{euro(risparmi.totaleCent)}</span>
-          <span className="piccolo">{r.risparmiatoCent ? `${r.risparmiatoCent > 0 ? '+' : '−'}${euro(Math.abs(r.risparmiatoCent))} questo mese` : 'non contano in "Ti restano"'}</span></div>
+          <span className="piccolo">{r.risparmiatoCent ? `${r.risparmiatoCent > 0 ? '+' : '−'}${euro(Math.abs(r.risparmiatoCent))} questo mese` : 'separati dai soldi del mese'}</span></div>
       </div>
 
       <div className="piu-meno">
         <button type="button" className="grande-piu" onClick={() => setModifica({ tipo: 'entrata' })} aria-label="Nuova entrata"><span>+</span>Entrata</button>
         <button type="button" className="grande-meno" onClick={() => setModifica({ tipo: 'uscita' })} aria-label="Nuova uscita"><span>−</span>Uscita</button>
         <button type="button" className="grande-risparmio" onClick={() => setModifica({ tipo: 'risparmio' })} aria-label="Metti da parte"><IconaSalvadanaio dimensione={18} />Metti da parte</button>
+        <button type="button" className="grande-risparmio togli" onClick={() => setModifica({ tipo: 'prelievo' })} aria-label="Togli dai risparmi"><IconaSalvadanaio dimensione={18} />Togli dai risparmi</button>
       </div>
       <div className="aggiunta-veloce">
         <input value={testo} onChange={(e) => setTesto(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') aggiungiVeloce() }}
@@ -236,7 +237,7 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
         <aside className="laterale-destra">
           <section className="scheda scheda-risparmi" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <h2 className="titolo-sezione" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconaSalvadanaio dimensione={20} /> Risparmi</h2>
-            <span className="secondario piccolo">Soldi messi da parte: non contano in "Ti restano".</span>
+            <span className="secondario piccolo">Separati dai soldi del mese: tolgono da "Ti restano" solo se lo scegli.</span>
             {vociRisparmio.map((v) => (
               <div key={v.chiave} className="riga-semplice">
                 <button type="button" className="crescente" onClick={() => apri(v)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
@@ -577,12 +578,13 @@ function FormRisparmio({ m, obiettivi, onChiudi, onNuovoObiettivo }: { m: Modifi
     giorno: mov?.giorno ?? r?.inizio ?? chiaveGiorno(oggi()),
     nota: mov?.nota ?? r?.descrizione ?? '',
     ripeti: (r?.frequenza ?? 'no') as 'no' | 'mese' | 'anno',
+    colMese: Boolean(mov?.colMese ?? r?.colMese),
   })
   const importoCent = centesimiDa(b.importo)
   const valido = !!importoCent && !!giornoDaChiave(b.giorno)
   async function conferma() {
     if (!valido) return
-    const comuni = { tipo, importoCent: importoCent!, categoriaId: CATEGORIA_RISPARMI, obiettivoId: b.obiettivoId || undefined }
+    const comuni = { tipo, importoCent: importoCent!, categoriaId: CATEGORIA_RISPARMI, obiettivoId: b.obiettivoId || undefined, colMese: b.colMese || undefined }
     if (b.ripeti !== 'no' && tipo === 'risparmio') {
       await salva('ricorrenti', { ...r, ...comuni, descrizione: b.nota.trim(), frequenza: b.ripeti, inizio: b.giorno })
       if (mov) await elimina('movimenti', mov.id)
@@ -593,13 +595,13 @@ function FormRisparmio({ m, obiettivi, onChiudi, onNuovoObiettivo }: { m: Modifi
     onChiudi()
   }
   return (
-    <Foglio aperto titolo={tipo === 'risparmio' ? 'Metti da parte' : 'Riprendi dai risparmi'} onChiudi={onChiudi}
+    <Foglio aperto titolo={tipo === 'risparmio' ? 'Metti da parte' : 'Togli dai risparmi'} onChiudi={onChiudi}
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
       <div className="modulo">
         <div className="segmenti" role="radiogroup" aria-label="Tipo">
           {(['risparmio', 'prelievo'] as const).map((t) => (
             <button key={t} type="button" role="radio" aria-checked={tipo === t} className={tipo === t ? 'attivo' : ''} onClick={() => setTipo(t)}>
-              {t === 'risparmio' ? 'Metti da parte' : 'Riprendi'}
+              {t === 'risparmio' ? 'Metti da parte' : 'Togli dai risparmi'}
             </button>
           ))}
         </div>
@@ -631,6 +633,13 @@ function FormRisparmio({ m, obiettivi, onChiudi, onNuovoObiettivo }: { m: Modifi
             </Campo>
           )}
         </div>
+        <label className="interruttore">
+          <span>{tipo === 'risparmio' ? 'Prendili dai soldi del mese (li toglie da "Ti restano")' : 'Rimettili nei soldi del mese (li aggiunge a "Ti restano")'}</span>
+          <input type="checkbox" checked={b.colMese} onChange={(e) => setB({ ...b, colMese: e.target.checked })} />
+        </label>
+        <span className="secondario piccolo">{b.colMese
+          ? (tipo === 'risparmio' ? 'Sposti soldi dal mese ai risparmi.' : 'I soldi tornano tra quelli da spendere nel mese.')
+          : (tipo === 'risparmio' ? 'Risparmi aggiunti da soli (es. soldi che avevi già): "Ti restano" non cambia.' : 'Esce solo dai risparmi: "Ti restano" non cambia.')}</span>
         <Campo etichetta="Nota (facoltativa)"><input value={b.nota} placeholder={tipo === 'prelievo' ? 'es. per l\'auto' : ''} onChange={(e) => setB({ ...b, nota: e.target.value })} /></Campo>
         {(mov || r) && (
           <button type="button" className="pulsante pericolo" onClick={() => void (async () => {

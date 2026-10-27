@@ -106,6 +106,8 @@ export interface Voce {
   titolo: string
   daIncassare?: boolean
   obiettivoId?: string
+  /** Risparmio/prelievo che sposta soldi da/verso "Ti restano". */
+  colMese?: boolean
 }
 
 export interface DatiBudget {
@@ -131,12 +133,12 @@ export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
   const voci: Voce[] = []
   for (const m of d.movimenti) {
     if (meseDi(m.giorno) !== mese) continue
-    voci.push({ chiave: `m:${m.id}`, origine: 'movimento', id: m.id, tipo: tipoDa(m.tipo), importoCent: m.importoCent, giorno: m.giorno, categoriaId: m.categoriaId, titolo: m.nota || titoloRisparmio(tipoDa(m.tipo)) || nomi.get(m.categoriaId) || 'Movimento', daIncassare: m.daIncassare, obiettivoId: m.obiettivoId })
+    voci.push({ chiave: `m:${m.id}`, origine: 'movimento', id: m.id, tipo: tipoDa(m.tipo), importoCent: m.importoCent, giorno: m.giorno, categoriaId: m.categoriaId, titolo: m.nota || titoloRisparmio(tipoDa(m.tipo)) || nomi.get(m.categoriaId) || 'Movimento', daIncassare: m.daIncassare, obiettivoId: m.obiettivoId, colMese: m.colMese })
   }
   for (const r of d.ricorrenti) {
     const giorno = giornoNelMese(r, mese)
     if (!giorno) continue
-    voci.push({ chiave: `r:${r.id}:${mese}`, origine: 'ricorrente', id: r.id, tipo: tipoDa(r.tipo), importoCent: r.importoCent, giorno, categoriaId: r.categoriaId, titolo: r.descrizione || titoloRisparmio(tipoDa(r.tipo)) || nomi.get(r.categoriaId) || 'Fisso', obiettivoId: r.obiettivoId })
+    voci.push({ chiave: `r:${r.id}:${mese}`, origine: 'ricorrente', id: r.id, tipo: tipoDa(r.tipo), importoCent: r.importoCent, giorno, categoriaId: r.categoriaId, titolo: r.descrizione || titoloRisparmio(tipoDa(r.tipo)) || nomi.get(r.categoriaId) || 'Fisso', obiettivoId: r.obiettivoId, colMese: r.colMese })
   }
   for (const t of d.turni ?? []) {
     if (!t.compensoCent) continue
@@ -157,6 +159,8 @@ export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
 export interface Riepilogo {
   /** Messo da parte meno ripreso, nel mese (fino a oggi). Non entra in "Ti restano". */
   risparmiatoCent: number
+  /** Parte di risparmiatoCent che è uscita dai (o rientrata nei) soldi del mese. */
+  spostatoCent: number
   entrateCent: number
   extraCent: number
   usciteCent: number
@@ -185,7 +189,9 @@ export function riepilogo(d: DatiBudget, mese: string, oggi: string): Riepilogo 
     extraCent: somma(entrate.filter((v) => categorie.get(v.categoriaId ?? '')?.extra)),
     usciteCent: somma(uscite),
     risparmiatoCent: somma(contano.filter((v) => v.tipo === 'risparmio')) - somma(contano.filter((v) => v.tipo === 'prelievo')),
-    restoCent: somma(entrate) - somma(uscite) - (somma(contano.filter((v) => v.tipo === 'risparmio')) - somma(contano.filter((v) => v.tipo === 'prelievo'))),
+    // Solo i risparmi presi dai soldi del mese (e i prelievi rimessi nel mese) cambiano "Ti restano".
+    restoCent: somma(entrate) - somma(uscite) - (somma(contano.filter((v) => v.tipo === 'risparmio' && v.colMese)) - somma(contano.filter((v) => v.tipo === 'prelievo' && v.colMese))),
+    spostatoCent: somma(contano.filter((v) => v.tipo === 'risparmio' && v.colMese)) - somma(contano.filter((v) => v.tipo === 'prelievo' && v.colMese)),
     daIncassare: voci.filter((v) => v.daIncassare),
     perCategoria: [
       ...[...perCat].map(([id, cent]) => ({ categoria: categorie.get(id) ?? { id, nome: 'Senza categoria', tipo: 'uscita', colore: '#D3D1C7', ordine: 999, creatoIl: 0, modificatoIl: 0 }, cent, tettoCent: categorie.get(id)?.tettoCent })),

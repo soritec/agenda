@@ -406,6 +406,8 @@ export interface Movimento extends Base {
   daIncassare?: boolean
   /** Per risparmi e prelievi: l'obiettivo a cui vanno (assente = risparmi generici). */
   obiettivoId?: string
+  /** Per risparmi e prelievi: i soldi escono da (o tornano in) "Ti restano" del mese. Senza: risparmi messi ex novo. */
+  colMese?: boolean
   /** Importo scritto in un'altra valuta (es. paghetta in euro su un profilo in sterline): `importoCent` è già convertito. */
   valutaOriginale?: string
   importoOriginaleCent?: number
@@ -436,6 +438,8 @@ export interface Ricorrente extends Base {
   /** Mesi ("2026-11") in cui questa volta non vale. */
   saltati?: string[]
   obiettivoId?: string
+  /** Per risparmi e prelievi: i soldi escono da (o tornano in) "Ti restano" del mese. Senza: risparmi messi ex novo. */
+  colMese?: boolean
   /** Importo scritto in un'altra valuta (es. paghetta in euro su un profilo in sterline): `importoCent` è già convertito. */
   valutaOriginale?: string
   importoOriginaleCent?: number
@@ -464,6 +468,9 @@ export interface Impostazioni {
   obiettivoStudioMinuti?: number
   /** Valuta degli importi di questo profilo (predefinita: euro). */
   valuta?: 'EUR' | 'GBP'
+  /** Matricole da avere sempre sotto mano (sezione Servizi di ateneo). */
+  matricolaOspedale?: string
+  matricolaUniversita?: string
   /** Passi predefiniti delle nuove application. */
   passiApplication?: string[]
   /** Per la sincronizzazione: vince l'impostazione modificata più di recente. */
