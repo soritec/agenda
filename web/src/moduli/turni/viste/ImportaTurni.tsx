@@ -38,12 +38,18 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
     let attivo = true
     void (async () => {
       const letti: { allegato: Allegato; pezzi: PezzoTesto[] }[] = []
-      const nonLetti: string[] = []
+      const problemi: string[] = []
+      const motivo = (e: unknown) => (e instanceof Error ? e.message : String(e))
       for (const a of allegati) {
-        try { letti.push({ allegato: a, pezzi: await pezziDelPdf(await contenutoAllegato(a)) }) } catch (e) { console.error(e); nonLetti.push(a.nome) }
+        let contenuto: Blob
+        try { contenuto = await contenutoAllegato(a) } catch (e) { problemi.push(`${a.nome}: ${motivo(e)}`); continue }
+        try { letti.push({ allegato: a, pezzi: await pezziDelPdf(contenuto) }) } catch (e) {
+          console.error(e)
+          problemi.push(`${a.nome}: non riesco a leggerne il testo (funziona con i PDF fatti al computer, non con foto o scansioni). Dettaglio per Claude: ${motivo(e)}`)
+        }
       }
       if (!attivo) return
-      if (nonLetti.length) setErrore(`Non riesco a leggere il testo di: ${nonLetti.join(', ')}. Funziona con i PDF fatti al computer, non con le foto o le scansioni.`)
+      if (problemi.length) setErrore(problemi.join('\n'))
       setPezzi(letti)
     })()
     return () => { attivo = false }
@@ -126,7 +132,7 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
           </div>
           <span className="secondario piccolo">Scrivilo esattamente come nel file. Se compare in modi diversi, separali con ; (punto e virgola).</span>
         </form>
-        {errore && <Avviso>{errore}</Avviso>}
+        {errore && <Avviso><span style={{ whiteSpace: 'pre-line' }}>{errore}</span></Avviso>}
         {!errore && !pezzi && <span className="secondario piccolo">Leggo il file…</span>}
         {letti && letti.senzaMese.length > 0 && <Avviso>Non trovo il mese (es. "Novembre 2026") dentro: {letti.senzaMese.join(', ')}.</Avviso>}
         {proposte && letti && letti.mesi.length > 0 && (
