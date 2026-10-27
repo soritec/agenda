@@ -103,3 +103,11 @@ export function modelloPerSigla<T extends { sigla: string }>(sigla: string, mode
   const k = (t: string) => normalizza(t).replace(/[^a-z0-9]/g, '')
   return modelli.find((m) => k(m.sigla) === k(sigla))
 }
+
+/** Mese ("2026-11") scritto nel nome del file, es. "Guardie novembre 2026.pdf"; se manca l'anno vale `annoPredefinito`. */
+export function meseDelNome(nome: string, annoPredefinito?: number): string | undefined {
+  const t = normalizza(nome).replace(/[_\-.]+/g, ' ')
+  const m = t.match(new RegExp(`\\b(${MESI.join('|')})\\b(?:\\s+(\\d{4}))?`))
+  const anno = m?.[2] ? Number(m[2]) : annoPredefinito
+  return m && anno ? `${anno}-${String(MESI.indexOf(m[1]!) + 1).padStart(2, '0')}` : undefined
+}

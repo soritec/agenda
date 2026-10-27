@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { leggiTurni, meseDelFile, modelloPerSigla, type PezzoTesto } from '../src/moduli/turni/importaPdf'
+import { leggiTurni, meseDelFile, meseDelNome, modelloPerSigla, type PezzoTesto } from '../src/moduli/turni/importaPdf'
 
 /** Tabella finta: righe di caselle a colonne fisse (x = 40 + 80·i), una riga ogni 20 punti. */
 function tabella(righe: string[][], pagina = 1, y0 = 100): PezzoTesto[] {
@@ -40,5 +40,30 @@ describe('lettura dei turni dal PDF', () => {
 
   it('collega la sigla al turno tipo', () => {
     expect(modelloPerSigla('gsp', [{ sigla: 'G' }, { sigla: 'GSP' }])).toEqual({ sigla: 'GSP' })
+  })
+})
+
+describe('mese dal nome del file', () => {
+  it('legge mese e anno', () => {
+    expect(meseDelNome('Guardie novembre 2026.docx.pdf')).toBe('2026-11')
+    expect(meseDelNome('turni_Dicembre.pdf', 2026)).toBe('2026-12')
+    expect(meseDelNome('turni.pdf', 2026)).toBeUndefined()
+  })
+})
+
+describe('file dei turni per mese', () => {
+  it('raggruppa per mese del nome o del caricamento', async () => {
+    const { fileTurniPerMese } = await import('../src/moduli/turni/fileTurni')
+    const ott = Date.parse('2026-10-27T12:00:00Z')
+    const g = fileTurniPerMese([
+      { nome: 'Guardie novembre 2026.pdf', creatoIl: ott, collegatoA: 'file-turni' },
+      { nome: 'turni.pdf', creatoIl: ott + 1, collegatoA: 'file-turni' },
+      { nome: 'Turni novembre.pdf', creatoIl: ott + 2, collegatoA: 'file-turni' },
+      { nome: 'altro.pdf', creatoIl: ott, collegatoA: 'procedura:1' },
+    ])
+    expect(g.map((x) => [x.mese, x.file.map((f) => f.nome)])).toEqual([
+      ['2026-11', ['Turni novembre.pdf', 'Guardie novembre 2026.pdf']],
+      ['2026-10', ['turni.pdf']],
+    ])
   })
 })

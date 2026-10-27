@@ -16,17 +16,17 @@ import { aggiungiSmonti, eliminaTurno } from '../smonto'
 /** Valore della scelta per una sigla della scuola che non è ancora un turno tipo. */
 const CATALOGO = 'catalogo:'
 
-interface Proposta extends TurnoLetto { modelloId?: string; scelto: boolean; giaPresente: boolean }
+interface Proposta extends TurnoLetto { modelloId?: string; scelto: boolean; giaPresente: boolean; allegatoId: string }
 
 /**
  * Legge i propri turni da un file PDF dei turni e li mostra per la conferma: niente viene salvato
  * finché l'utente non tocca "Aggiungi". I turni già presenti nello stesso giorno restano deselezionati.
  */
-export function ImportaTurni({ allegato, onChiudi }: { allegato: Allegato | undefined; onChiudi: () => void }) {
+export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onChiudi: () => void }) {
   const impostazioni = useImpostazioni()
   const modelli = useCollezione('modelliTurno')
   const turni = useCollezione('turni')
-  const [pezzi, setPezzi] = useState<PezzoTesto[]>()
+  const [pezzi, setPezzi] = useState<{ allegato: Allegato; pezzi: PezzoTesto[] }[]>()
   const [errore, setErrore] = useState<string>()
   const [nome, setNome] = useState('')
   const [proposte, setProposte] = useState<Proposta[]>()
@@ -34,17 +34,36 @@ export function ImportaTurni({ allegato, onChiudi }: { allegato: Allegato | unde
 
   useEffect(() => {
     setPezzi(undefined); setErrore(undefined); setProposte(undefined)
-    if (!allegato) return
+    if (allegati.length === 0) return
     let attivo = true
-    contenutoAllegato(allegato).then(pezziDelPdf)
-      .then((p) => { if (attivo) setPezzi(p) })
-      .catch((e: unknown) => { console.error(e); if (attivo) setErrore('Non riesco a leggere il testo di questo file. Funziona con i PDF fatti al computer, non con le foto o le scansioni.') })
+    void (async () => {
+      const letti: { allegato: Allegato; pezzi: PezzoTesto[] }[] = []
+      const nonLetti: string[] = []
+      for (const a of allegati) {
+        try { letti.push({ allegato: a, pezzi: await pezziDelPdf(await contenutoAllegato(a)) }) } catch (e) { console.error(e); nonLetti.push(a.nome) }
+      }
+      if (!attivo) return
+      if (nonLetti.length) setErrore(`Non riesco a leggere il testo di: ${nonLetti.join(', ')}. Funziona con i PDF fatti al computer, non con le foto o le scansioni.`)
+      setPezzi(letti)
+    })()
     return () => { attivo = false }
-  }, [allegato])
+  }, [allegati])
   useEffect(() => { if (impostazioni?.nomeNeiTurni && !nome) setNome(impostazioni.nomeNeiTurni) }, [impostazioni, nome])
 
   const nomeSalvato = impostazioni?.nomeNeiTurni?.trim()
-  const letti = useMemo(() => (pezzi && nomeSalvato ? leggiTurni(pezzi, nomeSalvato.split(/\s*;\s*/)) : undefined), [pezzi, nomeSalvato])
+  const letti = useMemo(() => {
+    if (!pezzi || !nomeSalvato) return undefined
+    const perFile = pezzi.map((p) => ({ allegato: p.allegato, ...leggiTurni(p.pezzi, nomeSalvato.split(/\s*;\s*/)) }))
+    const visti = new Set<string>()
+    return {
+      mesi: [...new Set(perFile.flatMap((f) => (f.mese ? [f.mese] : [])))].sort(),
+      senzaMese: perFile.filter((f) => !f.mese).map((f) => f.allegato.nome),
+      // Stesso giorno e stessa sigla in due file (es. guardie e turni) = un turno solo.
+      turni: perFile.flatMap((f) => f.turni.map((t) => ({ ...t, allegatoId: f.allegato.id })))
+        .filter((t) => { const k = `${t.giorno}|${t.sigla.toLowerCase()}`; if (visti.has(k)) return false; visti.add(k); return true })
+        .sort((a, b) => a.giorno.localeCompare(b.giorno)),
+    }
+  }, [pezzi, nomeSalvato])
 
   useEffect(() => {
     if (!letti || !modelli || !turni) return
@@ -67,7 +86,6 @@ export function ImportaTurni({ allegato, onChiudi }: { allegato: Allegato | unde
   const cambia = (i: number, m: Partial<Proposta>) => setProposte((ps) => ps?.map((p, j) => (j === i ? { ...p, ...m } : p)))
 
   async function aggiungi() {
-    if (!allegato) return
     setSalvando(true)
     const creati: Turno[] = []
     const nuoviModelli = new Map<string, ModelloTurno>()
@@ -85,7 +103,7 @@ export function ImportaTurni({ allegato, onChiudi }: { allegato: Allegato | unde
       if (!m) continue
       const g = giornoDaChiave(p.giorno)!
       const orari = m.tuttoIlGiorno ? intervalloTuttoIlGiorno(g) : intervallo(g, m.minutoInizio, m.minutoFine)
-      creati.push(await salva('turni', { ...orari, tipo: m.tipo, tuttoIlGiorno: m.tuttoIlGiorno, stato: 'pianificato', sedeId: m.sedeId, modelloId: m.id, origine: 'importato', importazioneId: allegato.id }))
+      creati.push(await salva('turni', { ...orari, tipo: m.tipo, tuttoIlGiorno: m.tuttoIlGiorno, stato: 'pianificato', sedeId: m.sedeId, modelloId: m.id, origine: 'importato', importazioneId: p.allegatoId }))
     }
     await aggiungiSmonti(creati)
     setSalvando(false)
@@ -93,13 +111,13 @@ export function ImportaTurni({ allegato, onChiudi }: { allegato: Allegato | unde
     mostraAvviso(`Aggiunti ${creati.length} turni`, () => void Promise.all(creati.map((t) => eliminaTurno(t.id))))
   }
 
-  const mese = letti?.mese ? giornoDaChiave(`${letti.mese}-01`) : undefined
+  const nomeMesi = (letti?.mesi ?? []).map((m) => { const g = giornoDaChiave(`${m}-01`)!; return F.mese(istante(g.anno, g.mese, 1, 12)) }).join(', ')
   return (
-    <Foglio aperto={!!allegato} titolo="Inserisci i miei turni" onChiudi={onChiudi}
+    <Foglio aperto={allegati.length > 0} titolo="Inserisci i miei turni" onChiudi={onChiudi}
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={salvando || daAggiungere.length === 0}
         onClick={() => void aggiungi()}>Aggiungi{daAggiungere.length ? ` (${daAggiungere.length})` : ''}</button>}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <span className="secondario piccolo">{allegato?.nome}</span>
+        <span className="secondario piccolo">{allegati.map((a) => a.nome).join(' · ')}</span>
         <form className="campo" onSubmit={(e) => { e.preventDefault(); void salvaImpostazioni({ nomeNeiTurni: nome.trim() || undefined }) }}>
           <label htmlFor="nome-turni">Il tuo nome come compare nei file</label>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -110,12 +128,12 @@ export function ImportaTurni({ allegato, onChiudi }: { allegato: Allegato | unde
         </form>
         {errore && <Avviso>{errore}</Avviso>}
         {!errore && !pezzi && <span className="secondario piccolo">Leggo il file…</span>}
-        {pezzi && letti && !letti.mese && <Avviso>Non trovo il mese nel file (es. "Novembre 2026").</Avviso>}
-        {proposte && letti?.mese && (
+        {letti && letti.senzaMese.length > 0 && <Avviso>Non trovo il mese (es. "Novembre 2026") dentro: {letti.senzaMese.join(', ')}.</Avviso>}
+        {proposte && letti && letti.mesi.length > 0 && (
           proposte.length === 0
-            ? <div className="vuoto">Nessun turno trovato a nome "{nomeSalvato}" in {mese ? F.mese(istante(mese.anno, mese.mese, 1, 12)) : 'questo file'}.</div>
+            ? <div className="vuoto">Nessun turno trovato a nome "{nomeSalvato}" ({nomeMesi}).</div>
             : <>
-              <span className="secondario piccolo">Trovati {proposte.length} turni in {mese ? F.mese(istante(mese.anno, mese.mese, 1, 12)) : ''}. Controlla e tocca Aggiungi: niente viene salvato prima.</span>
+              <span className="secondario piccolo">Trovati {proposte.length} turni ({nomeMesi}). Controlla e tocca Aggiungi: niente viene salvato prima.</span>
               <div className="lista">
                 {proposte.map((p, i) => {
                   const g = giornoDaChiave(p.giorno)!

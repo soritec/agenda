@@ -28,11 +28,16 @@ const AMB_GIN = (amb: string) => `Ambulatori di ginecologia: piano terra, settor
 const SALA_GIN = 'Sala operatoria: piano -1, blocco F. Presentarsi alle 7:45 già cambiati (tutina azzurra, cuffia, mascherina); zoccoli nel blocco F, tutine dal distributore al piano -1 nel corridoio delle sale.'
 
 const INFO_REPARTO_OST = "3° piano, settore C. Arrivare alle 7:45: poi si scende alle consegne con quelli della guardia (sala consegne, piano 0, settore C). Conviene portarsi il pranzo."
+const INFO_PUERPERIO = 'Reparto maternità: 3° piano, settore B. Arrivare alle 7:45: poi si scende alle consegne con quelli della guardia (sala consegne, piano 0, settore C); di solito una settimana da lunedì a domenica.'
+/** Reparti: ostetricia 7:45–18; ginecologia 7–19 (in settimana si aspetta la fine della sala). */
+const REPARTO_OST: [number, number] = [7 * ORA + 45, 18 * ORA]
+const REPARTO_GIN: [number, number] = [7 * ORA, 19 * ORA]
 const INFO_REPARTO_GIN = 'Reparto: 7° piano, settore B. Arrivare alle 7 (dipende dagli strutturati: qualcuno è più flessibile). In settimana di solito si resta fino alle 18:30–19, perché si aspetta che finisca la sala; nel weekend si esce prima, verso pranzo o il primo pomeriggio. Una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.'
 
 /** Testi delle versioni precedenti del catalogo, per sigla: se il turno tipo ha ancora quello, si aggiorna. */
 export const INFO_PRIMA: Record<string, string[]> = {
   R: ['3° piano, settore C. Alle 8 in guardia per le consegne della sala parto, in reparto verso le 8:30. Conviene portarsi il pranzo.'],
+  P: ['Reparto maternità: 3° piano, settore B. Alle 8 in guardia per le consegne, in reparto verso le 8:30; di solito una settimana da lunedì a domenica.'],
   Rg: ['7° piano, settore B. In reparto alle 7:00–7:30, si può restare fino alle 20; una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.'],
 }
 
@@ -44,6 +49,15 @@ export function infoSuperate<T extends { sigla: string; info?: string }>(modelli
   })
 }
 
+/** Turni tipo dei reparti ancora con l'orario predefinito di prima (8–18), con l'orario nuovo. */
+export function orariRepartiSuperati<T extends { sigla: string; minutoInizio: number; minutoFine: number; tuttoIlGiorno?: boolean }>(modelli: T[]): T[] {
+  return modelli.flatMap((m) => {
+    if (!['R', 'P', 'Rg'].includes(m.sigla) || m.tuttoIlGiorno || m.minutoInizio !== 8 * ORA || m.minutoFine !== 18 * ORA) return []
+    const v = CATALOGO_SCUOLA.find((x) => x.sigla === m.sigla)!
+    return [{ ...m, minutoInizio: v.orari[0], minutoFine: v.orari[1] }]
+  })
+}
+
 export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'G', nome: 'Guardia giorno (triage)', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia 8–20. ${TRIAGE} ${GUARDIA}` },
   { sigla: 'N', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8. ${TRIAGE} ${GUARDIA}` },
@@ -51,10 +65,10 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'GN', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8. ${TRIAGE} ${GUARDIA}` },
   { sigla: 'GSP', nome: 'Guardia giorno sala parto', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia sala parto 8–20. ${SALA_PARTO} ${GUARDIA}` },
   { sigla: 'NSP', nome: 'Guardia notte sala parto', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia sala parto 20–8. ${SALA_PARTO} ${GUARDIA}` },
-  { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: AMB, info: INFO_REPARTO_OST },
-  { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: AMB, info: 'Reparto maternità: 3° piano, settore B. Alle 8 in guardia per le consegne, in reparto verso le 8:30; di solito una settimana da lunedì a domenica.' },
+  { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: REPARTO_OST, info: INFO_REPARTO_OST },
+  { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: REPARTO_OST, info: INFO_PUERPERIO },
   { sigla: 'DSO', nome: 'Day Service Ostetrico', tipo: 'reparto', orari: AMB },
-  { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: AMB, info: INFO_REPARTO_GIN },
+  { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: REPARTO_GIN, info: INFO_REPARTO_GIN },
   { sigla: 'F', nome: 'Amb. Gravidanza Fisiologica', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Fisiologia medici: martedì e venerdì mattina.` },
   { sigla: 'Gem', nome: 'Amb. Gemelli', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'PP', nome: 'Amb. Parto Prematuro', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },

@@ -1,3 +1,4 @@
+import { EstraiDaFile } from './EstraiDaFile'
 import { useMemo, useState } from 'react'
 import { giornoDi, intervalloMese, istante, stessoGiorno } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
@@ -14,7 +15,7 @@ import { GiornoRapido } from './GiornoRapido'
 import { SceltaOspedale } from './SceltaOspedale'
 import { SvuotaMese } from './SvuotaMese'
 import { assegnazioneDelMese } from '../assegnazioni'
-import { IconaAvanti, IconaCestino, IconaImpostazioni, IconaIndietro, IconaPiu, IconaStampa } from '../../../interfaccia/icone'
+import { IconaAvanti, IconaCestino, IconaImpostazioni, IconaIndietro, IconaPiu, IconaStampa, IconaArticolo } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { sovrapposizioni } from '../controlli'
 import { calcolaRiepilogo } from '../riepilogo'
@@ -34,6 +35,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   const impostazioni = useImpostazioni()
   const [sceltaArea, setSceltaArea] = useState(false)
   const [sceltaOspedale, setSceltaOspedale] = useState(false)
+  const [estrai, setEstrai] = useState(false)
   const [svuota, setSvuota] = useState(false)
   // Giorno in cui l'utente ha tenuto premuto un turno: mostra le × per eliminare.
   const [inModifica, setInModifica] = useState<string>()
@@ -122,6 +124,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           )}
         </div>
         <div className="riga-azioni azioni">
+          <button type="button" className="pulsante con-icona" onClick={() => setEstrai(true)} aria-label="Estrai i turni dai file" title="Estrai i turni dai file"><IconaArticolo dimensione={18} /><span className="solo-largo">Estrai da file</span></button>
           <a className="pulsante con-icona" href={`#/turni/stampa?mese=${qui}`} aria-label="Stampa, PDF e Calendario Apple"><IconaStampa dimensione={18} /><span className="solo-largo">Stampa ed esporta</span></a>
           {delMese.length + giornateMese.reduce((n, g) => n + g.numero, 0) > 0 && (
             <button type="button" className="pulsante tondo pericolo" onClick={() => setSvuota(true)} aria-label="Svuota il mese" title="Svuota il mese"><IconaCestino dimensione={18} /></button>
@@ -260,6 +263,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
         </aside>
       </div>
 
+      <EstraiDaFile aperto={estrai} onChiudi={() => setEstrai(false)} />
       {svuota && (
         <SvuotaMese anno={anno} mese={mese} turni={delMese.length} giornate={giornateMese.reduce((n, g) => n + g.numero, 0)} onChiudi={() => setSvuota(false)} />
       )}

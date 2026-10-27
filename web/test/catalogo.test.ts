@@ -22,3 +22,16 @@ describe('testi superati del catalogo', () => {
     expect(infoSuperate([vecchio, mio])).toEqual([{ sigla: 'Rg', info: CATALOGO_SCUOLA.find((v) => v.sigla === 'Rg')!.info }])
   })
 })
+
+describe('orari dei reparti', () => {
+  test('cambia solo i reparti con l orario predefinito di prima', async () => {
+    const { orariRepartiSuperati } = await import('../src/moduli/turni/catalogoScuola')
+    const r = orariRepartiSuperati([
+      { sigla: 'Rg', minutoInizio: 480, minutoFine: 1080 },
+      { sigla: 'R', minutoInizio: 480, minutoFine: 1080 },
+      { sigla: 'R', minutoInizio: 420, minutoFine: 1080 },
+      { sigla: 'F', minutoInizio: 480, minutoFine: 1080 },
+    ])
+    expect(r).toEqual([{ sigla: 'Rg', minutoInizio: 420, minutoFine: 1140 }, { sigla: 'R', minutoInizio: 465, minutoFine: 1080 }])
+  })
+})
