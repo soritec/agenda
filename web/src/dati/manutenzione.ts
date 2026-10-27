@@ -1,4 +1,4 @@
-import { correzioniCatalogoV1 } from '../moduli/turni/catalogoScuola'
+import { correzioniCatalogoV1, infoMancanti, vociMancanti } from '../moduli/turni/catalogoScuola'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
 import { CATEGORIE_PREDEFINITE, CATEGORIE_STUDENTE, idPredefinita } from '../moduli/budget/logica'
@@ -93,5 +93,34 @@ export async function eseguiManutenzione(): Promise<void> {
     nuove.push('cose-casa-in-task-v1')
   }
 
-  if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('catalogo-ginecologia-v1')) {
+    // Sigle di ginecologia e informazioni utili dal vademecum: solo per chi ha già caricato i turni tipo.
+    const modelli = await elenca('modelliTurno')
+    if (modelli.length) {
+      const conInfo = infoMancanti(modelli)
+      if (conInfo.length) await salvaTanti('modelliTurno', conInfo)
+      const base = Math.max(0, ...modelli.map((m) => m.ordine)) + 1
+      // Id derivati dalla sigla: due dispositivi aggiungono gli stessi record, senza doppioni.
+      const mancanti = vociMancanti(modelli).map((v, i) => ({
+        id: `catalogo-${v.sigla.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i,
+        minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
+      }))
+      const esistenti = new Set((await elencaTutti('modelliTurno')).map((m) => m.id))
+      const nuovi = mancanti.filter((m) => !esistenti.has(m.id))
+      if (nuovi.length) await salvaTanti('modelliTurno', nuovi)
+    }
+    nuove.push('catalogo-ginecologia-v1')
+  }
+
+  if (!fatte.has('risparmi-col-mese-v1')) {
+    // I risparmi inseriti prima che esistesse l'interruttore erano tolti dai soldi del mese: restano così.
+    const PRIMA = Date.parse('2026-10-27T12:08:00Z')
+    for (const nome of ['movimenti', 'ricorrenti'] as const) {
+      const vecchi = (await elencaTutti(nome)).filter((m) => (m.tipo === 'risparmio' || m.tipo === 'prelievo') && m.colMese === undefined && m.creatoIl < PRIMA)
+      if (vecchi.length) await salvaTanti(nome, vecchi.map((m) => ({ ...m, colMese: true })))
+    }
+    nuove.push('risparmi-col-mese-v1')
+  }
+
+    if (nuove.length) await salvaImpostazioni({ correzioniApplicate: [...fatte, ...nuove] })
 }

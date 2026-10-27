@@ -152,13 +152,13 @@ describe('Turni tutto il giorno', () => {
 
 describe('Sigle della scuola', () => {
   test('catalogo completo e senza doppioni', () => {
-    expect(CATALOGO_SCUOLA).toHaveLength(34)
-    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(34)
+    expect(CATALOGO_SCUOLA).toHaveLength(51)
+    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(51)
     expect(CATALOGO_SCUOLA.every((v) => TIPI_TURNO.includes(v.tipo))).toBe(true)
   })
   test('aggiunge solo le sigle mancanti', () => {
     expect(vociMancanti([{ sigla: 'N' }, { sigla: 'e pom' }]).map((v) => v.sigla)).not.toContain('E pom')
-    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(33)
+    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(50)
   })
 })
 

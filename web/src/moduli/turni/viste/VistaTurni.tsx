@@ -144,7 +144,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <div className="riga-azioni">
             <button type="button" className="pulsante primario" onClick={() => void salvaTanti('modelliTurno', CATALOGO_SCUOLA.map((v, i) => ({
               nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: i,
-              minutoInizio: v.orari[0], minutoFine: v.orari[1],
+              minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
             })))}>Carica le sigle della scuola</button>
             <a className="pulsante" href="#/turni/impostazioni">Crea a mano</a>
           </div>

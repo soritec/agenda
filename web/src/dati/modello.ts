@@ -33,6 +33,8 @@ export interface ModelloTurno extends Base {
   tuttoIlGiorno?: boolean
   sedeId?: string
   ordine: number
+  /** Informazioni utili: dove e quando presentarsi (es. "piano -1, blocco F, alle 7:45"). */
+  info?: string
 }
 
 export interface Turno extends Base {

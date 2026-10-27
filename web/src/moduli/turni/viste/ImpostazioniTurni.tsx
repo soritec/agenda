@@ -37,7 +37,7 @@ export function ImpostazioniTurni() {
     const base = elencoModelli.length
     const nuovi = await salvaTanti('modelliTurno', mancanti.map((v, i) => ({
       nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i,
-      minutoInizio: v.orari[0], minutoFine: v.orari[1],
+      minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
     })))
     mostraAvviso(`${nuovi.length} turni tipo aggiunti`, () => void Promise.all(nuovi.map((n) => elimina('modelliTurno', n.id))))
   }
@@ -141,7 +141,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
   const [b, setB] = useState({
     nome: record?.nome ?? '', sigla: record?.sigla ?? '', tipo: tipoTurnoDa(record?.tipo ?? 'reparto'),
     inizio: orarioDaMinuti(record?.minutoInizio ?? 8 * 60), fine: orarioDaMinuti(record?.minutoFine ?? 16 * 60),
-    sedeId: record?.sedeId ?? '', tuttoIlGiorno: Boolean(record?.tuttoIlGiorno),
+    sedeId: record?.sedeId ?? '', tuttoIlGiorno: Boolean(record?.tuttoIlGiorno), info: record?.info ?? '',
   })
   const mi = minutiDaOrario(b.inizio), mf = minutiDaOrario(b.fine)
   const valido = b.nome.trim() !== '' && mi !== undefined && mf !== undefined
@@ -150,7 +150,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
     if (!valido || mi === undefined || mf === undefined) return
     await salva('modelliTurno', {
       ...record, nome: b.nome.trim(), sigla: (b.sigla.trim() || b.nome.trim().charAt(0).toUpperCase()).slice(0, 6),
-      tipo: b.tipo, minutoInizio: mi, minutoFine: mf, tuttoIlGiorno: b.tuttoIlGiorno || undefined, sedeId: b.sedeId || undefined, ordine: record?.ordine ?? ordine,
+      tipo: b.tipo, minutoInizio: mi, minutoFine: mf, tuttoIlGiorno: b.tuttoIlGiorno || undefined, sedeId: b.sedeId || undefined, ordine: record?.ordine ?? ordine, info: b.info.trim() || undefined,
     })
     onChiudi()
   }
@@ -185,6 +185,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
             {sedi.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
           </select>
         </Campo>
+        <Campo etichetta="Dove e quando presentarsi (facoltativo)"><textarea rows={3} value={b.info} placeholder="es. piano -1, blocco F, alle 7:45 già cambiati" onChange={(e) => setB({ ...b, info: e.target.value })} /></Campo>
         {record && <PulsanteElimina onElimina={() => void elimina('modelliTurno', record.id).then(() => { onChiudi(); mostraAvviso(`Eliminato: ${record.nome}`, () => void ripristina('modelliTurno', record.id)) })} />}
       </div>
     </Foglio>

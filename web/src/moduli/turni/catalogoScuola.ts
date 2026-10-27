@@ -10,47 +10,71 @@ export interface VoceCatalogo {
   nome: string
   tipo: TipoTurno
   orari: [number, number]
+  /** Dove e quando presentarsi (dal vademecum). */
+  info?: string
 }
 
 const ORA = 60
 const AMB: [number, number] = [8 * ORA, 18 * ORA]
 const SALA: [number, number] = [7 * ORA, 18 * ORA]
 
+const GUARDIA = 'Presentarsi 10–15 minuti prima in sala parto per le consegne.'
+const AMB_OST = 'Ambulatori di ostetricia: piano terra, settore C.'
+const AMB_GIN = (amb: string) => `Ambulatori di ginecologia: piano terra, settore A${amb}. Presentarsi alle 8:00–8:20; di solito finisce verso le 13–13:30, spesso anche il pomeriggio dalle 14–14:30.`
+const SALA_GIN = 'Sala operatoria: piano -1, blocco F. Presentarsi alle 7:45 già cambiati (tutina azzurra, cuffia, mascherina); zoccoli nel blocco F, tutine dal distributore al piano -1 nel corridoio delle sale.'
+
 export const CATALOGO_SCUOLA: VoceCatalogo[] = [
-  { sigla: 'G', nome: 'Guardia giorno', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA] },
-  { sigla: 'N', nome: 'Guardia notte', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA] },
-  { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: AMB },
-  { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: AMB },
+  { sigla: 'G', nome: 'Guardia giorno', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Guardia 8–20 (triage o sala parto). ${GUARDIA}` },
+  { sigla: 'N', nome: 'Guardia notte', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Guardia 20–8 (triage o sala parto). ${GUARDIA}` },
+  { sigla: 'GG', nome: 'Guardia giorno (triage)', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Triage del PS ostetrico-ginecologico, 8–20. ${GUARDIA}` },
+  { sigla: 'GN', nome: 'Guardia notte (triage)', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Triage del PS ostetrico-ginecologico, 20–8. ${GUARDIA}` },
+  { sigla: 'GSP', nome: 'Guardia giorno sala parto', tipo: 'guardiaDiurna', orari: [8 * ORA, 20 * ORA], info: `Sala parto, 8–20, affiancati all'ostetrica. ${GUARDIA}` },
+  { sigla: 'NSP', nome: 'Guardia notte sala parto', tipo: 'guardiaNotturna', orari: [20 * ORA, 8 * ORA], info: `Sala parto, 20–8, affiancati all'ostetrica. ${GUARDIA}` },
+  { sigla: 'R', nome: 'Reparto Ostetricia', tipo: 'reparto', orari: AMB, info: '3° piano, settore C. Alle 8 in guardia per le consegne della sala parto, in reparto verso le 8:30. Conviene portarsi il pranzo.' },
+  { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: AMB, info: 'Reparto maternità: 3° piano, settore B. Alle 8 in guardia per le consegne, in reparto verso le 8:30; di solito una settimana da lunedì a domenica.' },
   { sigla: 'DSO', nome: 'Day Service Ostetrico', tipo: 'reparto', orari: AMB },
-  { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: AMB },
-  { sigla: 'F', nome: 'Amb. Gravidanza Fisiologica', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Gem', nome: 'Amb. Gemelli', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'PP', nome: 'Amb. Parto Prematuro', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Au', nome: 'Amb. Autoimmunità', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'I', nome: 'Amb. Ipertensione', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Pa', nome: 'Amb. Pluriabortività', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'D', nome: 'Amb. Dismetabolismo', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'PV', nome: 'Amb. Patologia Varia', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'A', nome: 'Amb. Gravidanza Alto Rischio', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Ex', nome: 'Amb. Gravidanza Extrauterina / I trim.', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB },
+  { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: AMB, info: '7° piano, settore B. In reparto alle 7:00–7:30, si può restare fino alle 20; una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.' },
+  { sigla: 'F', nome: 'Amb. Gravidanza Fisiologica', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Fisiologia medici: martedì e venerdì mattina.` },
+  { sigla: 'Gem', nome: 'Amb. Gemelli', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'PP', nome: 'Amb. Parto Prematuro', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'Au', nome: 'Amb. Autoimmunità', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'I', nome: 'Amb. Ipertensione', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'Pa', nome: 'Amb. Pluriabortività', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'D', nome: 'Amb. Dismetabolismo', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'PV', nome: 'Amb. Patologia Varia', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'A', nome: 'Amb. Gravidanza Alto Rischio', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'Ex', nome: 'Amb. Gravidanza Extrauterina / I trim.', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
+  { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'Cs', nome: 'Consultorio', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'AGI', nome: 'Amb. Ginecologia generale', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Ben', nome: 'Amb. Patologia Benigna', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Aon', nome: 'Amb. Oncologia', tipo: 'ambulatorio', orari: AMB },
-  { sigla: 'Uro', nome: 'Amb. Uroginecologia', tipo: 'ambulatorio', orari: AMB },
+  { sigla: 'AGI', nome: 'Amb. Ginecologia I livello', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 4') },
+  { sigla: 'Ben', nome: 'Amb. Benigna / endometriosi', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
+  { sigla: 'Aon', nome: 'Amb. Oncologico', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'Uro', nome: 'Amb. Urologia / uroginecologia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'AUB', nome: 'Amb. Perdite ematiche atipiche', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 5') },
+  { sigla: 'ECO', nome: 'Ecografie ginecologiche', tipo: 'ecografia', orari: AMB, info: AMB_GIN(', amb 7') },
+  { sigla: 'BRCA', nome: 'Amb. BRCA mutate', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 7') },
+  { sigla: 'ISC', nome: 'Isteroscopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 5') },
+  { sigla: 'AOE', nome: 'Amb. Oncologia età fertile', tipo: 'ambulatorio', orari: AMB, info: `${AMB_GIN(', amb 7')} Mercoledì mattina.` },
+  { sigla: 'END', nome: 'Amb. Endocrino', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
+  { sigla: 'VACCINI', nome: 'Vaccini HPV', tipo: 'ambulatorio', orari: AMB, info: `${AMB_GIN(', amb 9')} 1° e 3° giovedì del mese.` },
+  { sigla: 'ron', nome: 'Oncologia ginecologica', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 12') },
+  { sigla: 'PR', nome: 'Prericoveri', tipo: 'ambulatorio', orari: AMB, info: 'Prericoveri: chiedere la stanza al mattino.' },
+  { sigla: 'GOI', nome: 'Discussione casi onco (GOI)', tipo: 'altro', orari: [13 * ORA, 14 * ORA + 30], info: 'Discussione multidisciplinare dei casi di oncologia ginecologica: giovedì 13–14:30, Anatomia patologica, piano 0, corridoio settore A (solo in presenza).' },
   { sigla: 'BT', nome: 'Bi-test', tipo: 'ecografia', orari: AMB },
   { sigla: 'Gen', nome: 'Ecografie genetiche', tipo: 'ecografia', orari: AMB },
   { sigla: 'Am', nome: 'Amniocentesi', tipo: 'ecografia', orari: AMB },
   { sigla: 'E', nome: 'Ecografie ostetriche', tipo: 'ecografia', orari: AMB },
-  { sigla: 'E terr', nome: 'Ecografie ostetriche del territorio', tipo: 'ecografia', orari: AMB },
+  { sigla: 'E terr', nome: 'Ecografie ostetriche del territorio', tipo: 'ecografia', orari: AMB, info: 'Ecografie del I trimestre e di accrescimento: martedì mattina. Le pazienti patologiche richiedono la supervisione dello strutturato.' },
   { sigla: 'E pom', nome: 'Ecografie ostetriche pomeriggio', tipo: 'ecografia', orari: AMB },
   { sigla: 'Dpl', nome: 'Ecodoppler ostetricia', tipo: 'ecografia', orari: AMB },
   { sigla: 'ES', nome: 'Ecografie di II livello', tipo: 'ecografia', orari: AMB },
-  { sigla: 'PI', nome: 'Piccoli interventi', tipo: 'salaOperatoria', orari: SALA },
-  { sigla: 'Sop', nome: 'Sala operatoria', tipo: 'salaOperatoria', orari: SALA },
-  { sigla: 'Tro', nome: 'Tronco', tipo: 'altro', orari: AMB },
+  { sigla: 'PI', nome: 'Piccoli interventi', tipo: 'salaOperatoria', orari: SALA, info: 'Presentarsi in reparto di ostetricia (3° piano, settore C) alle 8. Sala operatoria ostetrica accanto alla sala parto (si entra col badge dal PS ostetrico).' },
+  { sigla: 'Sop', nome: 'Sala operatoria', tipo: 'salaOperatoria', orari: SALA, info: SALA_GIN },
+  { sigla: 'OP', nome: 'Sala operatoria ginecologia', tipo: 'salaOperatoria', orari: SALA, info: SALA_GIN },
+  { sigla: 'OPP', nome: 'Piccoli interventi ginecologia', tipo: 'salaOperatoria', orari: SALA, info: SALA_GIN },
+  { sigla: 'STRUM', nome: 'Affiancamento strumentista', tipo: 'salaOperatoria', orari: SALA, info: SALA_GIN },
+  { sigla: 'Tro', nome: 'Tronco', tipo: 'altro', orari: AMB, info: 'Tronco comune: 2 settimane di senologia e 2 di chirurgia generale. In questo mese niente ferie.' },
 ]
 
 /** Voci del catalogo non ancora presenti tra i turni tipo (confronto per sigla). */
@@ -67,11 +91,19 @@ export function correzioniCatalogoV1<T extends { sigla: string; nome: string; ti
   modelli: T[],
 ): (T & { minutoInizio: number; minutoFine: number; tuttoIlGiorno: undefined })[] {
   const perSigla = new Map(CATALOGO_SCUOLA.map((v) => [v.sigla, v]))
+  // Nomi con cui alcune sigle erano state caricate la prima volta (poi rinominate dal vademecum di ginecologia).
+  const nomiPrima: Record<string, string> = { AGI: 'Amb. Ginecologia generale', Ben: 'Amb. Patologia Benigna', Aon: 'Amb. Oncologia', Uro: 'Amb. Uroginecologia' }
   return modelli.flatMap((m) => {
     const v = perSigla.get(m.sigla)
-    if (!v || !m.tuttoIlGiorno || m.nome !== v.nome) return []
+    if (!v || !m.tuttoIlGiorno || m.nome !== (nomiPrima[v.sigla] ?? v.nome)) return []
     const tipoVecchio = v.sigla === 'Tro' ? 'salaOperatoria' : v.tipo
     if (m.tipo !== tipoVecchio) return []
     return [{ ...m, tipo: v.tipo, minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: undefined }]
   })
+}
+
+/** Le informazioni del catalogo per i turni tipo che non le hanno ancora (confronto per sigla, senza maiuscole). */
+export function infoMancanti<T extends { sigla: string; info?: string }>(modelli: T[]): T[] {
+  const perSigla = new Map(CATALOGO_SCUOLA.filter((v) => v.info).map((v) => [v.sigla.toLowerCase(), v.info!]))
+  return modelli.flatMap((m) => { const info = perSigla.get(m.sigla.trim().toLowerCase()); return info && !m.info ? [{ ...m, info }] : [] })
 }

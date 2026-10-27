@@ -122,6 +122,9 @@ export function DettaglioTurno({ id }: { id: string }) {
         <h1 className="titolo-grande">{titoloTurno(turno, mappaModelli)}</h1>
         <div className="secondario">{F.dataEstesa(turno.inizio)}</div>
       </header>
+      {turno.modelloId && mappaModelli.get(turno.modelloId)?.info && (
+        <div className="info-turno"><strong>Dove e quando</strong><span>{mappaModelli.get(turno.modelloId)!.info}</span></div>
+      )}
 
       <div className="scheda modulo">
         <div className="campi-affiancati">
