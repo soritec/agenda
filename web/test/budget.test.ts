@@ -53,7 +53,7 @@ describe('Budget', () => {
       { ...b, id: 't1', inizio: istante(2026, 10, 10, 8), fine: istante(2026, 10, 10, 20), tipo: 'sostituzioneMMG', stato: 'pagato', compensoCent: 18000, origine: 'manuale' },
       { ...b, id: 't2', inizio: istante(2026, 10, 14, 8), fine: istante(2026, 10, 14, 20), tipo: 'sostituzioneMMG', stato: 'svolto', compensoCent: 18000, origine: 'manuale' },
     ]
-    const tasse: Tassa[] = [{ ...b, id: 'k1', descrizione: 'Prima rata', importoCent: 78000, scadenza: '2026-10-31', stato: 'pagato', pagatoIl: '2026-10-02' }]
+    const tasse: Tassa[] = [{ ...b, id: 'k1', descrizione: 'Prima rata', importoCent: 78000, scadenza: '2026-10-05', stato: 'pagato', pagatoIl: '2026-10-02' }]
     const cat = categorie.map((c) => (c.nome === 'Svago' ? { ...c, tettoCent: 15000 } : c.nome === 'Salute' ? { ...c, tettoCent: 5000 } : c))
     const r = riepilogo({ categorie: cat, movimenti, ricorrenti, turni, tasse }, '2026-10', '2026-10-15')
     expect(r.entrateCent).toBe(165000 + 18000)
@@ -65,6 +65,26 @@ describe('Budget', () => {
       ['Tasse universitarie', 78000, undefined], ['Svago', 20000, 15000], ['Spesa', 4500, undefined], ['Salute', 0, 5000],
     ])
     expect(vociDelMese({ categorie: cat, movimenti, ricorrenti }, '2026-10').map((v) => v.chiave)).toContain('r:r1:2026-10')
+  })
+
+  test('una scadenza toglie i soldi alla data prevista, non prima', () => {
+    const uscita = { ...b, tipo: 'uscita', importoCent: 10000, categoriaId: id('Spesa') }
+    const movimenti: Movimento[] = [{ ...uscita, id: 'm1', giorno: '2026-10-20' }]
+    const ricorrenti: Ricorrente[] = [{ ...uscita, id: 'r1', descrizione: 'Fisso', frequenza: 'mese', inizio: '2026-10-25' }]
+    const tasse: Tassa[] = [
+      { ...b, id: 'pagata-prima', descrizione: 'A', importoCent: 1000, scadenza: '2026-10-22', stato: 'pagato', pagatoIl: '2026-10-02' },
+      { ...b, id: 'da-pagare', descrizione: 'B', importoCent: 2000, scadenza: '2026-10-23', stato: 'daPagare' },
+      { ...b, id: 'pagata-dopo', descrizione: 'C', importoCent: 4000, scadenza: '2026-10-05', stato: 'pagato', pagatoIl: '2026-10-24' },
+    ]
+    const d = { categorie, movimenti, ricorrenti, tasse }
+    const uscite = (oggi: string) => riepilogo(d, '2026-10', oggi).usciteCent
+    expect(uscite('2026-10-19')).toBe(0)
+    expect(uscite('2026-10-20')).toBe(10000)
+    expect(uscite('2026-10-22')).toBe(11000)
+    expect(uscite('2026-10-23')).toBe(13000)
+    expect(uscite('2026-10-24')).toBe(17000)
+    expect(uscite('2026-10-25')).toBe(27000)
+    expect(prossimeScadenze(d, '2026-10-10').filter((s) => s.titolo === 'B').length).toBe(1)
   })
 
   test('prossime scadenze', () => {

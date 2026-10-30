@@ -127,6 +127,16 @@ const titoloRisparmio = (t: TipoVoce) => (t === 'risparmio' ? 'Messo da parte' :
 /** Categoria delle entrate da turni (compenso scritto nel turno): sostituzioni MMG o libera professione. */
 const categoriaTurno = (t: Turno) => idPredefinita(t.tipo === 'sostituzioneMMG' ? 'Sostituzioni MMG' : 'Libera professione')
 
+/**
+ * Giorno in cui una tassa toglie i soldi: la scadenza, anche se è già segnata pagata prima;
+ * se è stata pagata dopo, il giorno del pagamento. Senza scadenza conta solo quando è pagata.
+ */
+function giornoTassa(t: Tassa): string | undefined {
+  const pagata = t.stato === 'pagato' ? t.pagatoIl : undefined
+  if (!t.scadenza) return pagata
+  return pagata && pagata > t.scadenza ? pagata : t.scadenza
+}
+
 /** Tutte le voci di un mese ("2026-10"). */
 export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
   const nomi = new Map(d.categorie.map((c) => [c.id, c.nome]))
@@ -146,9 +156,9 @@ export function vociDelMese(d: DatiBudget, mese: string): Voce[] {
     if (meseDi(giorno) !== mese) continue
     voci.push({ chiave: `t:${t.id}`, origine: 'turno', id: t.id, tipo: 'entrata', importoCent: t.compensoCent, giorno, categoriaId: categoriaTurno(t), titolo: nomi.get(categoriaTurno(t)) ?? 'Compenso turno', daIncassare: t.stato !== 'pagato' })
   }
-  // Le tasse universitarie pagate (sezione Specializzazione) contano come uscite, senza riscriverle qui.
+  // Le tasse universitarie (sezione Specializzazione) contano come uscite, senza riscriverle qui.
   for (const t of d.tasse ?? []) {
-    const giorno = t.stato === 'pagato' ? t.pagatoIl ?? t.scadenza : undefined
+    const giorno = giornoTassa(t)
     if (!giorno || meseDi(giorno) !== mese) continue
     voci.push({ chiave: `k:${t.id}`, origine: 'tassa', id: t.id, tipo: 'uscita', importoCent: t.importoCent, giorno, categoriaId: idPredefinita('Tasse universitarie'), titolo: t.descrizione })
   }
@@ -207,14 +217,15 @@ export function spostaMese(mese: string, n: number): string {
   return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`
 }
 
-/** Uscite in arrivo nei prossimi `giorni`: fissi, movimenti con data futura e tasse universitarie da pagare. */
+/** Uscite in arrivo nei prossimi `giorni`: fissi, movimenti con data futura e tasse universitarie. */
 export function prossimeScadenze(d: DatiBudget, oggi: string, giorni = 120): { chiave: string; giorno: string; titolo: string; importoCent: number; link: string }[] {
   const g = giornoDaChiave(oggi)!
   const limite = chiaveGiorno(giornoDi(Date.UTC(g.anno, g.mese - 1, g.giorno + giorni, 12)))
   const out: { chiave: string; giorno: string; titolo: string; importoCent: number; link: string }[] = []
   const mesi = Array.from({ length: Math.ceil(giorni / 28) + 1 }, (_, i) => spostaMese(meseDi(oggi), i))
   for (const mese of mesi) {
-    for (const v of vociDelMese({ ...d, turni: [] }, mese)) {
+    // Le tasse da pagare si aggiungono qui sotto (anche quelle già scadute).
+    for (const v of vociDelMese({ ...d, turni: [], tasse: d.tasse?.filter((t) => t.stato === 'pagato') }, mese)) {
       if (v.tipo === 'uscita' && v.giorno > oggi && v.giorno <= limite) out.push({ chiave: v.chiave, giorno: v.giorno, titolo: v.titolo, importoCent: v.importoCent, link: '#/budget' })
     }
   }

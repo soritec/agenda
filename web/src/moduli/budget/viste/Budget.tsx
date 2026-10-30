@@ -238,15 +238,21 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
           <section className="scheda scheda-risparmi" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <h2 className="titolo-sezione" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconaSalvadanaio dimensione={20} /> Risparmi</h2>
             <span className="secondario piccolo">Separati dai soldi del mese: tolgono da "Ti restano" solo se lo scegli.</span>
-            {vociRisparmio.map((v) => (
-              <div key={v.chiave} className="riga-semplice">
-                <button type="button" className="crescente" onClick={() => apri(v)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
-                  <span style={{ fontWeight: 600 }}>{v.titolo}</span>
-                  <span className="secondario piccolo">{[dataBreve(v.giorno), v.origine === 'ricorrente' ? '↻ ogni mese' : '', dati.obiettivi?.find((o) => o.id === v.obiettivoId)?.nome].filter(Boolean).join(' · ')}</span>
-                </button>
-                <span className={`numeri importo ${v.tipo}`}>{segno(v.tipo)}{euro(v.importoCent)}</span>
+            <details className="tendina-budget">
+              <summary className="sottotitolo-risparmi">Movimenti del mese <span className="secondario piccolo" style={{ fontWeight: 400 }}>{vociRisparmio.length}</span></summary>
+              <div className="corpo-tendina-budget">
+                {vociRisparmio.length === 0 && <span className="secondario piccolo">Nessun movimento in questo mese.</span>}
+                {vociRisparmio.map((v) => (
+                  <div key={v.chiave} className="riga-semplice">
+                    <button type="button" className="crescente" onClick={() => apri(v)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
+                      <span style={{ fontWeight: 600 }}>{v.titolo}</span>
+                      <span className="secondario piccolo">{[dataBreve(v.giorno), v.origine === 'ricorrente' ? '↻ ogni mese' : '', dati.obiettivi?.find((o) => o.id === v.obiettivoId)?.nome].filter(Boolean).join(' · ')}</span>
+                    </button>
+                    <span className={`numeri importo ${v.tipo}`}>{segno(v.tipo)}{euro(v.importoCent)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </details>
             <div className="riga-azioni">
               <button type="button" className="pillola" onClick={() => setModifica({ tipo: 'prelievo' })}>Riprendi dai risparmi</button>
             </div>
@@ -262,8 +268,9 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
             ))}
             <div className="riga-azioni"><button type="button" className="pillola" onClick={() => setObiettivoAperto({})}>+ Obiettivo</button></div>
           </section>
-          <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <h2 className="titolo-sezione">Da incassare</h2>
+          <details className="scheda tendina-budget">
+            <summary className="titolo-sezione">Da incassare <span className="secondario piccolo" style={{ fontWeight: 400 }}>{r.daIncassare.length ? euro(r.daIncassare.reduce((t, v) => t + v.importoCent, 0)) : 'niente'}</span></summary>
+            <div className="corpo-tendina-budget">
             {r.daIncassare.length === 0 && <span className="secondario piccolo">Niente in attesa questo mese.</span>}
             {r.daIncassare.map((v) => (
               <div key={v.chiave} className="riga-semplice">
@@ -275,9 +282,11 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                 <button type="button" className="pillola" onClick={() => void incassa(v)}>Incassato</button>
               </div>
             ))}
-          </section>
-          <section className="scheda" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <h2 className="titolo-sezione">Prossime scadenze</h2>
+            </div>
+          </details>
+          <details className="scheda tendina-budget">
+            <summary className="titolo-sezione">Prossime scadenze <span className="secondario piccolo" style={{ fontWeight: 400 }}>{scadenze.length || 'nessuna'}</span></summary>
+            <div className="corpo-tendina-budget">
             {scadenze.length === 0 && <span className="secondario piccolo">Nessuna uscita in programma.</span>}
             {scadenze.map((s) => (
               <a key={s.chiave} className="riga-semplice" href={s.link} style={{ color: 'inherit' }}>
@@ -285,7 +294,8 @@ export function Budget({ meseParam }: { meseParam?: string | null }) {
                 <span className="numeri">{euro(s.importoCent)}</span>
               </a>
             ))}
-          </section>
+            </div>
+          </details>
           <div className="riga-azioni">
             <button type="button" className="pulsante" onClick={() => setEsporta(true)}>Esporta l'anno</button>
             <a className="pulsante" href="#/budget/categorie">Categorie e tetti</a>
