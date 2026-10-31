@@ -126,14 +126,14 @@ export function datiConSede(t: Turno, assegnazioni: Assegnazione[] | undefined):
   return { ...datiDa(t), sedeId: sedeEffettiva(t, assegnazioni) }
 }
 
-/** Giorni con due attività senza orari, guardie escluse: la prima è del mattino (m), la seconda del pomeriggio (p). */
-export function fasceDelGiorno(perGiorno: Map<string, Turno[]>): Map<string, 'm' | 'p'> {
-  const fasce = new Map<string, 'm' | 'p'>()
+/** Giorni con due attività senza orari, guardie escluse: la prima è del mattino (M), la seconda del pomeriggio (P). */
+export function fasceDelGiorno(perGiorno: Map<string, Turno[]>): Map<string, 'M' | 'P'> {
+  const fasce = new Map<string, 'M' | 'P'>()
   for (const turni of perGiorno.values()) {
     const attivita = turni.filter((t) => !['guardiaDiurna', 'guardiaNotturna'].includes(tipoTurnoDa(t.tipo)))
     if (attivita.length !== 2) continue
-    fasce.set(attivita[0]!.id, 'm')
-    fasce.set(attivita[1]!.id, 'p')
+    fasce.set(attivita[0]!.id, 'M')
+    fasce.set(attivita[1]!.id, 'P')
   }
   return fasce
 }

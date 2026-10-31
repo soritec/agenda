@@ -299,8 +299,8 @@ describe('impegni della scuola nel calendario dei turni', () => {
   })
 })
 
-test('m e p solo con due attività, guardie escluse', () => {
+test('M e P solo con due attività, guardie escluse', () => {
   const t = (id: string, tipo: string) => ({ id, tipo }) as Turno
   const f = fasceDelGiorno(new Map([['a', [t('1', 'ambulatorio'), t('2', 'reparto')]], ['b', [t('3', 'reparto'), t('4', 'guardiaNotturna')]]]))
-  expect([...f]).toEqual([['1', 'm'], ['2', 'p']])
+  expect([...f]).toEqual([['1', 'M'], ['2', 'P']])
 })
