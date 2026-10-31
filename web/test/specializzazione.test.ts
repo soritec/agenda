@@ -21,8 +21,8 @@ describe('Specializzazione', () => {
     ]
     const tutti = conteggi(p)
     expect(tutti.totale).toBe(4)
-    expect(tutti.perTipo.get('tc')).toEqual({ primo: 1, secondo: 2, osservatore: 0 })
-    expect(tutti.perRuolo).toEqual({ primo: 1, secondo: 2, osservatore: 1 })
+    expect(tutti.perTipo.get('tc')).toEqual({ primo: 1, secondo: 2, terzo: 0, strumentista: 0, osservatore: 0 })
+    expect(tutti.perRuolo).toEqual({ primo: 1, secondo: 2, terzo: 0, strumentista: 0, osservatore: 1 })
     expect([...tutti.perAnno.entries()].sort()).toEqual([[1, 2], [2, 2]])
     const secondo = conteggi(p, 2)
     expect(secondo.totale).toBe(2)

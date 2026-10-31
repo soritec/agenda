@@ -12,7 +12,7 @@ import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
 import {
-  ANNI_PREDEFINITI, annoDiCorso, conteggi, nelFiltro, RUOLI, ruoloDa, settimaneValide, TITOLI_RUOLO, type FiltroCategoria, type Ruolo,
+  ANNI_PREDEFINITI, annoDiCorso, conteggi, nelFiltro, RUOLI, ruoloDa, settimaneValide, TITOLI_RUOLO, TITOLI_RUOLO_BREVI, type FiltroCategoria, type Ruolo,
 } from '../logica'
 
 export const AVVISO_REFERTO = 'Allega solo documenti senza dati che identificano la paziente (nome, codice fiscale, data di nascita, indirizzo): oscurali prima.'
@@ -25,7 +25,7 @@ const dataBreve = (giorno: string) => {
   return g ? F.dataBreve(istante(g.anno, g.mese, g.giorno, 12)) : giorno
 }
 
-interface RigaTabella { id: string; nome: string; primo: number; secondo: number; osservatore: number; totale: number; chirurgica: boolean }
+interface RigaTabella { id: string; nome: string; primo: number; secondo: number; terzo: number; strumentista: number; osservatore: number; totale: number; chirurgica: boolean }
 
 export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   const procedure = useCollezione('procedure')
@@ -56,7 +56,7 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   const nellaCategoria = useMemo(() => (procedure ?? []).filter((p) => nelFiltro(mappaTipi.get(p.tipoId), categoria)), [procedure, mappaTipi, categoria])
   const c = useMemo(() => conteggi(nellaCategoria, anno), [nellaCategoria, anno])
   const righe: RigaTabella[] = useMemo(() => [...c.perTipo.entries()]
-    .map(([id, r]) => ({ id, nome: mappaTipi.get(id)?.nome ?? '—', ...r, totale: r.primo + r.secondo + r.osservatore, chirurgica: Boolean(mappaTipi.get(id)?.chirurgica) }))
+    .map(([id, r]) => ({ id, nome: mappaTipi.get(id)?.nome ?? '—', ...r, totale: RUOLI.reduce((n, x) => n + r[x], 0), chirurgica: Boolean(mappaTipi.get(id)?.chirurgica) }))
     .sort((a, b) => b.totale - a.totale || a.nome.localeCompare(b.nome)), [c, mappaTipi])
   const gruppi = categoria === 'tutte'
     ? [{ titolo: 'Chirurgiche', righe: righe.filter((r) => r.chirurgica) }, { titolo: 'Non chirurgiche', righe: righe.filter((r) => !r.chirurgica) }].filter((g) => g.righe.length)
@@ -68,22 +68,22 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   const descrizioneFiltro = [anno ? `${anno}° anno` : 'Tutti gli anni', categoria === 'tutte' ? '' : CATEGORIE.find((x) => x.id === categoria)!.titolo.toLowerCase()].filter(Boolean).join(' · ')
 
   async function esportaPdf(azione: 'scarica' | 'condividi') {
-    const somma = (rr: RigaTabella[], k: 'primo' | 'secondo' | 'osservatore' | 'totale') => rr.reduce((s, r) => s + r[k], 0)
+    const somma = (rr: RigaTabella[], k: Ruolo | 'totale') => rr.reduce((s, r) => s + r[k], 0)
     const righePdf: RigaPdf[] = gruppi.flatMap((g) => [
-      ...(g.titolo ? [{ celle: [g.titolo, String(somma(g.righe, 'primo')), String(somma(g.righe, 'secondo')), String(somma(g.righe, 'osservatore')), String(somma(g.righe, 'totale'))], colore: [233, 228, 220] as [number, number, number] }] : []),
-      ...g.righe.map((r) => ({ celle: [r.nome, String(r.primo), String(r.secondo), String(r.osservatore), String(r.totale)] })),
+      ...(g.titolo ? [{ celle: [g.titolo, ...RUOLI.map((x) => String(somma(g.righe, x))), String(somma(g.righe, 'totale'))], colore: [233, 228, 220] as [number, number, number] }] : []),
+      ...g.righe.map((r) => ({ celle: [r.nome, ...RUOLI.map((x) => String(r[x])), String(r.totale)] })),
     ])
     const blob = await creaPdf({
       titolo: 'Logbook della specializzazione',
       sottotitolo: `${descrizioneFiltro} · aggiornato ${F.dataEstesa(Date.now())}`,
       riepilogo: [
         { etichetta: 'procedure', valore: String(c.totale) },
-        ...RUOLI.map((r) => ({ etichetta: TITOLI_RUOLO[r].toLowerCase(), valore: String(c.perRuolo[r]) })),
+        ...RUOLI.map((r) => ({ etichetta: TITOLI_RUOLO_BREVI[r].toLowerCase(), valore: String(c.perRuolo[r]) })),
       ],
-      intestazioni: ['Procedura', '1° operatore', '2° operatore', 'Osservatore', 'Totale'],
+      intestazioni: ['Procedura', ...RUOLI.map((r) => TITOLI_RUOLO_BREVI[r]), 'Totale'],
       righe: righePdf,
-      colonneGrassetto: [0, 4], colonnaColore: 0, colonneDestra: [1, 2, 3, 4],
-      totaleTabella: ['Totale', String(c.perRuolo.primo), String(c.perRuolo.secondo), String(c.perRuolo.osservatore), String(c.totale)],
+      colonneGrassetto: [0, 6], colonnaColore: 0, colonneDestra: [1, 2, 3, 4, 5, 6],
+      totaleTabella: ['Totale', ...RUOLI.map((r) => String(c.perRuolo[r])), String(c.totale)],
       piede: 'Agenda · logbook con soli dati anonimi',
     })
     const nome = `Logbook ${descrizioneFiltro}.pdf`
@@ -150,14 +150,14 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
       <section style={{ overflowX: 'auto' }}>
         <table className="tabella-stampa tabella-logbook">
           <thead>
-            <tr><th>Procedura</th><th className="num">1° op.</th><th className="num">2° op.</th><th className="num">Oss.</th><th className="num">Tot.</th></tr>
+            <tr><th>Procedura</th><th className="num">1° op.</th><th className="num">2° op.</th><th className="num">3° op.</th><th className="num">Strum.</th><th className="num">Oss.</th><th className="num">Tot.</th></tr>
           </thead>
           <tbody>
-            {righe.length === 0 && <tr><td colSpan={5} className="secondario">Nessuna procedura con questi filtri.</td></tr>}
+            {righe.length === 0 && <tr><td colSpan={7} className="secondario">Nessuna procedura con questi filtri.</td></tr>}
             {gruppi.map((g) => [
               g.titolo && (
                 <tr key={`g-${g.titolo}`} className="riga-gruppo">
-                  <td colSpan={4}>{g.titolo}</td>
+                  <td colSpan={6}>{g.titolo}</td>
                   <td className="num">{g.righe.reduce((s, r) => s + r.totale, 0)}</td>
                 </tr>
               ),
@@ -170,9 +170,7 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
                     <button type="button" className="x-elimina" aria-label={`Elimina ${r.nome}`} onPointerDown={(e) => e.stopPropagation()}
                       onClick={() => void eliminaTipo(r.id, r.nome)}>×</button>
                   </td>
-                  <td className="num">{r.primo || ''}</td>
-                  <td className="num">{r.secondo || ''}</td>
-                  <td className="num">{r.osservatore || ''}</td>
+                  {RUOLI.map((x) => <td key={x} className="num">{r[x] || ''}</td>)}
                   <td className="num" style={{ fontWeight: 700 }}>{r.totale}</td>
                 </tr>
               )),

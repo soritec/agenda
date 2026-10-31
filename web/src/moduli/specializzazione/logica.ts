@@ -3,9 +3,11 @@
  * Il logbook contiene solo dati anonimi.
  */
 
-export const RUOLI = ['primo', 'secondo', 'osservatore'] as const
+export const RUOLI = ['primo', 'secondo', 'terzo', 'strumentista', 'osservatore'] as const
 export type Ruolo = (typeof RUOLI)[number]
-export const TITOLI_RUOLO: Record<Ruolo, string> = { primo: '1° operatore', secondo: '2° operatore', osservatore: 'Osservatore' }
+export const TITOLI_RUOLO: Record<Ruolo, string> = { primo: '1° operatore', secondo: '2° operatore', terzo: '3° operatore', strumentista: 'Affiancamento strumentista', osservatore: 'Osservatore' }
+/** Nomi corti per tabelle e riquadri del PDF. */
+export const TITOLI_RUOLO_BREVI: Record<Ruolo, string> = { ...TITOLI_RUOLO, strumentista: 'Strumentista' }
 export const ruoloDa = (grezzo: string): Ruolo => ((RUOLI as readonly string[]).includes(grezzo) ? (grezzo as Ruolo) : 'osservatore')
 
 /** Elenco iniziale dei tipi di procedura (modificabile dall'utente). */
@@ -46,14 +48,14 @@ export interface Conteggi {
 }
 
 export function conteggi(procedure: { tipoId: string; ruolo: string; annoCorso: number }[], anno?: number): Conteggi {
-  const r: Conteggi = { totale: 0, perTipo: new Map(), perRuolo: { primo: 0, secondo: 0, osservatore: 0 }, perAnno: new Map() }
+  const r: Conteggi = { totale: 0, perTipo: new Map(), perRuolo: { primo: 0, secondo: 0, terzo: 0, strumentista: 0, osservatore: 0 }, perAnno: new Map() }
   for (const p of procedure) {
     r.perAnno.set(p.annoCorso, (r.perAnno.get(p.annoCorso) ?? 0) + 1)
     if (anno !== undefined && p.annoCorso !== anno) continue
     const ruolo = ruoloDa(p.ruolo)
     r.totale++
     r.perRuolo[ruolo]++
-    const t = r.perTipo.get(p.tipoId) ?? { primo: 0, secondo: 0, osservatore: 0 }
+    const t = r.perTipo.get(p.tipoId) ?? { primo: 0, secondo: 0, terzo: 0, strumentista: 0, osservatore: 0 }
     t[ruolo]++
     r.perTipo.set(p.tipoId, t)
   }
