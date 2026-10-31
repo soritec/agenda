@@ -103,7 +103,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         evidenza: eFestivo(t.inizio, { sabatoFestivo }) ? 'festivo' : undefined,
         celle: [
           F.dataBreve(t.inizio),
-          `${fasce.has(t.id) ? `${fasce.get(t.id)} ` : ''}${titoloTurno(t, mappaModelli)}`,
+          `${fasce.has(t.id) ? `(${fasce.get(t.id)}) ` : ''}${titoloTurno(t, mappaModelli)}`,
           t.tuttoIlGiorno ? '' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`,
           m > 0 ? F.durata(m) : '',
           mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')?.nome ?? '',
@@ -173,7 +173,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       giorno: g.giorno,
       festivo: eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo }),
       giornata: giornata ? { testo: ETICHETTE_GIORNATA[giornata], colore: COLORI_GIORNATA[giornata] } : undefined,
-      sigle: (perGiorno.get(k) ?? []).map((t) => ({ testo: `${fasce.has(t.id) ? `${fasce.get(t.id)} ` : ''}${siglaTurno(t, mappaModelli)}`, colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
+      sigle: (perGiorno.get(k) ?? []).map((t) => ({ testo: `${fasce.has(t.id) ? `(${fasce.get(t.id)}) ` : ''}${siglaTurno(t, mappaModelli)}`, colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
       voci: (scuola.get(k) ?? []).map((v) => ({ testo: `${v.nome}${v.ora ? ` ${v.ora}` : ''}`, colore: COLORI_SCUOLA[v.genere].testo })),
     }
   })
@@ -244,7 +244,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
                 <span className="sigle">
                   {(perGiorno.get(k) ?? []).map((t) => (
                     <span key={t.id} className="turno-mini">
-                      <span className={`${classeSigla(t.tipo)} barra-turno`}>{fasce.has(t.id) && <small className="fascia">{fasce.get(t.id)}</small>}{siglaTurno(t, mappaModelli)}</span>
+                      <span className={`${classeSigla(t.tipo)} barra-turno`}>{fasce.has(t.id) && <small className="fascia">({fasce.get(t.id)})</small>}{siglaTurno(t, mappaModelli)}</span>
                       {orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                     </span>
                   ))}
