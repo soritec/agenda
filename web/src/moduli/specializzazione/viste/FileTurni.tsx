@@ -7,13 +7,13 @@ import { useCollezione } from '../../../dati/hooks'
 import type { Allegato } from '../../../dati/modello'
 import { Avviso, mostraAvviso } from '../../../interfaccia/componenti'
 import { mostraAllegato } from '../../../interfaccia/Visualizzatore'
-import { FILE_TURNI, fileTurniPerMese } from '../../turni/fileTurni'
+import { eLeggibile, FILE_TURNI, fileTurniPerMese } from '../../turni/fileTurni'
 import { ImportaTurni } from '../../turni/viste/ImportaTurni'
 
 /** Nome del mese da "2026-11". */
 export const titoloMese = (m: string) => { const [a, n] = m.split('-').map(Number); return F.mese(istante(a!, n!, 1, 12)) }
 
-/** Archivio dei file dei turni e delle guardie che arrivano ogni mese (PDF o foto), diviso per mese. */
+/** Archivio dei file dei turni e delle guardie che arrivano ogni mese (Excel, PDF o foto), diviso per mese. */
 export function FileTurni() {
   const allegati = useCollezione('allegati')
   const [errore, setErrore] = useState<string>()
@@ -29,7 +29,7 @@ export function FileTurni() {
     for (const f of tutti) {
       try {
         const a = await aggiungiAllegato(f, FILE_TURNI)
-        if (tutti.length === 1 && a.tipoMime === 'application/pdf') setDaLeggere([a])
+        if (tutti.length === 1 && eLeggibile(a)) setDaLeggere([a])
       } catch (e) { setErrore(`${f.name}: non sono riuscita a caricarlo (${e instanceof Error ? e.message : 'errore sconosciuto'}).`) }
       setInCorso((n) => n - 1)
     }
@@ -50,14 +50,14 @@ export function FileTurni() {
         </div>
         <label className="pulsante primario" style={{ cursor: 'pointer', position: 'relative' }}>
           + Carica file
-          <input type="file" multiple accept="application/pdf,image/*" className="file-nascosto"
+          <input type="file" multiple accept="application/pdf,image/*,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="file-nascosto"
             onChange={(e) => { const campo = e.currentTarget, f = campo.files; if (f?.length) void aggiungi(f).finally(() => { campo.value = '' }) }} />
         </label>
       </header>
-      <span className="secondario piccolo">Qui tieni i file dei turni e delle guardie che arrivano ogni mese, divisi per mese (quello scritto nel nome del file). Con "Inserisci i miei turni" l'app cerca il tuo nome nel PDF e ti mostra i turni trovati: li controlli e poi li aggiungi al calendario.</span>
+      <span className="secondario piccolo">Qui tieni i file dei turni e delle guardie che arrivano ogni mese, divisi per mese (quello scritto nel nome del file). Con "Inserisci i miei turni" l'app cerca il tuo nome nel file (PDF o Excel) e ti mostra i turni trovati: li controlli e poi li aggiungi al calendario.</span>
       {errore && <Avviso>{errore}</Avviso>}
       {inCorso > 0 && <span className="secondario piccolo">Carico {inCorso === 1 ? 'il file' : `${inCorso} file`}…</span>}
-      {gruppi.length === 0 && <div className="vuoto">Nessun file. Carica il PDF dei turni appena arriva per mail.</div>}
+      {gruppi.length === 0 && <div className="vuoto">Nessun file. Carica il file dei turni appena arriva per mail.</div>}
       {gruppi.map((g) => (
         <section key={g.mese}>
           <h2 className="titolo-sezione" style={{ marginBottom: 8, textTransform: 'capitalize' }}>{titoloMese(g.mese)}</h2>
@@ -78,7 +78,7 @@ export function FileTurni() {
                       <span className="secondario piccolo">caricato il {F.dataBreve(a.creatoIl)}</span>
                     </button>
                     <button type="button" className="link piccolo" onClick={() => setRinomina({ id: a.id, nome: a.nome })}>Rinomina</button>
-                    {a.tipoMime === 'application/pdf' && <button type="button" className="pulsante" onClick={() => setDaLeggere([a])}>Inserisci i miei turni</button>}
+                    {eLeggibile(a) && <button type="button" className="pulsante" onClick={() => setDaLeggere([a])}>Inserisci i miei turni</button>}
                   </>
                 )}
                 <button type="button" className="elimina-riga" aria-label={`Elimina ${a.nome}`}

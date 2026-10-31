@@ -4,6 +4,11 @@ import { meseDelNome } from './importaPdf'
 /** Collegamento degli allegati della pagina "File dei turni" (Specializzazione). */
 export const FILE_TURNI = 'file-turni'
 
+const EXCEL = /\.xlsx?$/i
+export const eExcel = (a: { nome: string }) => EXCEL.test(a.nome)
+/** File da cui l'app sa leggere i turni: PDF ed Excel. */
+export const eLeggibile = (a: { nome: string; tipoMime: string }) => a.tipoMime === 'application/pdf' || eExcel(a)
+
 type FileBase = { nome: string; creatoIl: number; collegatoA: string }
 
 /** Mese a cui si riferisce il file: quello nel nome, altrimenti il mese in cui è stato caricato. */

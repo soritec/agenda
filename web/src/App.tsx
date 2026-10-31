@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { aggiungiGiorni, inizioGiorno } from './nucleo/calendario'
 import * as F from './nucleo/formati'
 import { linkGoogleMaps } from './nucleo/viaggio'
-import { useCollezione } from './dati/hooks'
+import { useCollezione, useImpostazioni } from './dati/hooks'
+import { profiloPrincipale } from './dati/profili'
 import { Guscio, InArrivo, SEZIONI, type Sezione } from './interfaccia/Guscio'
 import { meseDaParametro, useRotta } from './interfaccia/navigazione'
 import { DettaglioTurno } from './moduli/turni/viste/DettaglioTurno'
@@ -31,6 +32,7 @@ import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
 import { Tasse } from './moduli/specializzazione/viste/Tasse'
 import { FileTurni } from './moduli/specializzazione/viste/FileTurni'
+import { FileUtili } from './moduli/specializzazione/viste/FileUtili'
 import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni, IconaPin } from './interfaccia/icone'
@@ -61,6 +63,7 @@ export function App() {
     else if (sotto === 'lezioni') pagina = <EsamiOLezioni key="lezione" tipo="lezione" />
     else if (sotto === 'tasse') pagina = <Tasse />
     else if (sotto === 'fileturni') pagina = <FileTurni />
+    else if (sotto === 'fileutili') pagina = <FileUtili />
     else if (sotto === 'ecm') pagina = <CorsiEcm />
     else if (sotto === 'journal') pagina = <JournalClubPagina />
     else if (sotto === 'procedura' && percorso[2]) pagina = <SchedaProcedura id={percorso[2]} />
@@ -101,11 +104,15 @@ function Oggi() {
   const note = useCollezione('noteGiorno')
   const piani = useCollezione('pianiStudio')
   const sessioniPiano = useCollezione('sessioniPiano')
+  const impostazioniOggi = useImpostazioni()
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const g0 = oggi()
   // Gli altri impegni dell'agenda (i turni hanno le loro schede qui sotto).
-  const altri = impegniTra({ giornate, eventi, esami, tasse, attivita, note, piani, sessioniPiano }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1)))
+  const altri = [
+    ...impegniTra({ giornate, eventi, esami, tasse, attivita, note, piani, sessioniPiano }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1))),
+    ...(profiloPrincipale() ? impegniTra({ turni, modelli: mappaModelli, giornate, riunioniTolte: impostazioniOggi?.riunioniTolte ?? [] }, chiaveGiorno(g0), chiaveGiorno(aggiungiGiorni(g0, 1))).filter((i) => i.fonte === 'riunione') : []),
+  ]
   // I task di oggi hanno un riquadro a parte, con il cerchio da spuntare.
   const altriOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte !== 'task' && i.fonte !== 'nota')
   const noteOggi = altri.filter((i) => i.giorno === chiaveGiorno(g0) && i.fonte === 'nota')

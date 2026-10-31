@@ -38,12 +38,12 @@ describe('lettura dei turni dal PDF', () => {
     const casella = (giorno: number, n = 0) => 248 + 54 * (giorno - 1) + 18 * n
     const pezzi = [
       pezzo('novembre 2026', 148, 143),
-      ...[2, 3, 4, 5, 6, 7, 8].map((g) => pezzo(`${g}L`, casella(g) + 22, 143)),
+      ...[2, 3, 4, 5, 6, 7, 8, 9].map((g) => pezzo(`${g}L`, casella(g) + 22, 143)),
       pezzo('Bianchi', 170, 174), pezzo('G', casella(1), 174),
       pezzo('Rossi', 170, 190), pezzo('RGI', casella(1), 190), pezzo('RGI', casella(1, 1), 190), pezzo('RGI', casella(1, 2), 190),
       pezzo('eco', casella(2), 191), pezzo('op', casella(2, 1), 190),
       pezzo('N', casella(3), 190), pezzo('N', casella(3, 1), 190), pezzo('SMO', casella(4), 190),
-      pezzo('RIPCO', casella(5), 190), pezzo('F', casella(6), 190), pezzo('X', casella(7), 190),
+      pezzo('RIPCO', casella(5), 190), pezzo('F', casella(6), 190), pezzo('X', casella(7), 190), pezzo('cons', casella(8), 190),
     ]
     expect(leggiTurni(pezzi, ['Rossi'])).toEqual({ mese: '2026-11', turni: [
       { giorno: '2026-11-01', sigla: 'Rg', colonna: '', nelFile: 'RGI' },
@@ -52,6 +52,7 @@ describe('lettura dei turni dal PDF', () => {
       { giorno: '2026-11-03', sigla: 'N', colonna: '' },
       { giorno: '2026-11-05', sigla: 'RIPCO', colonna: '', giornata: 'riposo' },
       { giorno: '2026-11-06', sigla: 'F', colonna: '', giornata: 'ferie' },
+      { giorno: '2026-11-08', sigla: 'Cs', colonna: '', nelFile: 'cons' },
     ] })
   })
 
@@ -63,6 +64,17 @@ describe('lettura dei turni dal PDF', () => {
 
   it('collega la sigla al turno tipo', () => {
     expect(modelloPerSigla('gsp', [{ sigla: 'G' }, { sigla: 'GSP' }])).toEqual({ sigla: 'GSP' })
+  })
+})
+
+describe('griglia dei turni da Excel', () => {
+  it('ricava giorni e mese dalle caselle', async () => {
+    const { pezziDaCelle } = await import('../src/moduli/turni/leggiExcel')
+    const giorni = [2, 3, 4, 5, 6].map((n, i) => ({ riga: 1, colonna: 5 + 3 * i, testo: `${n}L`, colonne: 3 }))
+    const pezzi = pezziDaCelle('Novembre 2026', 1, [...giorni,
+      { riga: 3, colonna: 1, testo: 'Rossi', colonne: 1 }, { riga: 3, colonna: 2, testo: 'G', colonne: 1 },
+      { riga: 3, colonna: 5, testo: 'eco', colonne: 1 }, { riga: 3, colonna: 9, testo: 'op', colonne: 1 }])
+    expect(leggiTurni(pezzi, ['Rossi']).turni.map((t) => [t.giorno, t.sigla])).toEqual([['2026-11-01', 'G'], ['2026-11-02', 'eco'], ['2026-11-03', 'op']])
   })
 })
 

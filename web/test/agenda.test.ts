@@ -99,3 +99,19 @@ describe('Spostare trascinando', () => {
     expect(piuGiorniData('2026-12-30', 3)).toBe('2027-01-02')
   })
 })
+
+describe('riunioni fisse', () => {
+  const titoli = (d: Parameters<typeof impegniTra>[0]) => impegniTra(d, '2026-11-02', '2026-11-08').map((i) => `${i.giorno} ${i.titolo}`)
+  const base = { id: 'x', creatoIl: 0, modificatoIl: 0 }
+
+  test('journal club il mercoledì e GOI il giovedì, solo se attive', () => {
+    expect(titoli({ riunioniTolte: [] })).toEqual(['2026-11-04 Journal club', '2026-11-05 GOI'])
+    expect(titoli({})).toEqual([])
+  })
+
+  test('salta ferie e smonto; la × toglie il singolo giorno', () => {
+    const giornate = [{ ...base, giorno: '2026-11-04', tipo: 'smontoNotte' }, { ...base, id: 'y', giorno: '2026-11-05', tipo: 'ferie' }]
+    expect(titoli({ riunioniTolte: [], giornate }).filter((t) => /Journal|GOI/.test(t))).toEqual([])
+    expect(titoli({ riunioniTolte: ['jc:2026-11-04'] })).toEqual(['2026-11-05 GOI'])
+  })
+})

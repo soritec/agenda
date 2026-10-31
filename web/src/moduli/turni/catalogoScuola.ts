@@ -23,16 +23,44 @@ const TRIAGE = 'Chi ruota in ginecologia: triage del pronto soccorso ostetrico-g
 const SALA_PARTO = "Chi ruota in ostetricia: sala parto in affiancamento alle ostetriche, con gli strutturati e lo specializzando grande; si può entrare a vedere qualche parto solo con il permesso dell'ostetrica."
 /** Testi delle guardie nelle versioni precedenti del catalogo (per aggiornarli). */
 export const GUARDIA_PRIMA = 'Presentarsi 10–15 minuti prima in sala parto per le consegne.'
-const AMB_OST = 'Ambulatori di ostetricia: piano terra, settore C.'
-const AMB_GIN = (amb: string) => `Ambulatori di ginecologia: piano terra, settore A${amb}. Presentarsi alle 8:00–8:20; di solito finisce verso le 13–13:30, spesso anche il pomeriggio dalle 14–14:30.`
-const SALA_GIN = 'Sala operatoria: piano -1, blocco F. Presentarsi alle 7:45 già cambiati (tutina azzurra, cuffia, mascherina); zoccoli nel blocco F, tutine dal distributore al piano -1 nel corridoio delle sale.'
+const AMB_OST = 'Ambulatori di ostetricia: piano terra, settore C. Iniziano alle 8:00.'
+const AMB_GIN = (amb: string) => `Ambulatori di ginecologia: piano terra, settore A${amb}. Iniziano alle 8:00; di solito finisce verso le 13–13:30, spesso anche il pomeriggio dalle 14–14:30.`
+const SALA_GIN = 'Sala operatoria: piano -1, blocco F. Essere in sala almeno alle 7:45, già cambiati (tutina azzurra, cuffia, mascherina); zoccoli nel blocco F, tutine dal distributore al piano -1 nel corridoio delle sale.'
 
-const INFO_REPARTO_OST = "3° piano, settore C. Arrivare alle 7:45: poi si scende alle consegne con quelli della guardia (sala consegne, piano 0, settore C). Conviene portarsi il pranzo."
-const INFO_PUERPERIO = 'Reparto maternità: 3° piano, settore B. Arrivare alle 7:45: poi si scende alle consegne con quelli della guardia (sala consegne, piano 0, settore C); di solito una settimana da lunedì a domenica.'
+const CONSEGNE_REPARTO = "Alle 7:45–7:50 consegne in sala parto (stanza consegne al piano terra, settore C, oppure direttamente in sala parto al 1° piano, settore C, in base all'attività del giorno)"
+const INFO_REPARTO_OST = `3° piano, settore C. ${CONSEGNE_REPARTO}. Conviene portarsi il pranzo.`
+const INFO_PUERPERIO = `Reparto maternità: 3° piano, settore B. ${CONSEGNE_REPARTO}; di solito una settimana da lunedì a domenica. Vademecum e protocollo puerperio nei file utili; compilare la survey nutrizionale per ogni puerpera dimessa.`
 /** Reparti: ostetricia 7:45–18; ginecologia 7–19 (in settimana si aspetta la fine della sala). */
 const REPARTO_OST: [number, number] = [7 * ORA + 45, 18 * ORA]
 const REPARTO_GIN: [number, number] = [7 * ORA, 19 * ORA]
-const INFO_REPARTO_GIN = 'Reparto: 7° piano, settore B. Arrivare alle 7 (dipende dagli strutturati: qualcuno è più flessibile). In settimana di solito si resta fino alle 18:30–19, perché si aspetta che finisca la sala; nel weekend si esce prima, verso pranzo o il primo pomeriggio. Una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.'
+const INFO_FISIO = 'Vademecum sul drive: file "Copia di gravidanza fisiologica".'
+const INFO_VACCINI = 'Format sul drive: segnare lotto e scadenza sul referto e acquisire il consenso informato.'
+const INFO_PRERICOVERI = "Prericoveri: chiedere la stanza al mattino. Cartelle in CCE già pronte prima del giorno del prericovero; stampare e compilare i consensi (Drive spec, CONSENSI UNITO), l'ultima visita e le informative degli interventi. Il giovedì: presentazione con i casi chirurgici oncologici della settimana dopo."
+const INFO_GOI = 'Riunione multidisciplinare con oncologi e radiologi: giovedì alle 13, 3° piano, settore A. Obbligatoria per chi ha AON il giovedì pomeriggio, consigliata a tutti. Al I anno il turno GOI è il mercoledì pomeriggio: si preparano i casi del giorno dopo con uno specializzando senior.'
+const INFO_REPARTO_GIN = 'Reparto: 3° piano, settore A. Inizio tra le 7 e le 7:30 (dipende dagli strutturati: qualcuno è più flessibile). In settimana di solito si resta fino alle 18:30–19, perché si aspetta che finisca la sala; nel weekend si esce prima, verso pranzo o il primo pomeriggio. Una settimana da lunedì a domenica, con un riposo compensativo la settimana dopo. Cartella clinica elettronica e Galileo.'
+
+/** Pezzi di testo superati dalle istruzioni della scuola: nei turni tipo si sostituiscono lasciando il resto com'è. */
+const TESTI_SUPERATI: [string, string][] = [
+  ['Presentarsi alle 8:00–8:20; di solito', 'Iniziano alle 8:00; di solito'],
+  ['Ambulatori di ostetricia: piano terra, settore C.', AMB_OST],
+  ['Presentarsi alle 7:45 già cambiati (tutina', 'Essere in sala almeno alle 7:45, già cambiati (tutina'],
+  ['Arrivare alle 7:45: poi si scende alle consegne con quelli della guardia (sala consegne, piano 0, settore C)', CONSEGNE_REPARTO],
+  ['di solito una settimana da lunedì a domenica.', 'di solito una settimana da lunedì a domenica. Vademecum e protocollo puerperio nei file utili; compilare la survey nutrizionale per ogni puerpera dimessa.'],
+  ['Reparto: 7° piano, settore B. Arrivare alle 7 (dipende', 'Reparto: 3° piano, settore A. Inizio tra le 7 e le 7:30 (dipende'],
+  ['7° piano, settore B. In reparto alle 7:00–7:30', '3° piano, settore A. In reparto alle 7:00–7:30'],
+  ['Fisiologia medici: martedì e venerdì mattina.', `Fisiologia medici: martedì e venerdì mattina. ${INFO_FISIO}`],
+  ['1° e 3° giovedì del mese.', `1° e 3° giovedì del mese. ${INFO_VACCINI}`],
+  ['Prericoveri: chiedere la stanza al mattino.', INFO_PRERICOVERI],
+  ['Discussione multidisciplinare dei casi di oncologia ginecologica: giovedì 13–14:30, Anatomia patologica, piano 0, corridoio settore A (solo in presenza).', INFO_GOI],
+]
+
+/** Turni tipo con le informazioni aggiornate. */
+export function testiAggiornati<T extends { info?: string }>(modelli: T[]): T[] {
+  return modelli.flatMap((m) => {
+    const info = TESTI_SUPERATI.reduce((t, [vecchio, nuovo]) => t.replace(vecchio, nuovo), m.info ?? '')
+    return info !== (m.info ?? '') ? [{ ...m, info }] : []
+  })
+}
 
 /** Testi delle versioni precedenti del catalogo, per sigla: se il turno tipo ha ancora quello, si aggiorna. */
 export const INFO_PRIMA: Record<string, string[]> = {
@@ -69,7 +97,7 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'P', nome: 'Puerperio', tipo: 'reparto', orari: REPARTO_OST, info: INFO_PUERPERIO },
   { sigla: 'DSO', nome: 'Day Service Ostetrico', tipo: 'reparto', orari: AMB },
   { sigla: 'Rg', nome: 'Reparto Ginecologia', tipo: 'reparto', orari: REPARTO_GIN, info: INFO_REPARTO_GIN },
-  { sigla: 'F', nome: 'Amb. Gravidanza Fisiologica', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Fisiologia medici: martedì e venerdì mattina.` },
+  { sigla: 'F', nome: 'Amb. Gravidanza Fisiologica', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Fisiologia medici: martedì e venerdì mattina. ${INFO_FISIO}` },
   { sigla: 'Gem', nome: 'Amb. Gemelli', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'PP', nome: 'Amb. Parto Prematuro', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'Au', nome: 'Amb. Autoimmunità', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
@@ -79,8 +107,8 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'PV', nome: 'Amb. Patologia Varia', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'A', nome: 'Amb. Gravidanza Alto Rischio', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'Ex', nome: 'Amb. Gravidanza Extrauterina / I trim.', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
-  { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
-  { sigla: 'Cs', nome: 'Consultorio', tipo: 'ambulatorio', orari: AMB },
+  { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Precompilato sul drive: far firmare consenso e foglio informativo, riportare lotto e scadenza.` },
+  { sigla: 'Cs', nome: 'Consultorio', tipo: 'ambulatorio', orari: AMB, info: "Orari e sedi nella tabella allegata alle istruzioni della scuola. Se si è segnati in due, ci si divide tra le sedi." },
   { sigla: 'AGI', nome: 'Amb. Ginecologia I livello', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
   { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 4') },
   { sigla: 'Ben', nome: 'Amb. Benigna / endometriosi', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
@@ -92,11 +120,14 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'ISC', nome: 'Isteroscopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 5') },
   { sigla: 'AOE', nome: 'Amb. Oncologia età fertile', tipo: 'ambulatorio', orari: AMB, info: `${AMB_GIN(', amb 7')} Mercoledì mattina.` },
   { sigla: 'END', nome: 'Amb. Endocrino', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
-  { sigla: 'VACCINI', nome: 'Vaccini HPV', tipo: 'ambulatorio', orari: AMB, info: `${AMB_GIN(', amb 9')} 1° e 3° giovedì del mese.` },
+  { sigla: 'VACCINI', nome: 'Vaccini HPV', tipo: 'ambulatorio', orari: AMB, info: `${AMB_GIN(', amb 9')} 1° e 3° giovedì del mese. ${INFO_VACCINI}` },
   { sigla: 'ron', nome: 'Oncologia ginecologica', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 12') },
-  { sigla: 'PR', nome: 'Prericoveri', tipo: 'ambulatorio', orari: AMB, info: 'Prericoveri: chiedere la stanza al mattino.' },
-  { sigla: 'GOI', nome: 'Discussione casi onco (GOI)', tipo: 'altro', orari: [13 * ORA, 14 * ORA + 30], info: 'Discussione multidisciplinare dei casi di oncologia ginecologica: giovedì 13–14:30, Anatomia patologica, piano 0, corridoio settore A (solo in presenza).' },
+  { sigla: 'PR', nome: 'Prericoveri', tipo: 'ambulatorio', orari: AMB, info: INFO_PRERICOVERI },
+  { sigla: 'GOI', nome: 'Discussione casi onco (GOI)', tipo: 'altro', orari: [13 * ORA, 14 * ORA + 30], info: INFO_GOI },
   { sigla: 'CONS', nome: 'Consulenze genetiche', tipo: 'ambulatorio', orari: AMB, info: 'Consulenze genetiche con la genetista.' },
+  { sigla: 'RIC', nome: 'Ricoveri pomeridiani', tipo: 'reparto', orari: [15 * ORA, 18 * ORA], info: 'Ricoveri pomeridiani dalle 15:00.' },
+  { sigla: 'PR CARICO', nome: 'Amb. Presa in carico', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Prese in carico e prericoveri TC: compilare la cartella come prericovero, far firmare i consensi (privacy, generico, emotrasfusioni; controllare che ci sia il consenso TC), metterli in una cartelletta e portarli in triage (armadio).` },
+  { sigla: 'E I TRIM', nome: 'Ecografie I trimestre', tipo: 'ecografia', orari: AMB },
   { sigla: 'BT', nome: 'Bi-test', tipo: 'ecografia', orari: AMB },
   { sigla: 'Gen', nome: 'Ecografie genetiche', tipo: 'ecografia', orari: AMB },
   { sigla: 'Am', nome: 'Amniocentesi', tipo: 'ecografia', orari: AMB },

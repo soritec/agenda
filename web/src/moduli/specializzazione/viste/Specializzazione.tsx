@@ -3,9 +3,10 @@ import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
+import { fileUtili } from '../fileUtili'
 import type { Collegamento, EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
-import { IconaArticolo, IconaAttestato, IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLogbook, IconaMicroscopio, IconaCalendario } from '../../../interfaccia/icone'
+import { IconaArticolo, IconaAttestato, IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLibro, IconaLogbook, IconaMicroscopio, IconaCalendario } from '../../../interfaccia/icone'
 import { assegnazioneDelMese } from '../../turni/assegnazioni'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../../turni/rotazione'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
@@ -20,6 +21,7 @@ const dataBreve = (giorno: string) => {
 /** Specializzazione: anno di corso, rotazione e un riquadro per ogni sezione. */
 export function Specializzazione() {
   const fileTurni = (useCollezione('allegati') ?? []).filter((a) => a.collegatoA === 'file-turni').sort((a, b) => b.creatoIl - a.creatoIl)
+  const numeroFileUtili = fileUtili(useCollezione('allegati') ?? []).length
   const impostazioni = useImpostazioni()
   const procedure = useCollezione('procedure')
   const esami = useCollezione('esami')
@@ -116,7 +118,12 @@ export function Specializzazione() {
         <a className="riquadro-sezione" href="#/specializzazione/fileturni">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#3E6E78', background: '#E1EEF0' }}><IconaCalendario dimensione={18} /></span>File dei turni</span>
           <span className="valore">{fileTurni.length || '—'}</span>
-          <span className="dettaglio">{fileTurni[0] ? `ultimo: ${fileTurni[0].nome}` : 'PDF dei turni e delle guardie'}</span>
+          <span className="dettaglio">{fileTurni[0] ? `ultimo: ${fileTurni[0].nome}` : 'Excel e PDF dei turni e delle guardie'}</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/fileutili">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#6E5A3E', background: '#F0E9DC' }}><IconaLibro dimensione={18} /></span>File utili</span>
+          <span className="valore">{numeroFileUtili || '—'}</span>
+          <span className="dettaglio">Istruzioni, protocolli e moduli</span>
         </a>
         <a className="riquadro-sezione in-arrivo" href="#/specializzazione/ricerca">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#6B6862', background: '#EEECE8' }}><IconaMicroscopio dimensione={18} /></span>Ricerca</span>

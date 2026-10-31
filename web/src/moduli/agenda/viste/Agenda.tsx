@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent 
 import { aggiungiGiorni, componenti, giornoDi, istante } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
-import { elimina, ripristina, salva } from '../../../dati/archivio'
+import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Evento, NotaGiorno } from '../../../dati/modello'
 import { creaIcs, type EventoIcs } from '../../../export/ics'
@@ -30,7 +30,7 @@ const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const CHIAVE_FILTRI = 'agenda.fontiNascoste'
 /** Negli altri profili (senza turni né specializzazione) l'agenda non mostra turni, ferie e journal club. */
 const MEDICO = profiloPrincipale()
-const FONTI_PROFILO: readonly Fonte[] = MEDICO ? FONTI : FONTI.filter((f) => f !== 'turno' && f !== 'giornata' && f !== 'journal')
+const FONTI_PROFILO: readonly Fonte[] = MEDICO ? FONTI : FONTI.filter((f) => f !== 'turno' && f !== 'giornata' && f !== 'journal' && f !== 'riunione')
 const CHIAVE_VISTA = 'agenda.vista'
 export const VISTE = ['settimana', 'dueSettimane', 'mese'] as const
 export type Vista = (typeof VISTE)[number]
@@ -114,11 +114,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     : `${dataBreve(da)} – ${dataBreve(a)} ${a.slice(0, 4)}`
 
   const budget = useMemo(() => ({ categorie: categorieBudget ?? [], movimenti: movimenti ?? [], ricorrenti: ricorrenti ?? [] }), [categorieBudget, movimenti, ricorrenti])
-  const dati = { turni: MEDICO ? turni : undefined, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate: MEDICO ? giornate : undefined, linkEsami: MEDICO ? undefined : '#/studio', eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, applications }
+  const dati = { riunioniTolte: MEDICO ? impostazioni?.riunioniTolte ?? [] : undefined, turni: MEDICO ? turni : undefined, modelli: mappaModelli, sedi: mappaSedi, assegnazioni, giornate: MEDICO ? giornate : undefined, linkEsami: MEDICO ? undefined : '#/studio', eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, applications }
   // Dal giorno prima, per le notti che continuano nel primo giorno mostrato.
   const tutti = useMemo(() => impegniTra(dati, spostaGiorni(da, -1), vista === 'mese' ? spostaGiorni(a, 30) : a),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, applications, da, a, vista])
+    [turni, mappaModelli, mappaSedi, assegnazioni, giornate, eventi, esami, tasse, attivita, budget, note, journal, piani, sessioniPiano, promemoria, candidate, stanze, impostazioni?.riunioniTolte, applications, da, a, vista])
   const visibili = tutti.filter((i) => !nascoste.has(i.fonte) && FONTI_PROFILO.includes(i.fonte))
   const sabatoFestivo = impostazioni?.sabatoFestivo ?? true
   const festivo = (g: string) => eFestivo(msGiorno(g), { sabatoFestivo })
@@ -194,7 +194,11 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   async function eliminaImpegno(i: Impegno) {
     pressione.setAttivo(undefined)
     let annulla: () => Promise<void>
-    if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
+    if (i.fonte === 'riunione') {
+      const prima = impostazioni?.riunioniTolte ?? []
+      await salvaImpostazioni({ riunioniTolte: [...prima, i.id] })
+      annulla = async () => { await salvaImpostazioni({ riunioniTolte: prima }) }
+    } else if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
     else {
       const collezione = i.fonte === 'studio' ? 'sessioniPiano' : i.fonte === 'journal' ? 'journalClub' : i.fonte === 'nota' ? 'noteGiorno' : i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
       await elimina(collezione, i.id)
@@ -681,7 +685,7 @@ function FormEvento({ record, giorno, minuto, onChiudi }: { record?: Evento; gio
 /** Colori tenui delle fonti nel PDF (come nell'app). */
 const COLORI_PDF: Partial<Record<Fonte, Colore>> = {
   nota: [255, 243, 205], turno: [214, 228, 234], giornata: [236, 234, 230], evento: [216, 226, 238], task: [234, 223, 240], studio: [214, 234, 232],
-  esame: [240, 216, 204], lezione: [216, 226, 238], journal: [234, 223, 230], promemoria: [251, 241, 222], tassa: [246, 238, 223], casa: [230, 238, 242], application: [233, 238, 241],
+  esame: [240, 216, 204], lezione: [216, 226, 238], journal: [234, 223, 230], riunione: [234, 223, 230], promemoria: [251, 241, 222], tassa: [246, 238, 223], casa: [230, 238, 242], application: [233, 238, 241],
 }
 
 function EsportaCalendario({ anno, mese, dati, nascoste, visibile, festivo, onChiudi }: {

@@ -1,5 +1,5 @@
 /**
- * Lettura dei turni dai file PDF della scuola (tabelle mensili), senza intelligenza artificiale.
+ * Lettura dei turni dai file PDF ed Excel della scuola (tabelle mensili), senza intelligenza artificiale.
  * Riceve i pezzi di testo con la loro posizione (da pdf.js) e cerca il nome dell'utente in due forme di tabella:
  * - nome nelle caselle (es. guardie: colonne "… G" / "… N", righe = giorni) → la sigla viene dall'intestazione;
  * - nome nell'intestazione (es. una colonna per persona) → la sigla è scritta nella casella del giorno;
@@ -20,7 +20,7 @@ export interface TurnoLetto {
   nelFile?: string
 }
 
-const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre']
+export const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre']
 const RIGA_GIORNO = /^(lun|mar|mer|gio|ven|sab|dom)[a-zì]*\.?\s+(\d{1,2})$/i
 /** Sigle che non sono turni (lo smonto lo segna già l'app dopo la notte). */
 const DA_SALTARE = new Set(['smo', 'smonto', '-', '–', '/'])
@@ -28,6 +28,8 @@ const DA_SALTARE = new Set(['smo', 'smonto', '-', '–', '/'])
 const GIORNO_GRIGLIA = /^(\d{1,2})\s*[lmgvsd]$/i
 /** Griglia del mese: sigle con un altro nome nell'app (la legenda del file è diversa da quella del vademecum). */
 const SIGLE_GRIGLIA: Record<string, string> = { rgi: 'Rg', ros: 'R', pu: 'P', fisio: 'F', ar: 'A', rho: 'Rh', preric: 'PR', 'e pome': 'E pom' }
+/** Sigle in cui contano le maiuscole: "cons" è il consultorio, "CONS" le consulenze genetiche. */
+const SIGLE_ESATTE: Record<string, string> = { cons: 'Cs' }
 const GIORNATE_GRIGLIA: Record<string, 'riposo' | 'ferie'> = { ripco: 'riposo', f: 'ferie' }
 
 export const normalizza = (t: string) =>
@@ -89,7 +91,7 @@ function turniDellaGriglia(pezzi: PezzoTesto[], griglia: NonNullable<ReturnType<
       const scritta = p.testo.trim()
       const k = normalizza(scritta)
       if (n > griglia.ultimo || k === 'x' || DA_SALTARE.has(k)) continue
-      const sigla = SIGLE_GRIGLIA[k] ?? scritta
+      const sigla = SIGLE_ESATTE[scritta] ?? SIGLE_GRIGLIA[k] ?? scritta
       turni.push({
         giorno: `${mese}-${String(n).padStart(2, '0')}`, sigla, colonna: '', giornata: GIORNATE_GRIGLIA[k],
         ...(sigla !== scritta ? { nelFile: scritta } : {}),

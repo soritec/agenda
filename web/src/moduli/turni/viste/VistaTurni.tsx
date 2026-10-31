@@ -5,10 +5,12 @@ import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaTanti } from '../../../dati/archivio'
 import { CATALOGO_SCUOLA } from '../catalogoScuola'
+import { conOrariFissi } from '../senzaOrari'
 import { eliminaTurno as eliminaTurnoConSmonto, spostaTurno } from '../smonto'
 import { useTrascinamento, type Rilascio } from '../../../interfaccia/trascina'
 import { turnoSpostato } from '../../agenda/sposta'
 import type { GiornataSpeciale, Turno } from '../../../dati/modello'
+import { FERIE_ANNUE, ferieUsate } from '../ferie'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
@@ -147,7 +149,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
           <div className="riga-azioni">
             <button type="button" className="pulsante primario" onClick={() => void salvaTanti('modelliTurno', CATALOGO_SCUOLA.map((v, i) => ({
               nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: i,
-              minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
+              minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: !conOrariFissi(v.tipo) || undefined, info: v.info,
             })))}>Carica le sigle della scuola</button>
             <a className="pulsante" href="#/turni/impostazioni">Crea a mano</a>
           </div>
@@ -234,6 +236,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
               <IconaAvanti dimensione={16} />
             </a>
           )}
+          <span className="secondario piccolo" title="Contano solo i giorni dal lunedì al venerdì non festivi">Ferie {qui.slice(0, 4)}: {ferieUsate(ferie ?? [], Number(qui.slice(0, 4)))} giorni su {FERIE_ANNUE}</span>
           {numeroSovrapposizioni > 0 && (
             <div className="avviso">
               {numeroSovrapposizioni === 1 ? 'Due turni si sovrappongono' : `${numeroSovrapposizioni} sovrapposizioni tra turni`} in questo mese.

@@ -1,4 +1,5 @@
-import { GUARDIA_PRIMA, correzioniCatalogoV1, infoMancanti, infoSuperate, orariRepartiSuperati, vociMancanti } from '../moduli/turni/catalogoScuola'
+import { GUARDIA_PRIMA, correzioniCatalogoV1, infoMancanti, infoSuperate, orariRepartiSuperati, testiAggiornati, vociMancanti } from '../moduli/turni/catalogoScuola'
+import { conOrariFissi, modelliSenzaOrari, turniFuturiSenzaOrari } from '../moduli/turni/senzaOrari'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
 import { CATEGORIE_PREDEFINITE, CATEGORIE_STUDENTE, idPredefinita } from '../moduli/budget/logica'
@@ -103,7 +104,7 @@ export async function eseguiManutenzione(): Promise<void> {
       // Id derivati dalla sigla: due dispositivi aggiungono gli stessi record, senza doppioni.
       const mancanti = vociMancanti(modelli).map((v, i) => ({
         id: `catalogo-${v.sigla.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i,
-        minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
+        minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: !conOrariFissi(v.tipo) || undefined, info: v.info,
       }))
       const esistenti = new Set((await elencaTutti('modelliTurno')).map((m) => m.id))
       const nuovi = mancanti.filter((m) => !esistenti.has(m.id))
@@ -128,6 +129,16 @@ export async function eseguiManutenzione(): Promise<void> {
     nuove.push('catalogo-ginecologia-v3')
   }
 
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('istruzioni-scuola-v1')) {
+    // Istruzioni della scuola (ottobre 2026): si cambiano solo i pezzi di testo superati e si riempiono le note vuote.
+    const modelli = await elenca('modelliTurno')
+    const aggiornati = new Map(testiAggiornati(modelli).map((m) => [m.id, m]))
+    const base = modelli.map((m) => aggiornati.get(m.id) ?? m)
+    const cambiati = [...aggiornati.values(), ...infoMancanti(base)]
+    if (cambiati.length) await salvaTanti('modelliTurno', cambiati)
+    nuove.push('istruzioni-scuola-v1')
+  }
+
   if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('orari-reparti-v1')) {
     // Reparti: ostetricia e puerperio 7:45–18, ginecologia 7–19 (solo se l'orario è ancora quello predefinito).
     const modelli = await elenca('modelliTurno')
@@ -137,6 +148,16 @@ export async function eseguiManutenzione(): Promise<void> {
     const cambiati = base.filter((m) => conInfo.has(m.id) || conOrari.has(m.id)).map((m) => conOrari.get(m.id) ?? m)
     if (cambiati.length) await salvaTanti('modelliTurno', cambiati)
     nuove.push('orari-reparti-v1')
+  }
+
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('turni-senza-orari-v1')) {
+    // Tranne le guardie, i turni non hanno più un orario predefinito: si scrive a mano quando serve.
+    const modelli = await elenca('modelliTurno')
+    const futuri = turniFuturiSenzaOrari(await elenca('turni'), modelli, Date.now())
+    const senzaOrari = modelliSenzaOrari(modelli)
+    if (senzaOrari.length) await salvaTanti('modelliTurno', senzaOrari)
+    if (futuri.length) await salvaTanti('turni', futuri)
+    nuove.push('turni-senza-orari-v1')
   }
 
   if (!fatte.has('risparmi-col-mese-v1')) {

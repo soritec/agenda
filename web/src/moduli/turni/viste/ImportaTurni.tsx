@@ -9,8 +9,11 @@ import type { Allegato, ModelloTurno, Turno } from '../../../dati/modello'
 import { Avviso, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { CATALOGO_SCUOLA } from '../catalogoScuola'
 import { leggiTurni, modelloPerSigla, type PezzoTesto, type TurnoLetto } from '../importaPdf'
+import { eExcel } from '../fileTurni'
+import { pezziDelExcel } from '../leggiExcel'
 import { pezziDelPdf } from '../leggiPdf'
 import { intervallo, intervalloTuttoIlGiorno } from '../orari'
+import { conOrariFissi } from '../senzaOrari'
 import { aggiungiSmonti, eliminaTurno } from '../smonto'
 import { TITOLI_GIORNATA } from '../tipi'
 
@@ -22,7 +25,7 @@ const GIORNATA = 'giornata:'
 interface Proposta extends TurnoLetto { modelloId?: string; scelto: boolean; giaPresente: boolean; allegatoId: string }
 
 /**
- * Legge i propri turni da un file PDF dei turni e li mostra per la conferma: niente viene salvato
+ * Legge i propri turni da un file dei turni (PDF o Excel) e li mostra per la conferma: niente viene salvato
  * finché l'utente non tocca "Aggiungi". I turni già presenti nello stesso giorno restano deselezionati.
  */
 export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onChiudi: () => void }) {
@@ -47,9 +50,9 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
       for (const a of allegati) {
         let contenuto: Blob
         try { contenuto = await contenutoAllegato(a) } catch (e) { problemi.push(`${a.nome}: ${motivo(e)}`); continue }
-        try { letti.push({ allegato: a, pezzi: await pezziDelPdf(contenuto) }) } catch (e) {
+        try { letti.push({ allegato: a, pezzi: await (eExcel(a) ? pezziDelExcel(contenuto) : pezziDelPdf(contenuto)) }) } catch (e) {
           console.error(e)
-          problemi.push(`${a.nome}: non riesco a leggerne il testo (funziona con i PDF fatti al computer, non con foto o scansioni). Dettaglio per Claude: ${motivo(e)}`)
+          problemi.push(`${a.nome}: non riesco a leggerne il testo (funziona con i file Excel e i PDF fatti al computer, non con foto o scansioni). Dettaglio per Claude: ${motivo(e)}`)
         }
       }
       if (!attivo) return
@@ -110,7 +113,7 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
       const v = CATALOGO_SCUOLA.find((x) => x.sigla === id.slice(CATALOGO.length))
       if (!v) return undefined
       if (!nuoviModelli.has(id)) nuoviModelli.set(id, await salva('modelliTurno', {
-        nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: (modelli?.length ?? 0) + nuoviModelli.size, minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
+        nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: (modelli?.length ?? 0) + nuoviModelli.size, minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: !conOrariFissi(v.tipo) || undefined, info: v.info,
       }))
       return nuoviModelli.get(id)
     }

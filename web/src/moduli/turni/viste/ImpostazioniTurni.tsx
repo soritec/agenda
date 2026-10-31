@@ -8,6 +8,7 @@ import { IconaAvanti } from '../../../interfaccia/icone'
 import { TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import { classeSigla, minutiDaOrario, orarioDaMinuti, perId } from '../supporto'
 import { infoMancanti, vociMancanti } from '../catalogoScuola'
+import { conOrariFissi } from '../senzaOrari'
 
 type Modifica = { tipo: 'modello'; record?: ModelloTurno } | { tipo: 'sede'; record?: Sede }
 
@@ -39,7 +40,7 @@ export function ImpostazioniTurni() {
     const base = elencoModelli.length
     const nuovi = await salvaTanti('modelliTurno', mancanti.map((v, i) => ({
       nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i,
-      minutoInizio: v.orari[0], minutoFine: v.orari[1], info: v.info,
+      minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: !conOrariFissi(v.tipo) || undefined, info: v.info,
     })))
     mostraAvviso(`${nuovi.length} turni tipo aggiunti`, () => void Promise.all(nuovi.map((n) => elimina('modelliTurno', n.id))))
   }

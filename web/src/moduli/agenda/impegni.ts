@@ -1,4 +1,4 @@
-import { componenti, giornoDi, istante } from '../../nucleo/calendario'
+import { componenti, giornoDi, giornoSettimana, istante } from '../../nucleo/calendario'
 import type { Application, Assegnazione, Attivita, Candidata, Stanza, JournalClub, NotaGiorno, PianoStudio, SessionePiano, EsameOLezione, Evento, GiornataSpeciale, ModelloTurno, Sede, Tassa, Turno } from '../../dati/modello'
 import { vociDelMese, spostaMese, type DatiBudget } from '../budget/logica'
 import { chiaveGiorno, giornoDaChiave, sedeEffettiva, siglaTurno, titoloTurno } from '../turni/supporto'
@@ -8,14 +8,14 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
  * L'agenda raccoglie gli impegni di tutte le sezioni in un unico elenco per giorno.
  * Ogni sezione resta la "fonte": l'agenda li mostra e porta alla pagina giusta per modificarli.
  */
-export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'promemoria', 'tassa', 'casa', 'application'] as const
+export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'riunione', 'promemoria', 'tassa', 'casa', 'application'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa', application: 'Applications',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', riunione: 'Riunioni fisse', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa', application: 'Applications',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
-export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', promemoria: 'Promemoria', tassa: 'Scadenza', casa: 'Casa', application: 'Application' }
+export const TITOLO_VOCE: Record<Fonte, string> = { nota: 'Nota', turno: 'Turno', giornata: 'Giornata', evento: 'Impegno', task: 'Task', studio: 'Studio', esame: 'Esame', lezione: 'Lezione', journal: 'Journal club', riunione: 'Riunione', promemoria: 'Promemoria', tassa: 'Scadenza', casa: 'Casa', application: 'Application' }
 
 export const CATEGORIE_EVENTO = ['personale', 'lavoro', 'studio', 'altro'] as const
 export type CategoriaEvento = (typeof CATEGORIE_EVENTO)[number]
@@ -59,6 +59,8 @@ export interface DatiAgenda {
   note?: NotaGiorno[]
   journal?: JournalClub[]
   piani?: PianoStudio[]
+  /** Riunioni fisse (solo profilo principale): quelle tolte con la ×. */
+  riunioniTolte?: string[]
   /** Dove si modificano esami e lezioni (predefinito: la sezione Specializzazione). */
   linkEsami?: string
   /** Casa: viewing delle candidate, partenze e arrivi delle coinquiline. */
@@ -86,6 +88,33 @@ export function giorniTra(da: string, a: string): string[] {
   const giorni: string[] = []
   for (let ms = istante(g.anno, g.mese, g.giorno, 12); ms <= fine && giorni.length < 400; ms += 86_400_000) giorni.push(chiaveGiorno(giornoDi(ms)))
   return giorni
+}
+
+const INIZIO_RIUNIONI = '2026-11-01'
+const SEDE_RIUNIONI = '3° piano, settore A'
+
+/** Journal club del mercoledì e GOI del giovedì: saltati nei giorni di ferie o smonto (il journal club anche se si monta di notte). */
+function riunioniFisse(d: DatiAgenda, da: string, a: string, oggi: string, adesso: number): Impegno[] {
+  const assente = new Set((d.giornate ?? []).filter((g) => ['ferie', 'smontoNotte'].includes(tipoGiornataDa(g.tipo))).map((g) => g.giorno))
+  const notti = new Set((d.turni ?? []).filter((t) => tipoTurnoDa(t.tipo) === 'guardiaNotturna').map((t) => chiaveGiorno(giornoDi(t.inizio))))
+  const goi = new Set((d.turni ?? []).filter((t) => siglaTurno(t, d.modelli ?? new Map()).toUpperCase() === 'GOI').map((t) => chiaveGiorno(giornoDi(t.inizio))))
+  const conJournal = new Set((d.journal ?? []).map((j) => j.giorno))
+  const out: Impegno[] = []
+  for (const giorno of giorniTra(da > INIZIO_RIUNIONI ? da : INIZIO_RIUNIONI, a)) {
+    const n = giornoSettimana(giornoDaChiave(giorno)!)
+    if (assente.has(giorno) || (n !== 3 && n !== 4)) continue
+    const journal = n === 3
+    if (journal ? notti.has(giorno) || conJournal.has(giorno) : goi.has(giorno)) continue
+    const id = `${journal ? 'jc' : 'goi'}:${giorno}`
+    if (d.riunioniTolte?.includes(id)) continue
+    out.push({
+      chiave: `riunione:${id}`, fonte: 'riunione', id, giorno, titolo: journal ? 'Journal club' : 'GOI',
+      dettaglio: journal ? `${SEDE_RIUNIONI} · obbligatorio` : `${SEDE_RIUNIONI} · riunione multidisciplinare`,
+      minutoInizio: journal ? 7 * 60 : 13 * 60, minutoFine: journal ? 8 * 60 : 14 * 60 + 30,
+      colore: 'colore-journal', link: '#/agenda', concluso: giorno < oggi, modificatoIl: adesso,
+    })
+  }
+  return out
 }
 
 /** Tutti gli impegni tra due giorni (compresi), ordinati: per giorno, prima quelli di tutto il giorno, poi per orario. */
@@ -209,6 +238,7 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
       colore: 'colore-journal', link: '#/specializzazione/journal', concluso: Boolean(j.presentato) || j.giorno < oggi, modificatoIl: j.modificatoIl,
     })
   }
+  if (d.riunioniTolte) out.push(...riunioniFisse(d, da, a, oggi, adesso))
   for (const t of d.attivita ?? []) {
     if (!t.scadenza || !dentro(t.scadenza)) continue
     const minuto = t.minuto !== undefined && t.minuto >= 0 && t.minuto < 1440 ? t.minuto : undefined

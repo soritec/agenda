@@ -720,7 +720,7 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .pillola.stato-daLeggere { background: #3A2F1C; color: #F0D9A8; } .pillola.stato-inLettura { background: #2E2A4A; color: #D6D2F5; } .pillola.stato-letto { background: #23392F; color: #BFE3D2; }
 }
 @media (max-width: 700px) { .collegamenti-rapidi a { font-size: 13px; padding: 8px 4px; } .riga-risorsa .pillola.piccola { font-size: 11px; padding: 0 7px; } }
-.f-journal { background: #B57AA6; }
+.f-journal, .f-riunione { background: #B57AA6; }
 .colore-journal { background: #F3E3EE; color: #6A3A5C; }
 @media (prefers-color-scheme: dark) { .colore-journal { background: #46304A; color: #EBD3E7; } }
 .collegamenti-rapidi { grid-template-columns: repeat(4, minmax(0, 1fr)); }

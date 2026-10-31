@@ -16,7 +16,8 @@
     "jspdf-autotable": "^5.0.8",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

@@ -153,13 +153,13 @@ describe('Turni tutto il giorno', () => {
 
 describe('Sigle della scuola', () => {
   test('catalogo completo e senza doppioni', () => {
-    expect(CATALOGO_SCUOLA).toHaveLength(52)
-    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(52)
+    expect(CATALOGO_SCUOLA).toHaveLength(55)
+    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(55)
     expect(CATALOGO_SCUOLA.every((v) => TIPI_TURNO.includes(v.tipo))).toBe(true)
   })
   test('aggiunge solo le sigle mancanti', () => {
     expect(vociMancanti([{ sigla: 'N' }, { sigla: 'e pom' }]).map((v) => v.sigla)).not.toContain('E pom')
-    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(51)
+    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(54)
   })
 })
 
@@ -216,5 +216,44 @@ describe('Smonto notte automatico', () => {
       { id: 'r1', tipo: 'reparto', inizio: d(25, 10, 8), fine: d(25, 10, 18) },
     ]
     expect(smontiDaCreare(turni, [{ giorno: '2026-10-24' }])).toEqual([{ giorno: '2026-10-22', tipo: 'smontoNotte', turnoId: 'n1' }])
+  })
+})
+
+describe('ferie usate', () => {
+  test('contano solo lunedì-venerdì non festivi', async () => {
+    const { ferieUsate } = await import('../src/moduli/turni/ferie')
+    const f = (giorno: string, tipo = 'ferie') => ({ giorno, tipo })
+    // 3/11 martedì sì; 7 e 8/11 weekend no; 8/12 festivo no; riposo no; altro anno no.
+    expect(ferieUsate([f('2026-11-03'), f('2026-11-07'), f('2026-11-08'), f('2026-12-08'), f('2026-11-04', 'riposo'), f('2027-01-04')], 2026)).toBe(1)
+  })
+})
+
+describe('informazioni dalle istruzioni della scuola', () => {
+  test('cambia solo i pezzi superati', async () => {
+    const { testiAggiornati } = await import('../src/moduli/turni/catalogoScuola')
+    expect(testiAggiornati([{ info: 'Mia nota. Reparto: 7° piano, settore B. Arrivare alle 7 (dipende da me)' }, { info: 'Mia nota' }]))
+      .toEqual([{ info: 'Mia nota. Reparto: 3° piano, settore A. Inizio tra le 7 e le 7:30 (dipende da me)' }])
+  })
+})
+
+describe('turni senza orari predefiniti', () => {
+  const modello = { id: 'm', minutoInizio: 480, minutoFine: 1080 }
+  const g = { anno: 2026, mese: 11, giorno: 3 }
+
+  test('le guardie restano con gli orari, gli altri turni tipo diventano tutto il giorno', async () => {
+    const { modelliSenzaOrari } = await import('../src/moduli/turni/senzaOrari')
+    expect(modelliSenzaOrari([{ tipo: 'guardiaNotturna' }, { tipo: 'reparto' }, { tipo: 'altro', tuttoIlGiorno: true }])).toEqual([{ tipo: 'reparto', tuttoIlGiorno: true }])
+  })
+
+  test('cambia solo i turni futuri con l orario predefinito', async () => {
+    const { turniFuturiSenzaOrari } = await import('../src/moduli/turni/senzaOrari')
+    const { intervallo } = await import('../src/moduli/turni/orari')
+    const base = { tipo: 'reparto', modelloId: 'm', ...intervallo(g, 480, 1080) }
+    const adesso = base.inizio - 1000
+    const [cambiato] = turniFuturiSenzaOrari([base], [modello], adesso)
+    expect(cambiato?.tuttoIlGiorno).toBe(true)
+    expect(cambiato!.fine - cambiato!.inizio).toBe(86_400_000)
+    expect(turniFuturiSenzaOrari([base], [modello], base.inizio + 1)).toEqual([])
+    expect(turniFuturiSenzaOrari([{ ...base, minutiManuali: 300 }, { ...base, ...intervallo(g, 480, 1200) }, { ...base, tipo: 'guardiaDiurna' }], [modello], adesso)).toEqual([])
   })
 })

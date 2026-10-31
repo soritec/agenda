@@ -94,6 +94,11 @@ export function DettaglioTurno({ id }: { id: string }) {
   const indietro = `/turni?mese=${parametroMese(mese.anno, mese.mese)}`
   const tipiDisponibili = TIPI_TURNO
   const aggiorna = (modifiche: Partial<Bozza>) => setBozza({ ...bozza, ...modifiche })
+  /** Togliendo "tutto il giorno" si parte dagli orari del turno tipo, non da mezzanotte. */
+  const orariProposti = (tuttoIlGiorno: boolean) => {
+    const m = turno.modelloId ? mappaModelli.get(turno.modelloId) : undefined
+    return !tuttoIlGiorno && m && bozza.inizio === bozza.fine ? { inizio: orarioDaMinuti(m.minutoInizio), fine: orarioDaMinuti(m.minutoFine) } : {}
+  }
 
   async function conferma() {
     if (!turno || !bozza || !orari || !valido) return
@@ -133,8 +138,8 @@ export function DettaglioTurno({ id }: { id: string }) {
           {!bozza.tuttoIlGiorno && <Campo etichetta="Fine"><input type="time" value={bozza.fine} onChange={(e) => aggiorna({ fine: e.target.value })} /></Campo>}
         </div>
         <label className="interruttore" style={{ borderBottom: 'none', padding: '2px 0' }}>
-          <span>Tutto il giorno (senza orari)</span>
-          <input type="checkbox" checked={bozza.tuttoIlGiorno} onChange={(e) => aggiorna({ tuttoIlGiorno: e.target.checked })} />
+          <span>Tutto il giorno (togli la spunta per scrivere gli orari)</span>
+          <input type="checkbox" checked={bozza.tuttoIlGiorno} onChange={(e) => aggiorna({ tuttoIlGiorno: e.target.checked, ...orariProposti(e.target.checked) })} />
         </label>
         {!bozza.tuttoIlGiorno && orari && mf !== undefined && mi !== undefined && mf <= mi && <span className="secondario piccolo">Finisce il giorno dopo, {F.dataBreve(orari.fine)}.</span>}
         <div className="campi-affiancati">

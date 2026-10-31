@@ -471,6 +471,8 @@ export interface Impostazioni {
   /** Valuta degli importi di questo profilo (predefinita: euro). */
   valuta?: 'EUR' | 'GBP'
   /** Matricole da avere sempre sotto mano (sezione Servizi di ateneo). */
+  /** Riunioni fisse (es. "jc:2026-11-04") tolte dall'agenda con la ×. */
+  riunioniTolte?: string[]
   matricolaOspedale?: string
   matricolaUniversita?: string
   /** Come compare il proprio nome nei file dei turni (es. il cognome), per leggerli in automatico. */

@@ -9,7 +9,7 @@ import type { Allegato } from './modello'
  * in `allegati/<id>.cifrato`, da cui gli altri dispositivi lo scaricano quando serve.
  */
 export const DIMENSIONE_MASSIMA = 20 * 1024 * 1024
-const TIPI: Record<string, string> = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', heic: 'image/heic', gif: 'image/gif', webp: 'image/webp', txt: 'text/plain' }
+const TIPI: Record<string, string> = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', heic: 'image/heic', gif: 'image/gif', webp: 'image/webp', txt: 'text/plain', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xls: 'application/vnd.ms-excel', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }
 const tipoDaNome = (nome: string) => TIPI[nome.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream'
 const percorso = (id: string) => `allegati/${id}.cifrato`
 
