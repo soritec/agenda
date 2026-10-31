@@ -63,8 +63,8 @@ export function FileUtili() {
       {inCorso > 0 && <span className="secondario piccolo">Carico {inCorso === 1 ? 'il file' : `${inCorso} file`}…</span>}
       {tutti.length === 0 && <div className="vuoto">Nessun file. Carica le istruzioni della scuola e gli allegati delle mail.</div>}
       {tutti.length > 0 && trovati.length === 0 && <div className="vuoto">Nessun file con questo nome.</div>}
-      {CARTELLE_UTILI.map((c) => {
-        const file = trovati.filter((a) => cartellaDi(a) === c.id)
+      {[{ id: 'importanti', nome: 'Importanti', file: trovati.filter((a) => a.importante) },
+        ...CARTELLE_UTILI.map((c) => ({ ...c, file: trovati.filter((a) => !a.importante && cartellaDi(a) === c.id) }))].map(({ file, ...c }) => {
         if (!file.length) return null
         return (
           <section key={c.id}>
@@ -85,13 +85,18 @@ export function FileUtili() {
                         <span style={{ display: 'block', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.nome}</span>
                         <span className="secondario piccolo">caricato il {F.dataBreve(a.creatoIl)}</span>
                       </button>
-                      <select value={c.id} aria-label={`Sposta ${a.nome}`} style={{ maxWidth: 120 }}
+                      <select value={cartellaDi(a)} aria-label={`Sposta ${a.nome}`} style={{ maxWidth: 120 }}
                         onChange={(e) => void salva('allegati', { ...a, collegatoA: collegamentoCartella(e.target.value as CartellaUtile) })}>
                         {CARTELLE_UTILI.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
                       </select>
                       <button type="button" className="link piccolo" onClick={() => setRinomina({ id: a.id, nome: a.nome })}>Rinomina</button>
                     </>
                   )}
+                  <button type="button" className={`stella${a.importante ? ' attiva' : ''}`} aria-pressed={!!a.importante}
+                    aria-label={a.importante ? `Togli ${a.nome} dagli importanti` : `Segna ${a.nome} come importante`}
+                    onClick={() => void salva('allegati', { ...a, importante: !a.importante })}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" /></svg>
+                  </button>
                   <button type="button" className="elimina-riga" aria-label={`Elimina ${a.nome}`}
                     onClick={() => void eliminaAllegato(a).then((annulla) => mostraAvviso(`Eliminato: ${a.nome}`, () => void annulla()))}>×</button>
                 </div>

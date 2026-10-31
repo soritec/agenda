@@ -343,6 +343,8 @@ export interface Allegato extends Base {
   collegatoA: string
   /** Il contenuto cifrato è già su GitHub (gli altri dispositivi possono scaricarlo). */
   caricato?: boolean
+  /** File utili: segnato con la stellina. */
+  importante?: boolean
 }
 
 /* Agenda */
