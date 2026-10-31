@@ -168,8 +168,8 @@ export async function eseguiManutenzione(): Promise<void> {
     const voci = SIGLE_AGI.map((s) => CATALOGO_SCUOLA.find((v) => v.sigla === s)!)
     const base = Math.max(0, ...modelli.map((m) => m.ordine)) + 1
     const aggiornati = await salvaTanti('modelliTurno', voci.map((v, i) => {
-      const m = modelli.find((x) => x.sigla.toLowerCase() === v.sigla)
-      return m ? { ...m, nome: v.nome } : { id: `catalogo-${v.sigla}`, nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i, minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: true, info: v.info }
+      const m = modelli.find((x) => x.sigla.toLowerCase() === v.sigla.toLowerCase())
+      return m ? { ...m, nome: v.nome } : { id: `catalogo-${v.sigla.toLowerCase()}`, nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i, minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: true, info: v.info }
     }))
     const agi = modelli.find((m) => m.sigla.toLowerCase() === 'agi')
     if (agi) {
@@ -179,6 +179,15 @@ export async function eseguiManutenzione(): Promise<void> {
       if (turni.filter((t) => t.modelloId === agi.id).length === diNovembre.length) await elimina('modelliTurno', agi.id)
     }
     nuove.push('agi-diviso-v1')
+  }
+
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('sigle-agi-maiuscole-v1')) {
+    const daCambiare = (await elenca('modelliTurno')).flatMap((m) => {
+      const sigla = SIGLE_AGI.find((s) => s.toLowerCase() === m.sigla.toLowerCase())
+      return sigla && sigla !== m.sigla ? [{ ...m, sigla }] : []
+    })
+    if (daCambiare.length) await salvaTanti('modelliTurno', daCambiare)
+    nuove.push('sigle-agi-maiuscole-v1')
   }
 
   if (!fatte.has('risparmi-col-mese-v1')) {

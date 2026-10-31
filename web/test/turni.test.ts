@@ -166,7 +166,7 @@ describe('Sigle della scuola', () => {
 describe('Orari predefiniti delle sigle', () => {
   test('ambulatori 8–18, sala operatoria 7–18, Tronco senza tipo', () => {
     const v = (s: string) => CATALOGO_SCUOLA.find((x) => x.sigla === s)!
-    expect(v('agiap').orari).toEqual([480, 1080])
+    expect(v('Agiap').orari).toEqual([480, 1080])
     expect(v('Sop').orari).toEqual([420, 1080])
     expect(v('Tro').tipo).toBe('altro')
   })

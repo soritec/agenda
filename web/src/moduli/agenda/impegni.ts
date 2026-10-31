@@ -120,13 +120,14 @@ function riunioniFisse(d: DatiAgenda, da: string, a: string, oggi: string, adess
 }
 
 /**
- * Griglia delle ore: i turni senza orari si posizionano indicativamente, senza cambiare nulla nel turno.
+ * Griglia delle ore: i turni senza orari, il riposo e lo smonto si posizionano indicativamente, senza cambiare nulla nel turno.
  * Reparto e sala dalle 7, il resto dalle 8, fine verso le 14; una seconda attività va dalle 14 alle 18.
  */
 export function conPosizioneIndicativa(impegni: Impegno[]): Impegno[] {
   const visti = new Map<string, number>()
   return impegni.map((i) => {
-    if (i.fonte !== 'turno' || i.minutoInizio !== undefined) return i
+    const comeTurno = i.fonte === 'turno' || i.colore === 'g-riposo' || i.colore === 'g-smontoNotte'
+    if (!comeTurno || i.minutoInizio !== undefined) return i
     const n = visti.get(i.giorno) ?? 0
     visti.set(i.giorno, n + 1)
     const presto = i.colore === 't-reparto' || i.colore === 't-salaOperatoria'
@@ -333,7 +334,8 @@ export function blocchiPerGiorno(impegni: Impegno[], giorni: string[]): Map<stri
     const fine = i.minutoFine ?? i.minutoInizio + 60
     const attraversa = fine <= i.minutoInizio && i.minutoFine !== undefined
     grezzi.get(i.giorno)?.push({ impegno: i, da: i.minutoInizio, a: attraversa ? 1440 : Math.max(fine, i.minutoInizio + 30), continuaDopo: attraversa || undefined })
-    if (attraversa && fine > 0) grezzi.get(giornoDopo(i.giorno))?.push({ impegno: i, da: 0, a: fine, continuaPrima: true })
+    // La notte resta sul suo giorno: il mattino dopo c'è lo smonto.
+    if (attraversa && fine > 0 && i.fonte !== 'turno') grezzi.get(giornoDopo(i.giorno))?.push({ impegno: i, da: 0, a: fine, continuaPrima: true })
   }
   const out = new Map<string, Blocco[]>()
   for (const [g, elenco] of grezzi) out.set(g, disponi(elenco))

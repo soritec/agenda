@@ -27,7 +27,7 @@ const DA_SALTARE = new Set(['smo', 'smonto', '-', '–', '/'])
 /** Intestazione di una colonna della griglia del mese, es. "12G". */
 const GIORNO_GRIGLIA = /^(\d{1,2})\s*[lmgvsd]$/i
 /** Griglia del mese: sigle con un altro nome nell'app (la legenda del file è diversa da quella del vademecum). */
-const SIGLE_GRIGLIA: Record<string, string> = { agi: 'agiap', rgi: 'Rg', ros: 'R', pu: 'P', fisio: 'F', ar: 'A', rho: 'Rh', preric: 'PR', 'e pome': 'E pom' }
+const SIGLE_GRIGLIA: Record<string, string> = { agi: 'Agiap', rgi: 'Rg', ros: 'R', pu: 'P', fisio: 'F', ar: 'A', rho: 'Rh', preric: 'PR', 'e pome': 'E pom' }
 /** Sigle in cui contano le maiuscole: "cons" è il consultorio, "CONS" le consulenze genetiche. */
 const SIGLE_ESATTE: Record<string, string> = { cons: 'Cs' }
 const GIORNATE_GRIGLIA: Record<string, 'riposo' | 'ferie'> = { ripco: 'riposo', f: 'ferie' }

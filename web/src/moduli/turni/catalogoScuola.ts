@@ -109,8 +109,8 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'Ex', nome: 'Amb. Gravidanza Extrauterina / I trim.', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Precompilato sul drive: far firmare consenso e foglio informativo, riportare lotto e scadenza.` },
   { sigla: 'Cs', nome: 'Consultorio', tipo: 'ambulatorio', orari: AMB, info: "Orari e sedi nella tabella allegata alle istruzioni della scuola. Se si è segnati in due, ci si divide tra le sedi." },
-  { sigla: 'agiap', nome: 'Ambulatorio di ginecologia di primo livello (gestito da strutturati)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
-  { sigla: 'agispec', nome: 'Ambulatorio di ginecologia di primo livello (gestito dagli specializzandi)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'Agiap', nome: 'Ambulatorio di ginecologia di primo livello (gestito da strutturati)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'Agispec', nome: 'Ambulatorio di ginecologia di primo livello (gestito dagli specializzandi)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
   { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 4') },
   { sigla: 'Ben', nome: 'Amb. Benigna / endometriosi', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
   { sigla: 'Aon', nome: 'Amb. Oncologico', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
@@ -146,7 +146,7 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
 ]
 
 /** "agi" è diviso in agiap e agispec. */
-export const SIGLE_AGI = ['agiap', 'agispec']
+export const SIGLE_AGI = ['Agiap', 'Agispec']
 
 /** Voci del catalogo non ancora presenti tra i turni tipo (confronto per sigla). */
 export function vociMancanti(esistenti: { sigla: string }[]): VoceCatalogo[] {
