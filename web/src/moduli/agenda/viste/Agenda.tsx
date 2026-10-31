@@ -1,3 +1,5 @@
+import { SchedaScuola } from '../../specializzazione/viste/Indicazioni'
+import { genereDi, type GenereScuola } from '../../turni/scuola'
 import { profiloPrincipale } from '../../../dati/profili'
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react'
 import { aggiungiGiorni, componenti, giornoDi, istante } from '../../../nucleo/calendario'
@@ -130,10 +132,13 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
     scrivi(CHIAVE_FILTRI, [...n])
   }
   /** Gli impegni dell'agenda si aprono qui; il resto porta alla sua sezione. */
+  const [schedaScuola, setSchedaScuola] = useState<{ titolo: string; genere: GenereScuola; link: string }>()
   function apri(i: Impegno, e?: MouseEvent) {
     // Il clic che chiude una pressione prolungata (o con la × visibile) non apre niente.
     if (pressione.eraPressione() || pressione.attivo === i.chiave) { e?.preventDefault(); return }
     if (i.fonte === 'nota') { e?.preventDefault(); setNotaInModifica(i.id); return }
+    const genere = genereDi(i)
+    if (genere) { e?.preventDefault(); setSchedaScuola({ titolo: i.titolo, genere, link: i.link }); return }
     if (i.fonte !== 'evento') return
     e?.preventDefault()
     setEventoInModifica(i.id)
@@ -296,6 +301,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       {aggiunta?.cosa === 'studio' && <NuovaSessioneDaAgenda giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {aggiunta?.cosa === 'nota' && <FormNota giorno={aggiunta.giorno} onChiudi={() => setAggiunta(undefined)} />}
       {taskNuovo && <FormTask giorno={taskNuovo} onChiudi={() => setTaskNuovo(undefined)} />}
+      {schedaScuola && <SchedaScuola voce={schedaScuola} onChiudi={() => setSchedaScuola(undefined)} />}
       {nota && <FormNota key={nota.id} record={nota} giorno={nota.giorno} onChiudi={chiudiNota} />}
       {esporta && <EsportaCalendario anno={Number(riferimento.slice(0, 4))} mese={Number(riferimento.slice(5, 7))} dati={dati} nascoste={nascoste} visibile={vista === 'mese' ? undefined : { da, a, nome: etichetta }} festivo={festivo} onChiudi={() => setEsporta(false)} />}
     </div>

@@ -10,7 +10,7 @@ export interface VoceCatalogo {
   nome: string
   tipo: TipoTurno
   orari: [number, number]
-  /** Dove e quando presentarsi (dal vademecum). */
+  /** Dove, come e quando (dal vademecum). */
   info?: string
 }
 

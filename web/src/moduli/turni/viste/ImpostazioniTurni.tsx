@@ -208,7 +208,7 @@ function FormModello({ record, sedi, ordine, onChiudi }: { record?: ModelloTurno
             {sedi.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
           </select>
         </Campo>
-        <Campo etichetta="Dove e quando presentarsi (facoltativo)"><textarea rows={3} value={b.info} placeholder="es. piano -1, blocco F, alle 7:45 già cambiati" onChange={(e) => setB({ ...b, info: e.target.value })} /></Campo>
+        <Campo etichetta="Dove, come e quando (facoltativo)"><textarea rows={3} value={b.info} placeholder="es. piano -1, blocco F, alle 7:45 già cambiati" onChange={(e) => setB({ ...b, info: e.target.value })} /></Campo>
         {record && <PulsanteElimina onElimina={() => void elimina('modelliTurno', record.id).then(() => { onChiudi(); mostraAvviso(`Eliminato: ${record.nome}`, () => void ripristina('modelliTurno', record.id)) })} />}
       </div>
     </Foglio>

@@ -64,7 +64,7 @@ export function EsamiOLezioni({ tipo }: { tipo: TipoAttivita }) {
           <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ {t.uno}</button>
         </div>
       </header>
-      {tipo === 'riunione' && <Indicazioni />}
+      {tipo !== 'esame' && <Indicazioni generi={tipo === 'lezione' ? ['lezione'] : ['riunione', 'goi']} />}
       {tipo !== 'esame' && profiloPrincipale() && <FileLezioni tipo={tipo} />}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <h2 className="titolo-sezione">In programma</h2>

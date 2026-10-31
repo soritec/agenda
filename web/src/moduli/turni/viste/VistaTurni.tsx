@@ -15,6 +15,8 @@ import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
 import { useVociScuola, VoceScuola } from './VoceScuola'
+import { SchedaScuola } from '../../specializzazione/viste/Indicazioni'
+import type { VoceScuola as Voce } from '../scuola'
 import { SceltaOspedale } from './SceltaOspedale'
 import { SvuotaMese } from './SvuotaMese'
 import { assegnazioneDelMese } from '../assegnazioni'
@@ -37,6 +39,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   const ferie = useCollezione('ferie')
   const impostazioni = useImpostazioni()
   const scuola = useVociScuola(anno, mese)
+  const [schedaScuola, setSchedaScuola] = useState<Voce>()
   const [sceltaArea, setSceltaArea] = useState(false)
   const [sceltaOspedale, setSceltaOspedale] = useState(false)
   const [estrai, setEstrai] = useState(false)
@@ -209,7 +212,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                           </span>
                         )
                       })}
-                      {(scuola.get(k) ?? []).map((v) => <VoceScuola key={v.chiave} voce={v} conLink />)}
+                      {(scuola.get(k) ?? []).map((v) => <VoceScuola key={v.chiave} voce={v} onApri={() => setSchedaScuola(v)} />)}
                     </span>
                   </div>
                 )
@@ -269,6 +272,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
         </aside>
       </div>
 
+      {schedaScuola && <SchedaScuola voce={{ ...schedaScuola, titolo: schedaScuola.nome }} onChiudi={() => setSchedaScuola(undefined)} />}
       <EstraiDaFile aperto={estrai} onChiudi={() => setEstrai(false)} />
       {svuota && (
         <SvuotaMese anno={anno} mese={mese} turni={delMese.length} giornate={giornateMese.reduce((n, g) => n + g.numero, 0)} onChiudi={() => setSvuota(false)} />

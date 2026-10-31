@@ -8,6 +8,7 @@ import type { Turno } from '../../../dati/modello'
 import { Avviso, Campo, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { parametroMese, vai } from '../../../interfaccia/navigazione'
 import { avvisi as calcolaAvvisi } from '../controlli'
+import { DoveComeQuando } from '../../specializzazione/viste/Indicazioni'
 import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { minuti, STATI_TURNO, TIPI_TURNO, TITOLI_TIPO_TURNO, tipoTurnoDa } from '../tipi'
 import {
@@ -118,6 +119,7 @@ export function DettaglioTurno({ id }: { id: string }) {
     mostraAvviso('Turno eliminato', () => void annulla())
   }
 
+  const modello = turno.modelloId ? mappaModelli.get(turno.modelloId) : undefined
   const minutiOrari = orari && !bozza.tuttoIlGiorno ? minuti({ ...datiDa(turno), ...orari, tuttoIlGiorno: false, minutiManuali: undefined }) : undefined
 
   return (
@@ -127,8 +129,9 @@ export function DettaglioTurno({ id }: { id: string }) {
         <h1 className="titolo-grande">{titoloTurno(turno, mappaModelli)}</h1>
         <div className="secondario">{F.dataEstesa(turno.inizio)}</div>
       </header>
-      {turno.modelloId && mappaModelli.get(turno.modelloId)?.info && (
-        <div className="info-turno"><strong>Dove e quando</strong><span>{mappaModelli.get(turno.modelloId)!.info}</span></div>
+      {modello && (
+        <DoveComeQuando testo={modello.info ?? ''} spiegazione={`Vale per tutti i turni ${modello.sigla}.`}
+          onSalva={(info) => salva('modelliTurno', { ...modello, info: info || undefined })} />
       )}
 
       <div className="scheda modulo">

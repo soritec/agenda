@@ -137,7 +137,7 @@ export function JournalClubPagina() {
           <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ Articolo</button>
         </div>
       </header>
-      <Indicazioni />
+      <Indicazioni generi={['journal', 'goi']} />
       {calendario.length > 0 && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <h2 className="titolo-sezione">Prossimi journal club</h2>

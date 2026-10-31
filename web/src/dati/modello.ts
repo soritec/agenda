@@ -500,6 +500,8 @@ export interface Impostazioni {
   orariNonChiesti?: string[]
   /** Riunioni fisse (es. "jc:2026-11-04") tolte dall'agenda con la ×. */
   riunioniTolte?: string[]
+  /** "Dove, come e quando" di journal club, GOI, lezioni e riunioni, se modificato. */
+  indicazioniScuola?: Partial<Record<'journal' | 'goi' | 'lezione' | 'riunione', string>>
   matricolaOspedale?: string
   matricolaUniversita?: string
   /** Come compare il proprio nome nei file dei turni (es. il cognome), per leggerli in automatico. */

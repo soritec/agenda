@@ -25,7 +25,7 @@ export const Freccetta = () => (
 )
 
 /** Riga di testo con la freccetta: sul telefono solo la sigla, in stampa il nome intero. */
-export function VoceScuola({ voce, conLink }: { voce: Voce; conLink?: boolean }) {
+export function VoceScuola({ voce, onApri }: { voce: Voce; onApri?: () => void }) {
   const contenuto = (
     <>
       <Freccetta />
@@ -34,5 +34,5 @@ export function VoceScuola({ voce, conLink }: { voce: Voce; conLink?: boolean })
     </>
   )
   const classe = `voce-scuola s-${voce.genere}`
-  return conLink ? <a className={classe} href={voce.link} title={voce.nome}>{contenuto}</a> : <span className={classe}>{contenuto}</span>
+  return onApri ? <button type="button" className={classe} title={voce.nome} onClick={onApri}>{contenuto}</button> : <span className={classe}>{contenuto}</span>
 }
