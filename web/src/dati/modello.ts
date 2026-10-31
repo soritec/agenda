@@ -261,6 +261,8 @@ export interface DiarioTurno extends Base {
   turni: string
   imparato?: string
   approfondire?: string
+  /** Risorse della Libreria di Studio con i file allegati a questo giorno. */
+  risorse?: string[]
 }
 
 export interface UmoreGiorno extends Base {

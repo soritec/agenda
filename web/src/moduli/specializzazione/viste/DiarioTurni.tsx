@@ -5,7 +5,9 @@ import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
 import type { DiarioTurno } from '../../../dati/modello'
 import { Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
+import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
 import { giornoDaChiave } from '../../turni/supporto'
+import { CampoFileDiario, salvaFileDiario } from './CampoFileDiario'
 
 const FILTRI = [['tutto', 'Tutto'], ['imparato', 'Imparato'], ['approfondire', 'Da approfondire']] as const
 type Filtro = (typeof FILTRI)[number][0]
@@ -18,7 +20,7 @@ export function DiarioTurni() {
   const [cerca, setCerca] = useState('')
   const [modifica, setModifica] = useState<DiarioTurno>()
   const testo = cerca.trim().toLowerCase()
-  const visibili = (voci ?? []).filter((v) => (v.imparato || v.approfondire) && (filtro === 'tutto' || v[filtro])
+  const visibili = (voci ?? []).filter((v) => (v.imparato || v.approfondire || v.risorse?.length) && (filtro === 'tutto' || v[filtro])
     && (!testo || `${v.turni} ${v.imparato ?? ''} ${v.approfondire ?? ''}`.toLowerCase().includes(testo)))
     .sort((a, b) => b.giorno.localeCompare(a.giorno))
   const mesi = [...new Set(visibili.map((v) => v.giorno.slice(0, 7)))]
@@ -58,6 +60,7 @@ export function DiarioTurni() {
               </div>
               {v.imparato && filtro !== 'approfondire' && <p className="appunto imparato"><span>Cosa ho imparato</span>{v.imparato}</p>}
               {v.approfondire && filtro !== 'imparato' && <p className="appunto approfondire"><span>Cosa devo approfondire</span>{v.approfondire}</p>}
+              {v.risorse?.map((id) => <EtichetteAllegati key={id} collegatoA={`risorsa:${id}`} />)}
             </article>
           ))}
         </section>
@@ -70,8 +73,11 @@ export function DiarioTurni() {
 function FormDiario({ voce, onChiudi }: { voce: DiarioTurno; onChiudi: () => void }) {
   const [imparato, setImparato] = useState(voce.imparato ?? '')
   const [approfondire, setApprofondire] = useState(voce.approfondire ?? '')
+  const [file, setFile] = useState<File[]>([])
   async function conferma() {
-    await salva('diarioTurni', { ...voce, imparato: imparato.trim() || undefined, approfondire: approfondire.trim() || undefined })
+    const nuove = await salvaFileDiario(file, F.dataBreve(ms(voce.giorno)))
+    const risorse = [...(voce.risorse ?? []), ...nuove]
+    await salva('diarioTurni', { ...voce, imparato: imparato.trim() || undefined, approfondire: approfondire.trim() || undefined, risorse: risorse.length ? risorse : undefined })
     onChiudi()
   }
   return (
@@ -80,6 +86,7 @@ function FormDiario({ voce, onChiudi }: { voce: DiarioTurno; onChiudi: () => voi
       <div className="modulo">
         <label className="appunto imparato"><span>Cosa ho imparato</span><textarea rows={3} value={imparato} onChange={(e) => setImparato(e.target.value)} /></label>
         <label className="appunto approfondire"><span>Cosa devo approfondire</span><textarea rows={3} value={approfondire} onChange={(e) => setApprofondire(e.target.value)} /></label>
+        <CampoFileDiario file={file} onCambia={setFile} />
         <NotaPrivacy />
       </div>
     </Foglio>

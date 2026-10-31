@@ -5,6 +5,7 @@ import { elimina, salva, salvaImpostazioni, salvaTanti } from '../../../dati/arc
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { DiarioTurno, Turno } from '../../../dati/modello'
 import { mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
+import { CampoFileDiario, salvaFileDiario } from '../../specializzazione/viste/CampoFileDiario'
 import { intervallo } from '../orari'
 import { giorniDaCompilare } from '../orariDaScrivere'
 import { chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, perId, titoloTurno } from '../supporto'
@@ -38,6 +39,7 @@ function RiquadroGiorno({ giorno, turni, guardie, altri, nomi, voce, nonChiesti,
   const [imparato, setImparato] = useState(voce?.imparato ?? '')
   const [approfondire, setApprofondire] = useState(voce?.approfondire ?? '')
   const [comeTask, setComeTask] = useState(true)
+  const [file, setFile] = useState<File[]>([])
   const [errore, setErrore] = useState<string>()
   const g = giornoDaChiave(giorno)!
   const valore = (id: string) => orari[id] ?? { da: '', a: '' }
@@ -52,10 +54,19 @@ function RiquadroGiorno({ giorno, turni, guardie, altri, nomi, voce, nonChiesti,
   async function salvaTutto() {
     const testoImparato = imparato.trim(), testoApprofondire = approfondire.trim()
     if (turni.some((t) => Boolean(valore(t.id).da) !== Boolean(valore(t.id).a))) { setErrore('Scrivi sia l\'inizio sia la fine.'); return }
-    if (completi.length === 0 && !testoImparato && !testoApprofondire) { setErrore('Scrivi almeno una cosa, oppure tocca Più tardi.'); return }
+    if (completi.length === 0 && !testoImparato && !testoApprofondire && file.length === 0) { setErrore('Scrivi almeno una cosa, oppure tocca Più tardi.'); return }
     if (completi.length) await salvaTanti('turni', completi.map(({ t, inizio, fine }) => ({ ...t, inizio, fine, tuttoIlGiorno: undefined })))
+    let nuoveRisorse: string[]
+    try { nuoveRisorse = await salvaFileDiario(file, F.dataBreve(istante(g.anno, g.mese, g.giorno, 12))) } catch (e) {
+      setErrore(`Non sono riuscita a caricare un file: ${e instanceof Error ? e.message : 'errore sconosciuto'}.`)
+      return
+    }
+    // Il riquadro può restare aperto se un turno è ancora senza orari: i file non vanno caricati due volte.
+    setFile([])
+    const risorse = [...(voce?.risorse ?? []), ...nuoveRisorse]
     const nuovaVoce = await salva('diarioTurni', {
       ...voce, id: giorno, giorno, turni: [...turni, ...guardie].map(nomi).join(', '), imparato: testoImparato || undefined, approfondire: testoApprofondire || undefined,
+      risorse: risorse.length ? risorse : undefined,
     })
     const task = testoApprofondire && comeTask && testoApprofondire !== voce?.approfondire
       ? await salva('attivita', { titolo: `Approfondire: ${testoApprofondire}`, priorita: 'nessuna', area: 'specializzazione' }) : undefined
@@ -63,6 +74,7 @@ function RiquadroGiorno({ giorno, turni, guardie, altri, nomi, voce, nonChiesti,
       if (completi.length) await salvaTanti('turni', completi.map((c) => c.t))
       if (voce) await salva('diarioTurni', voce); else await elimina('diarioTurni', nuovaVoce.id)
       if (task) await elimina('attivita', task.id)
+      await Promise.all(nuoveRisorse.map((id) => elimina('risorse', id)))
     })())
   }
 
@@ -98,6 +110,7 @@ function RiquadroGiorno({ giorno, turni, guardie, altri, nomi, voce, nonChiesti,
         <span>Cosa devo approfondire</span>
         <textarea rows={2} value={approfondire} onChange={(e) => { setApprofondire(e.target.value); setErrore(undefined) }} />
       </label>
+      <CampoFileDiario file={file} onCambia={(f) => { setFile(f); setErrore(undefined) }} />
       {approfondire.trim() && (
         <label className="secondario piccolo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={comeTask} onChange={(e) => setComeTask(e.target.checked)} /> Aggiungilo ai task

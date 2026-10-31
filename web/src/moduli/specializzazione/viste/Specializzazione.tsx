@@ -23,7 +23,7 @@ const dataBreve = (giorno: string) => {
 export function Specializzazione() {
   const fileTurni = (useCollezione('allegati') ?? []).filter((a) => a.collegatoA === 'file-turni').sort((a, b) => b.creatoIl - a.creatoIl)
   const giornate = useCollezione('ferie')
-  const diario = (useCollezione('diarioTurni') ?? []).filter((d) => d.imparato || d.approfondire)
+  const diario = (useCollezione('diarioTurni') ?? []).filter((d) => d.imparato || d.approfondire || d.risorse?.length)
   const numeroFileUtili = fileUtili(useCollezione('allegati') ?? []).length
   const impostazioni = useImpostazioni()
   const procedure = useCollezione('procedure')
