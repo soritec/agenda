@@ -96,6 +96,7 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'ron', nome: 'Oncologia ginecologica', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 12') },
   { sigla: 'PR', nome: 'Prericoveri', tipo: 'ambulatorio', orari: AMB, info: 'Prericoveri: chiedere la stanza al mattino.' },
   { sigla: 'GOI', nome: 'Discussione casi onco (GOI)', tipo: 'altro', orari: [13 * ORA, 14 * ORA + 30], info: 'Discussione multidisciplinare dei casi di oncologia ginecologica: giovedì 13–14:30, Anatomia patologica, piano 0, corridoio settore A (solo in presenza).' },
+  { sigla: 'CONS', nome: 'Consulenze genetiche', tipo: 'ambulatorio', orari: AMB, info: 'Consulenze genetiche con la genetista.' },
   { sigla: 'BT', nome: 'Bi-test', tipo: 'ecografia', orari: AMB },
   { sigla: 'Gen', nome: 'Ecografie genetiche', tipo: 'ecografia', orari: AMB },
   { sigla: 'Am', nome: 'Amniocentesi', tipo: 'ecografia', orari: AMB },

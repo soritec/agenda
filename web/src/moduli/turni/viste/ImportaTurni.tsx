@@ -3,7 +3,7 @@ import { giornoDaChiave, perId, turniPerGiorno } from '../supporto'
 import * as F from '../../../nucleo/formati'
 import { istante } from '../../../nucleo/calendario'
 import { contenutoAllegato } from '../../../dati/allegati'
-import { salva, salvaImpostazioni } from '../../../dati/archivio'
+import { elimina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Allegato, ModelloTurno, Turno } from '../../../dati/modello'
 import { Avviso, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
@@ -12,9 +12,12 @@ import { leggiTurni, modelloPerSigla, type PezzoTesto, type TurnoLetto } from '.
 import { pezziDelPdf } from '../leggiPdf'
 import { intervallo, intervalloTuttoIlGiorno } from '../orari'
 import { aggiungiSmonti, eliminaTurno } from '../smonto'
+import { TITOLI_GIORNATA } from '../tipi'
 
 /** Valore della scelta per una sigla della scuola che non è ancora un turno tipo. */
 const CATALOGO = 'catalogo:'
+/** Valore della scelta per una giornata senza turno (riposo, ferie). */
+const GIORNATA = 'giornata:'
 
 interface Proposta extends TurnoLetto { modelloId?: string; scelto: boolean; giaPresente: boolean; allegatoId: string }
 
@@ -26,6 +29,7 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
   const impostazioni = useImpostazioni()
   const modelli = useCollezione('modelliTurno')
   const turni = useCollezione('turni')
+  const giornate = useCollezione('ferie')
   const [pezzi, setPezzi] = useState<{ allegato: Allegato; pezzi: PezzoTesto[] }[]>()
   const [errore, setErrore] = useState<string>()
   const [nome, setNome] = useState('')
@@ -72,9 +76,14 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
   }, [pezzi, nomeSalvato])
 
   useEffect(() => {
-    if (!letti || !modelli || !turni) return
+    if (!letti || !modelli || !turni || !giornate) return
     const perGiorno = turniPerGiorno(turni)
+    const giorniOccupati = new Set(giornate.map((g) => g.giorno))
     setProposte(letti.turni.map((t) => {
+      if (t.giornata) {
+        const giaPresente = giorniOccupati.has(t.giorno)
+        return { ...t, modelloId: `${GIORNATA}${t.giornata}`, scelto: !giaPresente, giaPresente }
+      }
       const modello = modelloPerSigla(t.sigla, modelli)
       // Sigla della scuola non ancora tra i turni tipo: si crea insieme ai turni.
       const dalCatalogo = modello ? undefined : modelloPerSigla(t.sigla, CATALOGO_SCUOLA)
@@ -84,7 +93,7 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
     }))
     // Le proposte si ricalcolano solo quando cambia il file letto, non a ogni salvataggio.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [letti, !!modelli, !!turni])
+  }, [letti, !!modelli, !!turni, !!giornate])
 
   const mappa = useMemo(() => perId(modelli), [modelli])
   const ordinati = useMemo(() => [...(modelli ?? [])].sort((a, b) => a.sigla.localeCompare(b.sigla)), [modelli])
@@ -94,6 +103,7 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
   async function aggiungi() {
     setSalvando(true)
     const creati: Turno[] = []
+    const createGiornate: string[] = []
     const nuoviModelli = new Map<string, ModelloTurno>()
     const modelloDi = async (id: string) => {
       if (!id.startsWith(CATALOGO)) return mappa.get(id)
@@ -105,6 +115,10 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
       return nuoviModelli.get(id)
     }
     for (const p of daAggiungere) {
+      if (p.giornata) {
+        createGiornate.push((await salva('ferie', { giorno: p.giorno, tipo: p.giornata })).id)
+        continue
+      }
       const m = await modelloDi(p.modelloId!)
       if (!m) continue
       const g = giornoDaChiave(p.giorno)!
@@ -114,7 +128,10 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
     await aggiungiSmonti(creati)
     setSalvando(false)
     onChiudi()
-    mostraAvviso(`Aggiunti ${creati.length} turni`, () => void Promise.all(creati.map((t) => eliminaTurno(t.id))))
+    mostraAvviso(`Aggiunti ${creati.length} turni${createGiornate.length ? ` e ${createGiornate.length} ${createGiornate.length === 1 ? 'giornata' : 'giornate'}` : ''}`, () => void Promise.all([
+      ...creati.map((t) => eliminaTurno(t.id)),
+      ...createGiornate.map((id) => elimina('ferie', id)),
+    ]))
   }
 
   const nomeMesi = (letti?.mesi ?? []).map((m) => { const g = giornoDaChiave(`${m}-01`)!; return F.mese(istante(g.anno, g.mese, 1, 12)) }).join(', ')
@@ -148,13 +165,13 @@ export function ImportaTurni({ allegati, onChiudi }: { allegati: Allegato[]; onC
                       <input type="checkbox" checked={p.scelto} disabled={!p.modelloId} onChange={(e) => cambia(i, { scelto: e.target.checked })} />
                       <span className="crescente">
                         <span style={{ fontWeight: 600 }}>{F.dataBreve(istante(g.anno, g.mese, g.giorno, 12))}</span>
-                        <span className="secondario piccolo">{p.sigla} · colonna "{p.colonna}"{p.giaPresente ? ' · già nel calendario' : ''}</span>
+                        <span className="secondario piccolo">{p.sigla}{p.nelFile ? ` · nel file ${p.nelFile}` : p.colonna ? ` · colonna "${p.colonna}"` : ''}{p.giaPresente ? ' · già nel calendario' : ''}</span>
                       </span>
-                      <select value={p.modelloId ?? ''} onChange={(e) => cambia(i, { modelloId: e.target.value || undefined, scelto: !!e.target.value })} style={{ maxWidth: 190 }}>
+                      {p.giornata ? <span className="secondario piccolo">{TITOLI_GIORNATA[p.giornata]}</span> : <select value={p.modelloId ?? ''} onChange={(e) => cambia(i, { modelloId: e.target.value || undefined, scelto: !!e.target.value })} style={{ maxWidth: 190 }}>
                         <option value="">Scegli il turno…</option>
                         {ordinati.map((m) => <option key={m.id} value={m.id}>{m.sigla} · {m.nome}</option>)}
                         {p.modelloId?.startsWith(CATALOGO) && (() => { const v = modelloPerSigla(p.modelloId.slice(CATALOGO.length), CATALOGO_SCUOLA)!; return <option value={p.modelloId}>{v.sigla} · {v.nome} (nuovo)</option> })()}
-                      </select>
+                      </select>}
                     </label>
                   )
                 })}

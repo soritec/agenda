@@ -32,6 +32,29 @@ describe('lettura dei turni dal PDF', () => {
     expect(leggiTurni(pezzi, ['Rossi']).turni).toEqual([{ giorno: '2026-11-03', sigla: 'NSP', colonna: 'Rossi' }])
   })
 
+  it('griglia del mese: riga per persona, più caselle per giorno, sigle tradotte', () => {
+    const pezzo = (testo: string, x: number, y: number): PezzoTesto => ({ testo, x, y, larghezza: testo.length * 5, pagina: 1 })
+    // Ogni giorno è largo 54 con tre caselle da 18; il giorno 1 parte da 246 e la sua intestazione manca.
+    const casella = (giorno: number, n = 0) => 248 + 54 * (giorno - 1) + 18 * n
+    const pezzi = [
+      pezzo('novembre 2026', 148, 143),
+      ...[2, 3, 4, 5, 6, 7, 8].map((g) => pezzo(`${g}L`, casella(g) + 22, 143)),
+      pezzo('Bianchi', 170, 174), pezzo('G', casella(1), 174),
+      pezzo('Rossi', 170, 190), pezzo('RGI', casella(1), 190), pezzo('RGI', casella(1, 1), 190), pezzo('RGI', casella(1, 2), 190),
+      pezzo('eco', casella(2), 191), pezzo('op', casella(2, 1), 190),
+      pezzo('N', casella(3), 190), pezzo('N', casella(3, 1), 190), pezzo('SMO', casella(4), 190),
+      pezzo('RIPCO', casella(5), 190), pezzo('F', casella(6), 190), pezzo('X', casella(7), 190),
+    ]
+    expect(leggiTurni(pezzi, ['Rossi'])).toEqual({ mese: '2026-11', turni: [
+      { giorno: '2026-11-01', sigla: 'Rg', colonna: '', nelFile: 'RGI' },
+      { giorno: '2026-11-02', sigla: 'eco', colonna: '' },
+      { giorno: '2026-11-02', sigla: 'op', colonna: '' },
+      { giorno: '2026-11-03', sigla: 'N', colonna: '' },
+      { giorno: '2026-11-05', sigla: 'RIPCO', colonna: '', giornata: 'riposo' },
+      { giorno: '2026-11-06', sigla: 'F', colonna: '', giornata: 'ferie' },
+    ] })
+  })
+
   it('senza mese o senza nome non trova niente', () => {
     const pezzi = tabella([['', 'Rossi'], ['Lunedì 2', 'G']])
     expect(leggiTurni(pezzi, ['Rossi']).turni).toEqual([])

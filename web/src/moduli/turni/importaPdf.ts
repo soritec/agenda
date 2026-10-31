@@ -2,7 +2,8 @@
  * Lettura dei turni dai file PDF della scuola (tabelle mensili), senza intelligenza artificiale.
  * Riceve i pezzi di testo con la loro posizione (da pdf.js) e cerca il nome dell'utente in due forme di tabella:
  * - nome nelle caselle (es. guardie: colonne "… G" / "… N", righe = giorni) → la sigla viene dall'intestazione;
- * - nome nell'intestazione (es. una colonna per persona) → la sigla è scritta nella casella del giorno.
+ * - nome nell'intestazione (es. una colonna per persona) → la sigla è scritta nella casella del giorno;
+ * - griglia del mese (una riga per persona, intestazione "2L 3M 4M…") → le sigle sono nelle caselle della riga.
  * Logica pura: l'utente conferma sempre prima che i turni vengano salvati.
  */
 
@@ -11,14 +12,23 @@ export interface TurnoLetto {
   /** "2026-11-17" */
   giorno: string
   sigla: string
-  /** Intestazione della colonna da cui viene (per mostrarla nella conferma). */
+  /** Intestazione della colonna da cui viene (per mostrarla nella conferma); vuota nella griglia del mese. */
   colonna: string
+  /** Giornata senza turno (griglia del mese: RIPCO, F). */
+  giornata?: 'riposo' | 'ferie'
+  /** Sigla com'è scritta nel file, se diversa da `sigla`. */
+  nelFile?: string
 }
 
 const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre']
 const RIGA_GIORNO = /^(lun|mar|mer|gio|ven|sab|dom)[a-zì]*\.?\s+(\d{1,2})$/i
 /** Sigle che non sono turni (lo smonto lo segna già l'app dopo la notte). */
 const DA_SALTARE = new Set(['smo', 'smonto', '-', '–', '/'])
+/** Intestazione di una colonna della griglia del mese, es. "12G". */
+const GIORNO_GRIGLIA = /^(\d{1,2})\s*[lmgvsd]$/i
+/** Griglia del mese: sigle con un altro nome nell'app (la legenda del file è diversa da quella del vademecum). */
+const SIGLE_GRIGLIA: Record<string, string> = { rgi: 'Rg', ros: 'R', pu: 'P', fisio: 'F', ar: 'A', rho: 'Rh', preric: 'PR', 'e pome': 'E pom' }
+const GIORNATE_GRIGLIA: Record<string, 'riposo' | 'ferie'> = { ripco: 'riposo', f: 'ferie' }
 
 export const normalizza = (t: string) =>
   t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').replace(/[.\s]+$/, '').trim()
@@ -54,6 +64,41 @@ function righe(pezzi: PezzoTesto[]): Casella[][] {
   })
 }
 
+/** Colonne dei giorni della griglia del mese: `inizio` è il bordo sinistro del giorno 1 (la sua intestazione può mancare). */
+function colonneGriglia(pezzi: PezzoTesto[]): { y: number; inizio: number; passo: number; ultimo: number } | undefined {
+  const letti = pezzi.flatMap((p) => {
+    const m = p.testo.trim().match(GIORNO_GRIGLIA)
+    return m ? [{ n: Number(m[1]), centro: p.x + p.larghezza / 2, y: p.y }] : []
+  })
+  const prima = letti[0]
+  const stessaRiga = letti.filter((l) => prima && Math.abs(l.y - prima.y) <= 3).sort((a, b) => a.n - b.n)
+  if (!prima || stessaRiga.length < 5) return undefined
+  const a = stessaRiga[0]!
+  const z = stessaRiga[stessaRiga.length - 1]!
+  const passo = (z.centro - a.centro) / (z.n - a.n)
+  return { y: prima.y, inizio: a.centro - (a.n - 0.5) * passo, passo, ultimo: z.n }
+}
+
+/** Griglia del mese: ogni giorno ha più caselle (mattina, pomeriggio…); pezzi uguali nello stesso giorno sono un turno solo. */
+function turniDellaGriglia(pezzi: PezzoTesto[], griglia: NonNullable<ReturnType<typeof colonneGriglia>>, cercati: Set<string>, mese: string): TurnoLetto[] {
+  const turni: TurnoLetto[] = []
+  for (const nome of pezzi.filter((p) => p.x < griglia.inizio && p.y > griglia.y && cercati.has(normalizza(p.testo)))) {
+    for (const p of pezzi) {
+      if (p.x < griglia.inizio || Math.abs(p.y - nome.y) > 3) continue
+      const n = Math.floor((p.x - griglia.inizio) / griglia.passo) + 1
+      const scritta = p.testo.trim()
+      const k = normalizza(scritta)
+      if (n > griglia.ultimo || k === 'x' || DA_SALTARE.has(k)) continue
+      const sigla = SIGLE_GRIGLIA[k] ?? scritta
+      turni.push({
+        giorno: `${mese}-${String(n).padStart(2, '0')}`, sigla, colonna: '', giornata: GIORNATE_GRIGLIA[k],
+        ...(sigla !== scritta ? { nelFile: scritta } : {}),
+      })
+    }
+  }
+  return turni
+}
+
 /** Turni dell'utente (`nomi`: come compare nei file, anche più varianti) trovati nelle tabelle. */
 export function leggiTurni(pezzi: PezzoTesto[], nomi: string[]): { mese?: string; turni: TurnoLetto[] } {
   const mese = meseDelFile(pezzi)
@@ -62,6 +107,8 @@ export function leggiTurni(pezzi: PezzoTesto[], nomi: string[]): { mese?: string
   const turni: TurnoLetto[] = []
   const pagine = [...new Set(pezzi.map((p) => p.pagina))]
   for (const pagina of pagine) {
+    const griglia = colonneGriglia(pezzi.filter((p) => p.pagina === pagina))
+    if (griglia) { turni.push(...turniDellaGriglia(pezzi.filter((p) => p.pagina === pagina), griglia, cercati, mese)); continue }
     let intestazione: Casella[] | undefined
     let precedente: Casella[] | undefined
     for (const riga of righe(pezzi.filter((p) => p.pagina === pagina))) {
