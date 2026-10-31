@@ -13,7 +13,7 @@ export interface RigaPdf {
 }
 
 /** Casella del calendario del mese nel PDF; null = casella vuota prima o dopo il mese. */
-export type CellaPdf = { giorno: number; festivo?: boolean; sigle: { testo: string; colore: Colore }[] } | null
+export type CellaPdf = { giorno: number; festivo?: boolean; giornata?: { testo: string; colore: Colore }; sigle: { testo: string; colore: Colore }[] } | null
 
 export interface DocumentoPdf {
   titolo: string
@@ -40,6 +40,7 @@ const SECONDARIO: Colore = [107, 102, 95]
 const ACCENTO: Colore = [63, 110, 115]
 const SFONDO_RIQUADRO: Colore = [242, 238, 232]
 const FERIE: Colore = [243, 231, 207]
+const SFONDO_CASELLA: Colore = [247, 245, 241]
 const FESTIVO: Colore = [138, 76, 52]
 const GIORNI_PDF = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
@@ -100,10 +101,11 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
       if (!c) return
       const x = margine + (i % 7) * (w + stacco)
       const cy = y + Math.floor(i / 7) * (h + stacco)
-      doc.setDrawColor(216, 210, 200).setLineWidth(0.2)
-      doc.roundedRect(x, cy, w, h, 1.5, 1.5, 'S')
+      doc.setFillColor(...(c.giornata?.colore ?? SFONDO_CASELLA))
+      doc.roundedRect(x, cy, w, h, 1.5, 1.5, 'F')
       doc.setFont('helvetica', 'bold').setFontSize(9.5).setTextColor(...(c.festivo ? FESTIVO : TESTO))
       doc.text(String(c.giorno), x + 1.8, cy + 4.5)
+      if (c.giornata) doc.setFontSize(7.5).setTextColor(...TESTO).text(c.giornata.testo, x + 2.8 + doc.setFontSize(9.5).getTextWidth(String(c.giorno)), cy + 4.5)
       doc.setFontSize(7.5)
       let sx = x + 1.2, sy = cy + 6.2
       for (const s of c.sigle) {

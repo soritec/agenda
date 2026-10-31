@@ -151,10 +151,8 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
     return {
       giorno: g.giorno,
       festivo: eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo }),
-      sigle: [
-        ...(giornata ? [{ testo: ETICHETTE_GIORNATA[giornata], colore: COLORI_GIORNATA[giornata] }] : []),
-        ...(perGiorno.get(k) ?? []).map((t) => ({ testo: siglaTurno(t, mappaModelli), colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
-      ],
+      giornata: giornata ? { testo: ETICHETTE_GIORNATA[giornata], colore: COLORI_GIORNATA[giornata] } : undefined,
+      sigle: (perGiorno.get(k) ?? []).map((t) => ({ testo: siglaTurno(t, mappaModelli), colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
     }
   })
 
@@ -215,9 +213,11 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
             const festivo = eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo })
             return (
               <div key={k} className={`cella${festivo ? ' festivo' : ''}${giornateMese.has(k) ? ` g-${giornateMese.get(k)}` : ''}`} style={{ cursor: 'default', minHeight: 58 }}>
-                <span className="numero" style={{ width: 'auto', height: 22, fontWeight: 600 }}>{g.giorno}</span>
-                <span className="sigle">
+                <span className="testa-cella">
+                  <span className="numero" style={{ width: 'auto', height: 22, fontWeight: 600 }}>{g.giorno}</span>
                   {giornateMese.has(k) && <span className={`etichetta-giornata g-${giornateMese.get(k)}`}>{ETICHETTE_GIORNATA[giornateMese.get(k)!]}</span>}
+                </span>
+                <span className="sigle">
                   {(perGiorno.get(k) ?? []).map((t) => (
                     <span key={t.id} className="turno-mini">
                       <span className={`${classeSigla(t.tipo)} barra-turno`}>{siglaTurno(t, mappaModelli)}</span>

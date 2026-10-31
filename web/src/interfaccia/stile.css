@@ -1245,7 +1245,10 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 
 /* Stampa dei turni: primo foglio con riepilogo e calendario, secondo con l'elenco. Caselle e sigle sempre staccate. */
 .stampa .mese .griglia { gap: 5px; }
-.stampa .cella { border: 1px solid var(--linea); border-radius: 6px; }
+.stampa .cella { border-radius: 6px; align-items: stretch; }
+.stampa .cella:not([class*=' g-']) { background: var(--superficie-2); }
+.stampa .testa-cella { display: flex; align-items: center; gap: 6px; padding: 0 6px; }
+.stampa .testa-cella .etichetta-giornata { padding: 0; line-height: 22px; font-size: 11px; }
 .stampa .barra-turno { width: auto; max-width: 100%; }
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
@@ -1264,8 +1267,9 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .stampa .mese { padding: 0; border: none !important; break-inside: avoid; break-after: page; }
   .stampa .mese .giorni-settimana { font-size: 9pt; padding-bottom: 3pt; }
   .stampa .mese .griglia { gap: 5pt; }
-  .stampa .cella { min-height: 86pt !important; align-items: stretch; border: 0.5pt solid #bbb; padding: 3pt 0; break-inside: avoid; }
-  .stampa .cella .numero { justify-content: flex-start; padding-left: 4pt; font-size: 10pt; }
+  .stampa .cella { min-height: 86pt !important; padding: 3pt 0; break-inside: avoid; }
+  .stampa .cella:not([class*=' g-']) { background: #F7F5F1; }
+  .stampa .cella .numero { font-size: 10pt; }
   .stampa .cella .sigle { gap: 2.5pt; }
   .stampa .cella .sigla { font-size: 8.5pt; height: 12pt; }
   .stampa .cella .etichetta-giornata { font-size: 8.5pt; }
