@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { elimina, ripristina, salvaImpostazioni } from '../../../dati/archivio'
 import { profiloPrincipale } from '../../../dati/profili'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { parametroMese } from '../../../interfaccia/navigazione'
@@ -18,6 +19,19 @@ export function useVociScuola(anno: number, mese: number): Map<string, Voce[]> {
     const qui = parametroMese(anno, mese)
     return vociScuola({ turni, modelli: perId(modelli), giornate, esami, journal, riunioniTolte: tolte ?? [] }, `${qui}-01`, `${qui}-31`)
   }, [turni, modelli, giornate, esami, journal, tolte, anno, mese])
+}
+
+/** Toglie una voce della scuola; restituisce l'annullamento. Tolto un journal club, quel mercoledì non torna quello fisso. */
+export async function eliminaVoceScuola(v: Pick<Voce, 'fonte' | 'id' | 'giorno'>, tolte: string[] = []): Promise<() => Promise<void>> {
+  const fissa = /^(jc|goi):/.test(v.id)
+  const collezione = v.fonte === 'journal' ? 'journalClub' : 'esami'
+  const tolta = fissa ? v.id : v.fonte === 'journal' ? `jc:${v.giorno}` : undefined
+  if (!fissa) await elimina(collezione, v.id)
+  if (tolta) await salvaImpostazioni({ riunioniTolte: [...tolte, tolta] })
+  return async () => {
+    if (!fissa) await ripristina(collezione, v.id)
+    if (tolta) await salvaImpostazioni({ riunioniTolte: tolte })
+  }
 }
 
 export const Freccetta = () => (

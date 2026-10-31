@@ -14,7 +14,8 @@ import { FERIE_ANNUE, ferieUsate } from '../ferie'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
-import { useVociScuola, VoceScuola } from './VoceScuola'
+import { eliminaVoceScuola, useVociScuola, VoceScuola } from './VoceScuola'
+import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { SchedaScuola } from '../../specializzazione/viste/Indicazioni'
 import type { VoceScuola as Voce } from '../scuola'
 import { SceltaOspedale } from './SceltaOspedale'
@@ -40,6 +41,13 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   const impostazioni = useImpostazioni()
   const scuola = useVociScuola(anno, mese)
   const [schedaScuola, setSchedaScuola] = useState<Voce>()
+  // Solo tenendo premuto (o col clic destro): al passaggio del mouse non compare nessuna ×.
+  const pressioneScuola = usePressioneLunga()
+  async function eliminaScuola(v: Voce) {
+    pressioneScuola.setAttivo(undefined)
+    const annulla = await eliminaVoceScuola(v, impostazioni?.riunioniTolte)
+    mostraAvviso(`Eliminato: ${v.nome}`, () => void annulla())
+  }
   const [sceltaArea, setSceltaArea] = useState(false)
   const [sceltaOspedale, setSceltaOspedale] = useState(false)
   const [estrai, setEstrai] = useState(false)
@@ -212,7 +220,12 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                           </span>
                         )
                       })}
-                      {(scuola.get(k) ?? []).map((v) => <VoceScuola key={v.chiave} voce={v} onApri={() => setSchedaScuola(v)} />)}
+                      {(scuola.get(k) ?? []).map((v) => (
+                        <span key={v.chiave} className="voce-premibile" {...pressioneScuola.gestori(v.chiave)}>
+                          <VoceScuola voce={v} onApri={() => { if (!pressioneScuola.eraPressione()) setSchedaScuola(v) }} />
+                          {pressioneScuola.attivo === v.chiave && <button type="button" className="x-elimina in-riga" aria-label={`Elimina ${v.nome}`} onClick={() => void eliminaScuola(v)}>×</button>}
+                        </span>
+                      ))}
                     </span>
                   </div>
                 )

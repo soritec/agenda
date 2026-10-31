@@ -1317,3 +1317,6 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .tendina-indicazioni { background: var(--superficie); border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
 .tendina-indicazioni summary { cursor: pointer; font-weight: 600; }
 .tendina-indicazioni p { margin: 8px 0 0; }
+
+.voce-premibile { display: flex; align-items: flex-start; gap: 3px; min-width: 0; pointer-events: auto; position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.voce-premibile > .x-elimina { display: flex; width: 18px; height: 18px; font-size: 11px; }

@@ -5,7 +5,7 @@ import { tipoGiornataDa, tipoTurnoDa } from './tipi'
 
 /** Impegni della scuola mostrati nel calendario dei turni: non sono turni e non contano nelle ore. */
 export type GenereScuola = 'journal' | 'goi' | 'lezione' | 'riunione'
-export interface VoceScuola { chiave: string; giorno: string; genere: GenereScuola; nome: string; breve: string; ora?: string; minuto?: number; link: string }
+export interface VoceScuola { chiave: string; fonte: Impegno['fonte']; id: string; giorno: string; genere: GenereScuola; nome: string; breve: string; ora?: string; minuto?: number; link: string }
 
 const BREVE: Record<GenereScuola, string> = { journal: 'JC', goi: 'GOI', lezione: 'Lez', riunione: 'Riun' }
 
@@ -26,7 +26,7 @@ export function vociScuola(d: DatiAgenda, da: string, a: string, adesso = Date.n
     const genere = genereDi(i)
     if (assente.has(i.giorno) || !genere) continue
     const ora = i.minutoInizio === undefined ? undefined : testoOrario({ minutoInizio: i.minutoInizio })
-    out.set(i.giorno, [...(out.get(i.giorno) ?? []), { chiave: i.chiave, giorno: i.giorno, genere, nome: i.titolo, breve: BREVE[genere], ora, minuto: i.minutoInizio, link: i.link }])
+    out.set(i.giorno, [...(out.get(i.giorno) ?? []), { chiave: i.chiave, fonte: i.fonte, id: i.id, giorno: i.giorno, genere, nome: i.titolo, breve: BREVE[genere], ora, minuto: i.minutoInizio, link: i.link }])
   }
   return out
 }

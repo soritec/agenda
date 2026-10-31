@@ -1,3 +1,4 @@
+import { eliminaVoceScuola } from '../../turni/viste/VoceScuola'
 import { SchedaScuola } from '../../specializzazione/viste/Indicazioni'
 import { genereDi, type GenereScuola } from '../../turni/scuola'
 import { profiloPrincipale } from '../../../dati/profili'
@@ -5,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent 
 import { aggiungiGiorni, componenti, giornoDi, istante } from '../../../nucleo/calendario'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
-import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
+import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Evento, NotaGiorno } from '../../../dati/modello'
 import { creaIcs, type EventoIcs } from '../../../export/ics'
@@ -200,11 +201,8 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   async function eliminaImpegno(i: Impegno) {
     pressione.setAttivo(undefined)
     let annulla: () => Promise<void>
-    if (i.fonte === 'riunione' && !esami?.some((e) => e.id === i.id)) {
-      const prima = impostazioni?.riunioniTolte ?? []
-      await salvaImpostazioni({ riunioniTolte: [...prima, i.id] })
-      annulla = async () => { await salvaImpostazioni({ riunioniTolte: prima }) }
-    } else if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
+    if (genereDi(i)) annulla = await eliminaVoceScuola(i, impostazioni?.riunioniTolte)
+    else if (i.fonte === 'turno') annulla = await eliminaTurno(i.id)
     else {
       const collezione = i.fonte === 'studio' ? 'sessioniPiano' : i.fonte === 'journal' ? 'journalClub' : i.fonte === 'nota' ? 'noteGiorno' : i.fonte === 'evento' ? 'eventi' : i.fonte === 'giornata' ? 'ferie' : i.fonte === 'task' ? 'attivita' : 'esami'
       await elimina(collezione, i.id)
