@@ -298,6 +298,8 @@ export interface PostIt extends Base {
   /** Sezione dell'app dove sta (assente nei primi = oggi). */
   pagina?: string
   archiviato?: boolean
+  /** Abbassato: nella pagina resta solo una linguetta. */
+  ridotto?: boolean
   /** Testo semplice (per ricerche e vecchi post-it). */
   testo: string
   /** Testo formattato (HTML ripulito: grassetto, corsivo, sottolineato). */

@@ -1331,3 +1331,7 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .ridimensiona-postit::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 9px; height: 9px; border-right: 2px solid rgba(0,0,0,0.3); border-bottom: 2px solid rgba(0,0,0,0.3); }
 
 .tabella-stampa tr.senza-linea td { border-bottom: none !important; }
+
+.postit-ridotti { position: fixed; right: 22px; bottom: 68px; z-index: 40; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.postit-ridotti button { max-width: 170px; height: 28px; padding: 0 10px; border: none; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); color: #2A2622; font-family: inherit; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) { .postit-ridotti { right: 12px; bottom: calc(116px + env(safe-area-inset-bottom)); } }

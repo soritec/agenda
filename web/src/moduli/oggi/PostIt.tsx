@@ -58,7 +58,16 @@ export function BachecaPostIt({ pagina, children }: { pagina: string; children: 
       {pagina !== 'postit' && (
         <button type="button" className="pulsante-postit" onClick={() => void nuovo()} aria-label="Nuovo post-it su questa pagina"><IconaPostIt dimensione={18} /> Post-it</button>
       )}
-      {elenco.map((p) => <Foglietto key={p.id} p={p} contenitore={contenitore} zMax={zMax} />)}
+      {elenco.filter((p) => !p.ridotto).map((p) => <Foglietto key={p.id} p={p} contenitore={contenitore} zMax={zMax} />)}
+      {pagina !== 'postit' && elenco.some((p) => p.ridotto) && (
+        <div className="postit-ridotti">
+          {elenco.filter((p) => p.ridotto).map((p) => (
+            <button key={p.id} type="button" style={{ background: p.colore }} aria-label={`Riapri il post-it ${p.testo}`} onClick={() => void salva('postit', { ...p, ridotto: undefined })}>
+              {p.testo.split('\n')[0]?.trim() || 'Post-it'}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -130,6 +139,7 @@ function Foglietto({ p, contenitore, zMax }: { p: PostIt; contenitore: React.Ref
       <div className="maniglia-postit" onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su} title="Trascina per spostare">
         <button type="button" className="colori-postit" aria-label="Cambia colore" onPointerDown={(e) => e.stopPropagation()} onClick={() => setColori(!colori)}>●</button>
         <span className="presa" aria-hidden="true">⋮⋮</span>
+        <button type="button" className="abbassa-postit" aria-label="Abbassa il post-it" title="Abbassa" onPointerDown={(e) => e.stopPropagation()} onClick={() => void salvaTutto({ ridotto: true })}>−</button>
         <button type="button" className="archivia-postit" aria-label="Archivia il post-it" title="Archivia" onPointerDown={(e) => e.stopPropagation()}
           onClick={() => void salvaTutto({ archiviato: true }).then(() => mostraAvviso('Post-it archiviato', () => void salvaTutto({ archiviato: undefined })))}><IconaArchivia dimensione={14} /></button>
         <button type="button" className="chiudi-postit" aria-label="Elimina il post-it" onPointerDown={(e) => e.stopPropagation()}
