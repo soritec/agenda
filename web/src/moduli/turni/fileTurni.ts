@@ -17,12 +17,14 @@ export function meseDelFileTurni(a: FileBase): string {
   return meseDelNome(a.nome, g.anno) ?? `${g.anno}-${String(g.mese).padStart(2, '0')}`
 }
 
-/** File dei turni divisi per mese, dal più recente; dentro il mese, dal più recente caricato. */
-export function fileTurniPerMese<T extends FileBase>(allegati: T[]): { mese: string; file: T[] }[] {
+/** File con un collegamento, divisi per mese, dal più recente; dentro il mese, dal più recente caricato. */
+export function filePerMese<T extends FileBase>(allegati: T[], collegamento: string): { mese: string; file: T[] }[] {
   const gruppi = new Map<string, T[]>()
-  for (const a of allegati.filter((x) => x.collegatoA === FILE_TURNI)) {
+  for (const a of allegati.filter((x) => x.collegatoA === collegamento)) {
     const m = meseDelFileTurni(a)
     gruppi.set(m, [...(gruppi.get(m) ?? []), a])
   }
   return [...gruppi.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([mese, file]) => ({ mese, file: file.sort((x, y) => y.creatoIl - x.creatoIl) }))
 }
+
+export const fileTurniPerMese = <T extends FileBase>(allegati: T[]) => filePerMese(allegati, FILE_TURNI)

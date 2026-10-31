@@ -8,6 +8,7 @@ import type { EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import { eConcluso } from '../logica'
+import { FileLezioni } from './FileLezioni'
 
 export type TipoAttivita = 'esame' | 'lezione'
 const TITOLI = {
@@ -59,6 +60,7 @@ export function EsamiOLezioni({ tipo }: { tipo: TipoAttivita }) {
           <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ {t.uno}</button>
         </div>
       </header>
+      {tipo === 'lezione' && profiloPrincipale() && <FileLezioni />}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <h2 className="titolo-sezione">In programma</h2>
         <div className="lista">

@@ -1243,22 +1243,38 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .info-turno strong { font-size: 12.5px; color: var(--accento); }
 .info-modello { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* Stampa dei turni: un foglio A4, con ogni giorno e ogni turno ben staccati dagli altri */
+/* Stampa dei turni: primo foglio con riepilogo e calendario, secondo con l'elenco. Caselle e sigle sempre staccate. */
 .stampa .mese .griglia { gap: 5px; }
 .stampa .cella { border: 1px solid var(--linea); border-radius: 6px; }
 .stampa .barra-turno { width: auto; max-width: 100%; }
 @media print {
-  @page { size: A4; margin: 10mm; }
-  .stampa { gap: 6pt; }
+  @page { size: A4 portrait; margin: 10mm; }
+  /* Le colonne dello schermo (flex) non si spezzano sui fogli: in stampa tutto torna in un flusso semplice. */
+  html, body, #root, .guscio, .contenuto, .bacheca, .bacheca > .schermata, .schermata.stampa {
+    display: block !important; position: static !important; width: auto !important; max-width: none !important;
+    height: auto !important; min-height: 0 !important; overflow: visible !important; margin: 0 !important; padding: 0 !important;
+  }
+  .avviso-versione, .bacheca > :not(.schermata) { display: none !important; }
   .stampa * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .stampa .titolo-grande { font-size: 16pt !important; }
-  .stampa .tessere { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4pt; }
-  .stampa .tessera { padding: 3pt 6pt; }
-  .stampa .tessera .valore { font-size: 12pt; }
-  .stampa .mese { padding: 0; border: none !important; }
-  .stampa .mese .griglia { gap: 4pt; }
-  .stampa .cella { min-height: 38pt !important; border: 0.5pt solid #bbb; }
-  .stampa .sigle { gap: 1.5pt; }
-  .stampa .tabella-stampa { font-size: 8.5pt; }
-  .stampa .tabella-stampa th, .stampa .tabella-stampa td { padding: 1.6pt 3pt; }
+  .stampa .testata-stampa { margin-bottom: 8pt; }
+  .stampa .titolo-grande { font-size: 18pt !important; line-height: 1.2; }
+  .stampa .tessere { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4pt; margin-bottom: 10pt; }
+  .stampa .tessera { padding: 4pt 6pt; }
+  .stampa .tessera .valore { font-size: 12pt; white-space: nowrap; }
+  .stampa .mese { padding: 0; border: none !important; break-inside: avoid; break-after: page; }
+  .stampa .mese .giorni-settimana { font-size: 9pt; padding-bottom: 3pt; }
+  .stampa .mese .griglia { gap: 5pt; }
+  .stampa .cella { min-height: 86pt !important; align-items: stretch; border: 0.5pt solid #bbb; padding: 3pt 0; break-inside: avoid; }
+  .stampa .cella .numero { justify-content: flex-start; padding-left: 4pt; font-size: 10pt; }
+  .stampa .cella .sigle { gap: 2.5pt; }
+  .stampa .cella .sigla { font-size: 8.5pt; height: 12pt; }
+  .stampa .cella .etichetta-giornata { font-size: 8.5pt; }
+  .stampa .cella .orario-mini { font-size: 7.5pt; }
+  .stampa .titolo-elenco { display: block; font-size: 13pt; font-weight: 700; margin: 0 0 6pt; }
+  .stampa .tabella-stampa { font-size: 9.5pt; }
+  .stampa .tabella-stampa thead { display: table-header-group; }
+  .stampa .tabella-stampa th, .stampa .tabella-stampa td { padding: 3pt 4pt; }
+  .stampa .tabella-stampa tr { break-inside: avoid; }
+  .stampa > .solo-stampa { margin-top: 8pt; font-size: 8pt; }
 }
+.titolo-elenco { display: none; }

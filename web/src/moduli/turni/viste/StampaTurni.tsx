@@ -231,6 +231,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         </div>
       </section>
 
+      <h2 className="titolo-elenco">{titolo} · elenco</h2>
       <table className="tabella-stampa">
         <thead><tr>{INTESTAZIONI.map((h, i) => <th key={h} style={i === 3 ? { textAlign: 'right' } : undefined}>{h}</th>)}</tr></thead>
         <tbody>

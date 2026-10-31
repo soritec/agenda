@@ -75,7 +75,7 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
       doc.setFillColor(...SFONDO_RIQUADRO)
       doc.roundedRect(x, y, w, 17, 2, 2, 'F')
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(14)
+      doc.setFontSize(r.valore.length > 6 && w < 30 ? 10 : 14)
       doc.setTextColor(...TESTO)
       doc.text(r.valore, x + 4, y + 8)
       doc.setFont('helvetica', 'normal')
@@ -87,10 +87,12 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
   }
 
   if (d.calendario) {
-    const stacco = 1.5
+    // Primo foglio: il calendario occupa tutto lo spazio rimasto; l'elenco va sul foglio dopo.
+    const stacco = 2
     const w = (larghezza - 6 * stacco) / 7
-    const h = 13
+    const settimane = Math.ceil(d.calendario.length / 7)
     y += 7
+    const h = Math.min(36, (297 - 18 - y - 2 - (settimane - 1) * stacco) / settimane)
     doc.setFont('helvetica', 'bold').setFontSize(7.5).setTextColor(...SECONDARIO)
     GIORNI_PDF.forEach((g, i) => doc.text(g, margine + i * (w + stacco) + 1, y))
     y += 1.8
@@ -100,26 +102,30 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
       const cy = y + Math.floor(i / 7) * (h + stacco)
       doc.setDrawColor(216, 210, 200).setLineWidth(0.2)
       doc.roundedRect(x, cy, w, h, 1.5, 1.5, 'S')
-      doc.setFont('helvetica', 'bold').setFontSize(8).setTextColor(...(c.festivo ? FESTIVO : TESTO))
-      doc.text(String(c.giorno), x + 1.5, cy + 3.8)
-      doc.setFontSize(6.5)
-      let sx = x + 1.2, sy = cy + 5
+      doc.setFont('helvetica', 'bold').setFontSize(9.5).setTextColor(...(c.festivo ? FESTIVO : TESTO))
+      doc.text(String(c.giorno), x + 1.8, cy + 4.5)
+      doc.setFontSize(7.5)
+      let sx = x + 1.2, sy = cy + 6.2
       for (const s of c.sigle) {
         const sw = Math.min(doc.getTextWidth(s.testo) + 2, w - 2.4)
-        if (sx + sw > x + w - 1.2) { sx = x + 1.2; sy += 3.3 }
-        if (sy + 3 > cy + h) break
+        if (sx + sw > x + w - 1.2) { sx = x + 1.2; sy += 4.6 }
+        if (sy + 3.8 > cy + h) break
         doc.setFillColor(...s.colore)
-        doc.roundedRect(sx, sy, sw, 2.9, 0.7, 0.7, 'F')
+        doc.roundedRect(sx, sy, sw, 3.8, 0.8, 0.8, 'F')
         doc.setTextColor(...TESTO)
-        doc.text(s.testo, sx + 1, sy + 2.15, { maxWidth: sw - 1.2 })
+        doc.text(s.testo, sx + 1, sy + 2.8, { maxWidth: sw - 1.2 })
         sx += sw + 1
       }
     })
-    y += Math.ceil(d.calendario.length / 7) * (h + stacco) - stacco
+    doc.addPage()
+    doc.setFillColor(...ACCENTO)
+    doc.rect(0, 0, 210, 4, 'F')
+    doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(...TESTO)
+    doc.text(`${d.titolo} · elenco`, margine, 15)
+    y = 13
   }
 
   const grassetto = new Set(d.colonneGrassetto ?? [])
-  const compatta = Boolean(d.calendario)
   const destra = new Set(d.colonneDestra ?? [])
   autoTable(doc, {
     startY: y + 6,
@@ -129,7 +135,7 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
     showFoot: 'lastPage',
     footStyles: { fillColor: [255, 255, 255], textColor: TESTO, fontStyle: 'bold', fontSize: 10, lineColor: TESTO, lineWidth: { top: 0.4 } },
     margin: { left: margine, right: margine, bottom: 16 },
-    styles: { font: 'helvetica', fontSize: compatta ? 8 : 9, cellPadding: { top: compatta ? 0.8 : 2, bottom: compatta ? 0.8 : 2, left: 2.2, right: 2.2 }, textColor: TESTO, lineColor: [233, 228, 220], lineWidth: { bottom: 0.15 } },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: { top: 2, bottom: 2, left: 2.2, right: 2.2 }, textColor: TESTO, lineColor: [233, 228, 220], lineWidth: { bottom: 0.15 } },
     headStyles: { fillColor: ACCENTO, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
     didParseCell: (c) => {
       if (c.section !== 'body') {
