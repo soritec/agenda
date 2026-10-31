@@ -9,7 +9,7 @@ export const INDICAZIONI_PREDEFINITE: Record<GenereScuola, string> = {
   journal: 'Mercoledì alle 7, 3° piano settore A. La presenza è obbligatoria. Uno o due specializzandi, con uno strutturato di riferimento, presentano un argomento di ginecologia.',
   goi: 'Giovedì alle 13, 3° piano settore A: riunione multidisciplinare con oncologi e radiologi. È obbligatoria per chi è di turno AON il giovedì pomeriggio, caldamente consigliata a tutti gli altri. Al I anno il turno GOI del mercoledì pomeriggio serve a preparare i casi del giorno dopo con lo specializzando senior.',
   lezione: 'Lunedì dalle 16 alle 17:30. La lezione è obbligatoria.',
-  riunione: 'Riunione di ostetricia il lunedì dalle 14 alle 16.',
+  riunione: '',
 }
 
 /** Riquadro "Dove, come e quando": si legge come nei turni e si può modificare. */
