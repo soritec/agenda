@@ -12,11 +12,16 @@ export interface RigaPdf {
   evidenza?: 'ferie' | 'festivo'
 }
 
+/** Casella del calendario del mese nel PDF; null = casella vuota prima o dopo il mese. */
+export type CellaPdf = { giorno: number; festivo?: boolean; sigle: { testo: string; colore: Colore }[] } | null
+
 export interface DocumentoPdf {
   titolo: string
   sottotitolo?: string
   /** Riquadri in alto: valore in grande e in grassetto, etichetta sotto. */
   riepilogo: { etichetta: string; valore: string }[]
+  /** Calendario del mese sopra la tabella, in colonne dal lunedì. */
+  calendario?: CellaPdf[]
   intestazioni: string[]
   righe: RigaPdf[]
   /** Colonne in grassetto (es. data e turno). */
@@ -36,6 +41,7 @@ const ACCENTO: Colore = [63, 110, 115]
 const SFONDO_RIQUADRO: Colore = [242, 238, 232]
 const FERIE: Colore = [243, 231, 207]
 const FESTIVO: Colore = [138, 76, 52]
+const GIORNI_PDF = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
 export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
@@ -80,7 +86,40 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
     y += 17
   }
 
+  if (d.calendario) {
+    const stacco = 1.5
+    const w = (larghezza - 6 * stacco) / 7
+    const h = 13
+    y += 7
+    doc.setFont('helvetica', 'bold').setFontSize(7.5).setTextColor(...SECONDARIO)
+    GIORNI_PDF.forEach((g, i) => doc.text(g, margine + i * (w + stacco) + 1, y))
+    y += 1.8
+    d.calendario.forEach((c, i) => {
+      if (!c) return
+      const x = margine + (i % 7) * (w + stacco)
+      const cy = y + Math.floor(i / 7) * (h + stacco)
+      doc.setDrawColor(216, 210, 200).setLineWidth(0.2)
+      doc.roundedRect(x, cy, w, h, 1.5, 1.5, 'S')
+      doc.setFont('helvetica', 'bold').setFontSize(8).setTextColor(...(c.festivo ? FESTIVO : TESTO))
+      doc.text(String(c.giorno), x + 1.5, cy + 3.8)
+      doc.setFontSize(6.5)
+      let sx = x + 1.2, sy = cy + 5
+      for (const s of c.sigle) {
+        const sw = Math.min(doc.getTextWidth(s.testo) + 2, w - 2.4)
+        if (sx + sw > x + w - 1.2) { sx = x + 1.2; sy += 3.3 }
+        if (sy + 3 > cy + h) break
+        doc.setFillColor(...s.colore)
+        doc.roundedRect(sx, sy, sw, 2.9, 0.7, 0.7, 'F')
+        doc.setTextColor(...TESTO)
+        doc.text(s.testo, sx + 1, sy + 2.15, { maxWidth: sw - 1.2 })
+        sx += sw + 1
+      }
+    })
+    y += Math.ceil(d.calendario.length / 7) * (h + stacco) - stacco
+  }
+
   const grassetto = new Set(d.colonneGrassetto ?? [])
+  const compatta = Boolean(d.calendario)
   const destra = new Set(d.colonneDestra ?? [])
   autoTable(doc, {
     startY: y + 6,
@@ -90,7 +129,7 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
     showFoot: 'lastPage',
     footStyles: { fillColor: [255, 255, 255], textColor: TESTO, fontStyle: 'bold', fontSize: 10, lineColor: TESTO, lineWidth: { top: 0.4 } },
     margin: { left: margine, right: margine, bottom: 16 },
-    styles: { font: 'helvetica', fontSize: 9, cellPadding: { top: 2, bottom: 2, left: 2.2, right: 2.2 }, textColor: TESTO, lineColor: [233, 228, 220], lineWidth: { bottom: 0.15 } },
+    styles: { font: 'helvetica', fontSize: compatta ? 8 : 9, cellPadding: { top: compatta ? 0.8 : 2, bottom: compatta ? 0.8 : 2, left: 2.2, right: 2.2 }, textColor: TESTO, lineColor: [233, 228, 220], lineWidth: { bottom: 0.15 } },
     headStyles: { fillColor: ACCENTO, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
     didParseCell: (c) => {
       if (c.section !== 'body') {
@@ -106,7 +145,12 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
         c.cell.styles.textColor = SECONDARIO
       }
       if (riga.evidenza === 'ferie') c.cell.styles.fillColor = riga.colore ?? FERIE
-      else if (riga.colore && c.column.index === d.colonnaColore) c.cell.styles.fillColor = riga.colore
+      else if (riga.colore && c.column.index === d.colonnaColore) {
+        c.cell.styles.fillColor = riga.colore
+        // Un filo bianco stacca i colori di due righe vicine.
+        c.cell.styles.lineColor = [255, 255, 255]
+        c.cell.styles.lineWidth = { top: 0.5, bottom: 0.5 }
+      }
       if (riga.evidenza === 'festivo' && c.column.index === 0) c.cell.styles.textColor = FESTIVO
     },
   })

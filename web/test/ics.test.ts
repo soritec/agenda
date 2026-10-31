@@ -30,3 +30,12 @@ describe('File calendario (.ics)', () => {
     expect(piegata.replace(/\r\n /g, '')).toBe(lunga)
   })
 })
+
+describe('date incoerenti', () => {
+  test('una giornata intera finisce sempre il giorno dopo', () => {
+    const inizio = Date.parse('2026-11-03T11:00:00Z')
+    const testo = creaIcs([{ uid: 'a', titolo: 'x', inizio, fine: inizio, tuttoIlGiorno: true }], 'Turni')
+    expect(testo).toContain('DTSTART;VALUE=DATE:20261103')
+    expect(testo).toContain('DTEND;VALUE=DATE:20261104')
+  })
+})

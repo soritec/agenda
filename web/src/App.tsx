@@ -33,6 +33,8 @@ import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
 import { Tasse } from './moduli/specializzazione/viste/Tasse'
 import { FileTurni } from './moduli/specializzazione/viste/FileTurni'
 import { FileUtili } from './moduli/specializzazione/viste/FileUtili'
+import { StoricoFerie } from './moduli/specializzazione/viste/StoricoFerie'
+import { BannerOrari } from './moduli/turni/viste/BannerOrari'
 import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni, IconaPin } from './interfaccia/icone'
@@ -64,6 +66,7 @@ export function App() {
     else if (sotto === 'tasse') pagina = <Tasse />
     else if (sotto === 'fileturni') pagina = <FileTurni />
     else if (sotto === 'fileutili') pagina = <FileUtili />
+    else if (sotto === 'ferie') pagina = <StoricoFerie />
     else if (sotto === 'ecm') pagina = <CorsiEcm />
     else if (sotto === 'journal') pagina = <JournalClubPagina />
     else if (sotto === 'procedura' && percorso[2]) pagina = <SchedaProcedura id={percorso[2]} />
@@ -134,6 +137,7 @@ function Oggi() {
         <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a></span>
       </header>
 
+      <BannerOrari />
       {noteOggi.map((n) => (
         <a key={n.chiave} className="nota-oggi" href={n.link}>
           <IconaPin dimensione={18} />

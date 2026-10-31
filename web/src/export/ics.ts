@@ -57,8 +57,9 @@ export function creaIcs(eventi: EventoIcs[], nomeCalendario: string, adesso = Da
   for (const e of eventi) {
     const modificato = e.modificatoIl ?? adesso
     righe.push('BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${utc(adesso)}`, `LAST-MODIFIED:${utc(modificato)}`, `SEQUENCE:${Math.floor(modificato / 1000)}`)
-    if (e.tuttoIlGiorno) righe.push(`DTSTART;VALUE=DATE:${data(e.inizio)}`, `DTEND;VALUE=DATE:${data(e.fine)}`, 'TRANSP:TRANSPARENT')
-    else righe.push(`DTSTART:${utc(e.inizio)}`, `DTEND:${utc(e.fine)}`)
+    // La fine di una giornata intera è il giorno dopo: una fine incoerente farebbe rifiutare tutto il file.
+    if (e.tuttoIlGiorno) righe.push(`DTSTART;VALUE=DATE:${data(e.inizio)}`, `DTEND;VALUE=DATE:${data(e.fine > e.inizio && data(e.fine) !== data(e.inizio) ? e.fine : e.inizio + 86_400_000)}`, 'TRANSP:TRANSPARENT')
+    else righe.push(`DTSTART:${utc(e.inizio)}`, `DTEND:${utc(e.fine > e.inizio ? e.fine : e.inizio + 3_600_000)}`)
     righe.push(`SUMMARY:${escapeIcs(e.titolo)}`)
     if (e.luogo) righe.push(`LOCATION:${escapeIcs(e.luogo)}`)
     if (e.note) righe.push(`DESCRIPTION:${escapeIcs(e.note)}`)

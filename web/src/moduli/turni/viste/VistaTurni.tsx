@@ -236,7 +236,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
               <IconaAvanti dimensione={16} />
             </a>
           )}
-          <span className="secondario piccolo" title="Contano solo i giorni dal lunedì al venerdì non festivi">Ferie {qui.slice(0, 4)}: {ferieUsate(ferie ?? [], Number(qui.slice(0, 4)))} giorni su {FERIE_ANNUE}</span>
+          <a className="piccolo" href="#/specializzazione/ferie" title="Contano solo i giorni dal lunedì al venerdì non festivi">Ferie {qui.slice(0, 4)}: {ferieUsate(ferie ?? [], Number(qui.slice(0, 4)))} giorni su {FERIE_ANNUE}</a>
           {numeroSovrapposizioni > 0 && (
             <div className="avviso">
               {numeroSovrapposizioni === 1 ? 'Due turni si sovrappongono' : `${numeroSovrapposizioni} sovrapposizioni tra turni`} in questo mese.

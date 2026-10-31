@@ -471,6 +471,8 @@ export interface Impostazioni {
   /** Valuta degli importi di questo profilo (predefinita: euro). */
   valuta?: 'EUR' | 'GBP'
   /** Matricole da avere sempre sotto mano (sezione Servizi di ateneo). */
+  /** Giorni per cui non chiedere più gli orari dei turni (× sul banner di Oggi). */
+  orariNonChiesti?: string[]
   /** Riunioni fisse (es. "jc:2026-11-04") tolte dall'agenda con la ×. */
   riunioniTolte?: string[]
   matricolaOspedale?: string

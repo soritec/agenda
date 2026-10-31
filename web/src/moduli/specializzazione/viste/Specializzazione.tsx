@@ -4,6 +4,7 @@ import * as F from '../../../nucleo/formati'
 import { elimina, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { fileUtili } from '../fileUtili'
+import { FERIE_ANNUE, ferieUsate } from '../../turni/ferie'
 import type { Collegamento, EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { IconaArticolo, IconaAttestato, IconaCalcolatrice, IconaCappello, IconaEuro, IconaImpostazioni, IconaLavagna, IconaLibro, IconaLogbook, IconaMicroscopio, IconaCalendario } from '../../../interfaccia/icone'
@@ -21,6 +22,7 @@ const dataBreve = (giorno: string) => {
 /** Specializzazione: anno di corso, rotazione e un riquadro per ogni sezione. */
 export function Specializzazione() {
   const fileTurni = (useCollezione('allegati') ?? []).filter((a) => a.collegatoA === 'file-turni').sort((a, b) => b.creatoIl - a.creatoIl)
+  const giornate = useCollezione('ferie')
   const numeroFileUtili = fileUtili(useCollezione('allegati') ?? []).length
   const impostazioni = useImpostazioni()
   const procedure = useCollezione('procedure')
@@ -119,6 +121,11 @@ export function Specializzazione() {
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#3E6E78', background: '#E1EEF0' }}><IconaCalendario dimensione={18} /></span>File dei turni</span>
           <span className="valore">{fileTurni.length || '—'}</span>
           <span className="dettaglio">{fileTurni[0] ? `ultimo: ${fileTurni[0].nome}` : 'Excel e PDF dei turni e delle guardie'}</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/ferie">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#5E5A54', background: '#ECE9E4' }}><IconaCalendario dimensione={18} /></span>Storico ferie</span>
+          <span className="valore">{ferieUsate(giornate ?? [], oggi().anno)}</span>
+          <span className="dettaglio">giorni usati su {FERIE_ANNUE} nel {oggi().anno}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/fileutili">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#6E5A3E', background: '#F0E9DC' }}><IconaLibro dimensione={18} /></span>File utili</span>

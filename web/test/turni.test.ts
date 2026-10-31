@@ -153,13 +153,13 @@ describe('Turni tutto il giorno', () => {
 
 describe('Sigle della scuola', () => {
   test('catalogo completo e senza doppioni', () => {
-    expect(CATALOGO_SCUOLA).toHaveLength(55)
-    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(55)
+    expect(CATALOGO_SCUOLA).toHaveLength(57)
+    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(57)
     expect(CATALOGO_SCUOLA.every((v) => TIPI_TURNO.includes(v.tipo))).toBe(true)
   })
   test('aggiunge solo le sigle mancanti', () => {
     expect(vociMancanti([{ sigla: 'N' }, { sigla: 'e pom' }]).map((v) => v.sigla)).not.toContain('E pom')
-    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(54)
+    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(56)
   })
 })
 
@@ -255,5 +255,23 @@ describe('turni senza orari predefiniti', () => {
     expect(cambiato!.fine - cambiato!.inizio).toBe(86_400_000)
     expect(turniFuturiSenzaOrari([base], [modello], base.inizio + 1)).toEqual([])
     expect(turniFuturiSenzaOrari([{ ...base, minutiManuali: 300 }, { ...base, ...intervallo(g, 480, 1200) }, { ...base, tipo: 'guardiaDiurna' }], [modello], adesso)).toEqual([])
+  })
+})
+
+describe('banner degli orari', () => {
+  const g = (giorno: number, altro: object = {}) => ({ inizio: istante(2026, 11, giorno, 0), tipo: 'ambulatorio', tuttoIlGiorno: true as boolean | undefined, ...altro })
+  const oggi = { anno: 2026, mese: 11, giorno: 5 }
+
+  test('giorni passati senza orari, dal più recente, senza guardie né oggi', async () => {
+    const { giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
+    const r = giorniDaCompilare([
+      g(2), g(3), g(3), g(5), g(4, { tipo: 'guardiaDiurna', tuttoIlGiorno: undefined }), g(4, { minutiManuali: 300 }), g(1, { tuttoIlGiorno: undefined }),
+    ], oggi)
+    expect(r.map((x) => [x.giorno, x.turni.length])).toEqual([['2026-11-03', 2], ['2026-11-02', 1]])
+  })
+
+  test('con la × il giorno non viene più chiesto', async () => {
+    const { giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
+    expect(giorniDaCompilare([g(2)], oggi, ['2026-11-02'])).toEqual([])
   })
 })

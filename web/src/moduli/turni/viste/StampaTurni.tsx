@@ -4,14 +4,14 @@ import { creaIcs, type EventoIcs } from '../../../export/ics'
 import { eFestivo } from '../../../nucleo/festivita'
 import * as F from '../../../nucleo/formati'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
-import { condividiOScarica, creaPdf, scarica, type Colore, type RigaPdf } from '../../../export/pdf'
+import { condividiOScarica, creaPdf, scarica, type CellaPdf, type Colore, type RigaPdf } from '../../../export/pdf'
 import { Avviso } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
 import { ETICHETTE_GIORNATA, minuti, TIPI_GIORNATA, tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA, type TipoGiornata, type TipoTurno } from '../tipi'
-import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, giornoDaChiave, larghezzaTurno, oggi, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, giornoDaChiave, oggi, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const INTESTAZIONI = ['Data', 'Turno', 'Orario', 'Ore', 'Sede', 'Note']
@@ -55,6 +55,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const periodi = useCollezione('periodiRotazione')
   const impostazioni = useImpostazioni()
   const [stato, setStato] = useState<string>()
+  const [statoCalendario, setStatoCalendario] = useState<string>()
   const sabatoFestivo = impostazioni?.sabatoFestivo
 
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
@@ -90,7 +91,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         celle: [
           F.dataBreve(t.inizio),
           titoloTurno(t, mappaModelli),
-          t.tuttoIlGiorno ? 'Tutto il giorno' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`,
+          t.tuttoIlGiorno ? '' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`,
           m > 0 ? F.durata(m) : '',
           mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')?.nome ?? '',
           t.note ?? '',
@@ -100,7 +101,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
     for (const [g, tipo] of giornateMese) {
       const [a, m, gg] = g.split('-').map(Number)
       const i = istante(a!, m!, gg!, 12)
-      elenco.push({ chiave: `giornata-${g}`, ordine: i - 1, evidenza: 'ferie', colore: COLORI_GIORNATA[tipo], giornata: tipo, celle: [F.dataBreve(i), TITOLI_GIORNATA[tipo], '', '', '', ''] })
+      elenco.push({ chiave: `giornata-${g}`, ordine: i - 1, colore: COLORI_GIORNATA[tipo], giornata: tipo, celle: [F.dataBreve(i), TITOLI_GIORNATA[tipo], '', '', '', ''] })
     }
     return elenco.sort((x, y) => x.ordine - y.ordine)
   }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo, assegnazioni])
@@ -136,16 +137,32 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       const dopo = aggiungiGiorni(gg, 1)
       eventi.push({ uid: `giornata-${g.id}@agenda`, titolo: TITOLI_GIORNATA[tipoGiornataDa(g.tipo)], inizio, fine: istante(dopo.anno, dopo.mese, dopo.giorno), tuttoIlGiorno: true, modificatoIl: g.modificatoIl })
     }
+    if (eventi.length === 0) { setStatoCalendario('Non ci sono turni o giornate da esportare in questo periodo.'); return }
     const blob = new Blob([creaIcs(eventi, 'Turni')], { type: 'text/calendar' })
     const nome = periodo === 'mese' ? `Turni ${nomeMese}.ics` : 'Turni da oggi.ics'
-    await condividiOScarica(blob, nome, 'Turni')
+    const esito = await condividiOScarica(blob, nome, 'Turni')
+    setStatoCalendario(esito === 'scaricato' ? `File "${nome}" scaricato con ${eventi.length} voci: ora aprilo dalla cartella Download con un doppio clic.` : undefined)
   }
+
+  const calendarioPdf: CellaPdf[] = celleMese(anno, mese).map((g) => {
+    if (!g) return null
+    const k = chiaveGiorno(g)
+    const giornata = giornateMese.get(k)
+    return {
+      giorno: g.giorno,
+      festivo: eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo }),
+      sigle: [
+        ...(giornata ? [{ testo: ETICHETTE_GIORNATA[giornata], colore: COLORI_GIORNATA[giornata] }] : []),
+        ...(perGiorno.get(k) ?? []).map((t) => ({ testo: siglaTurno(t, mappaModelli), colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
+      ],
+    }
+  })
 
   async function pdf(azione: 'condividi' | 'scarica') {
     setStato('Preparo il PDF…')
     try {
       const blob = await creaPdf({
-        titolo, sottotitolo, riepilogo: caselle, intestazioni: INTESTAZIONI, righe,
+        titolo, sottotitolo, riepilogo: caselle, intestazioni: INTESTAZIONI, righe, calendario: calendarioPdf,
         colonneGrassetto: [0, 1], colonnaColore: 1, colonneDestra: [3], colonnaNote: 5,
         totaleTabella: ['Totale ore', '', '', F.durata(riepilogo.minutiTotali), '', ''],
         piede: `Agenda · creato ${F.dataEstesa(Date.now())}`,
@@ -203,7 +220,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
                   {giornateMese.has(k) && <span className={`etichetta-giornata g-${giornateMese.get(k)}`}>{ETICHETTE_GIORNATA[giornateMese.get(k)!]}</span>}
                   {(perGiorno.get(k) ?? []).map((t) => (
                     <span key={t.id} className="turno-mini">
-                      <span className={`${classeSigla(t.tipo)} barra-turno`} style={{ width: larghezzaTurno(t) }}>{siglaTurno(t, mappaModelli)}</span>
+                      <span className={`${classeSigla(t.tipo)} barra-turno`}>{siglaTurno(t, mappaModelli)}</span>
                       {orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                     </span>
                   ))}
@@ -223,6 +240,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
               <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }} className={r.evidenza === 'festivo' ? 'data-festiva' : undefined}>{r.celle[0]}</td>
               <td style={{ fontWeight: 700 }}>
                 {r.tipo && <span className={classeSigla(r.tipo)} style={{ minWidth: 10, width: 10, height: 10, padding: 0, marginRight: 6, verticalAlign: 'middle' }} />}
+                {r.giornata && <span className={`pallino-giornata g-${r.giornata}`} style={{ width: 10, height: 10, marginRight: 6, verticalAlign: 'middle' }} />}
                 {r.celle[1]}
               </td>
               <td className="numeri" style={{ whiteSpace: 'nowrap' }}>{r.celle[2]}</td>
@@ -250,13 +268,15 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       <section className="scheda modulo non-stampare">
         <h2 className="titolo-sezione">Calendario Apple</h2>
         <p className="secondario" style={{ margin: 0 }}>
-          Crea un file con i turni e le giornate (ferie, riposo…): su iPhone scegli <strong>Calendario</strong> dal foglio di condivisione,
-          su Mac si apre da solo. Ti conviene creare nel Calendario un calendario chiamato "Turni" e aggiungerli lì.
+          Crea un file con i turni e le giornate (ferie, riposo…). Su Mac il file finisce in Download: aprilo con un doppio clic e scegli il calendario.
+          Su iPhone, nel foglio di condivisione scegli <strong>Salva su File</strong>, poi apri il file dall'app File e aggiungi gli eventi.
+          Ti conviene creare prima nel Calendario un calendario chiamato "Turni".
         </p>
         <div className="riga-azioni">
           <button type="button" className="pulsante primario" onClick={() => void calendario('mese')}>Turni di {nomeMese}</button>
           <button type="button" className="pulsante" onClick={() => void calendario('futuro')}>Tutti da oggi in poi</button>
         </div>
+        {statoCalendario && <Avviso>{statoCalendario}</Avviso>}
       </section>
       <span className="solo-stampa secondario piccolo">Agenda · stampato {F.dataEstesa(Date.now())}</span>
     </div>

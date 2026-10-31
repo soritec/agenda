@@ -110,6 +110,8 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Precompilato sul drive: far firmare consenso e foglio informativo, riportare lotto e scadenza.` },
   { sigla: 'Cs', nome: 'Consultorio', tipo: 'ambulatorio', orari: AMB, info: "Orari e sedi nella tabella allegata alle istruzioni della scuola. Se si è segnati in due, ci si divide tra le sedi." },
   { sigla: 'AGI', nome: 'Amb. Ginecologia I livello', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'agiap', nome: 'Amb. Ginecologia (strutturati)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'agispec', nome: 'Amb. Ginecologia (specializzandi)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
   { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 4') },
   { sigla: 'Ben', nome: 'Amb. Benigna / endometriosi', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
   { sigla: 'Aon', nome: 'Amb. Oncologico', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
