@@ -13,7 +13,7 @@ import type { GenereScuola } from '../scuola'
 import { useVociScuola, VoceScuola } from './VoceScuola'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
 import { ETICHETTE_GIORNATA, minuti, TIPI_GIORNATA, tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA, type TipoGiornata, type TipoTurno } from '../tipi'
-import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, giornoDaChiave, oggi, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
+import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, fasceDelGiorno, giornoDaChiave, oggi, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
 
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const INTESTAZIONI = ['Data', 'Turno', 'Orario', 'Ore', 'Sede', 'Note']
@@ -73,6 +73,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const mappaModelli = useMemo(() => perId(modelli), [modelli])
   const mappaSedi = useMemo(() => perId(sedi), [sedi])
   const perGiorno = useMemo(() => turniPerGiorno(turni ?? []), [turni])
+  const fasce = useMemo(() => fasceDelGiorno(perGiorno), [perGiorno])
   const qui = parametroMese(anno, mese)
   const delMese = useMemo(() => {
     const { inizio, fine } = intervalloMese(anno, mese)
@@ -102,7 +103,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         evidenza: eFestivo(t.inizio, { sabatoFestivo }) ? 'festivo' : undefined,
         celle: [
           F.dataBreve(t.inizio),
-          titoloTurno(t, mappaModelli),
+          `${titoloTurno(t, mappaModelli)}${fasce.has(t.id) ? ` (${fasce.get(t.id)})` : ''}`,
           t.tuttoIlGiorno ? '' : `${F.ora(t.inizio)} – ${F.ora(t.fine)}`,
           m > 0 ? F.durata(m) : '',
           mappaSedi.get(sedeEffettiva(t, assegnazioni) ?? '')?.nome ?? '',
@@ -124,7 +125,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       }))
     }
     return elenco.sort((x, y) => x.ordine - y.ordine)
-  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo, assegnazioni, scuola])
+  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo, assegnazioni, scuola, fasce])
 
   const caselle = [
     { etichetta: 'ore lavorate', valore: F.durata(riepilogo.minutiTotali) },
@@ -172,7 +173,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       giorno: g.giorno,
       festivo: eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo }),
       giornata: giornata ? { testo: ETICHETTE_GIORNATA[giornata], colore: COLORI_GIORNATA[giornata] } : undefined,
-      sigle: (perGiorno.get(k) ?? []).map((t) => ({ testo: siglaTurno(t, mappaModelli), colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
+      sigle: (perGiorno.get(k) ?? []).map((t) => ({ testo: `${siglaTurno(t, mappaModelli)}${fasce.has(t.id) ? ` ${fasce.get(t.id)}` : ''}`, colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
       voci: (scuola.get(k) ?? []).map((v) => ({ testo: `${v.nome}${v.ora ? ` ${v.ora}` : ''}`, colore: COLORI_SCUOLA[v.genere].testo })),
     }
   })
@@ -243,7 +244,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
                 <span className="sigle">
                   {(perGiorno.get(k) ?? []).map((t) => (
                     <span key={t.id} className="turno-mini">
-                      <span className={`${classeSigla(t.tipo)} barra-turno`}>{siglaTurno(t, mappaModelli)}</span>
+                      <span className={`${classeSigla(t.tipo)} barra-turno`}>{siglaTurno(t, mappaModelli)}{fasce.has(t.id) && <small className="fascia">{fasce.get(t.id)}</small>}</span>
                       {orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                     </span>
                   ))}

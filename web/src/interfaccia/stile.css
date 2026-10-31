@@ -1311,3 +1311,8 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .voce-scuola .lungo { display: -webkit-box; } .voce-scuola .corto { display: none; }
   .s-journal { color: #0F6E56; } .s-goi { color: #854F0B; } .s-lezione { color: #993556; } .s-riunione { color: #534AB7; }
 }
+
+.fascia { margin-left: 3px; font-size: 0.8em; font-weight: 500; }
+.tendina-indicazioni { background: var(--superficie); border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.tendina-indicazioni summary { cursor: pointer; font-weight: 600; }
+.tendina-indicazioni p { margin: 8px 0 0; }

@@ -1,4 +1,5 @@
 import { vociScuola } from '../src/moduli/turni/scuola'
+import { fasceDelGiorno } from '../src/moduli/turni/supporto'
 import type { EsameOLezione, GiornataSpeciale, Turno } from '../src/dati/modello'
 import { describe, expect, test } from 'vitest'
 import { istante } from '../src/nucleo/calendario'
@@ -296,4 +297,10 @@ describe('impegni della scuola nel calendario dei turni', () => {
     const v = vociScuola({ riunioniTolte: [], turni: [notte], giornate }, '2026-11-04', '2026-11-12')
     expect([...v.keys()]).toEqual(['2026-11-05', '2026-11-11'])
   })
+})
+
+test('m e p solo con due attività, guardie escluse', () => {
+  const t = (id: string, tipo: string) => ({ id, tipo }) as Turno
+  const f = fasceDelGiorno(new Map([['a', [t('1', 'ambulatorio'), t('2', 'reparto')]], ['b', [t('3', 'reparto'), t('4', 'guardiaNotturna')]]]))
+  expect([...f]).toEqual([['1', 'm'], ['2', 'p']])
 })
