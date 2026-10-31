@@ -13,7 +13,7 @@ export interface RigaPdf {
 }
 
 /** Casella del calendario del mese nel PDF; null = casella vuota prima o dopo il mese. */
-export type CellaPdf = { giorno: number; festivo?: boolean; giornata?: { testo: string; colore: Colore }; sigle: { testo: string; colore: Colore }[] } | null
+export type CellaPdf = { giorno: number; festivo?: boolean; giornata?: { testo: string; colore: Colore }; sigle: { testo: string; colore: Colore }[]; voci?: { testo: string; colore: Colore }[] } | null
 
 export interface DocumentoPdf {
   titolo: string
@@ -117,6 +117,19 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
         doc.setTextColor(...TESTO)
         doc.text(s.testo, sx + 1, sy + 2.8, { maxWidth: sw - 1.2 })
         sx += sw + 1
+      }
+      // Impegni della scuola: testo colorato con una freccetta, sotto le sigle.
+      sy += c.sigle.length ? 5 : 0
+      doc.setFont('helvetica', 'normal').setFontSize(6.5)
+      for (const v of c.voci ?? []) {
+        const righe: string[] = doc.splitTextToSize(v.testo, w - 5.4).slice(0, 2)
+        if (sy + righe.length * 2.8 > cy + h) break
+        doc.setDrawColor(...v.colore).setLineWidth(0.25)
+        doc.line(x + 1.4, sy + 1.2, x + 3.4, sy + 1.2)
+        doc.line(x + 2.6, sy + 0.4, x + 3.4, sy + 1.2)
+        doc.line(x + 2.6, sy + 2, x + 3.4, sy + 1.2)
+        doc.setTextColor(...v.colore).text(righe, x + 4.2, sy + 2)
+        sy += righe.length * 2.8 + 0.4
       }
     })
     doc.addPage()

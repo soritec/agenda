@@ -1,3 +1,5 @@
+import { vociScuola } from '../src/moduli/turni/scuola'
+import type { EsameOLezione, GiornataSpeciale, Turno } from '../src/dati/modello'
 import { describe, expect, test } from 'vitest'
 import { istante } from '../src/nucleo/calendario'
 import { avvisi, sovrapposizioni } from '../src/moduli/turni/controlli'
@@ -277,5 +279,21 @@ describe('banner di fine turno', () => {
   test('con la × il giorno non viene più chiesto', async () => {
     const { giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
     expect(giorniDaCompilare([g(2)], oggi, ['2026-11-02'])).toEqual([])
+  })
+})
+
+describe('impegni della scuola nel calendario dei turni', () => {
+  const base = { id: 'x', creatoIl: 0, modificatoIl: 0 }
+  const esame = (id: string, giorno: string, tipo: string, titolo: string) => ({ ...base, id, giorno, tipo, titolo, minuto: 600 }) as EsameOLezione
+  test('mostra tutte le attività, ognuna col suo genere', () => {
+    const v = vociScuola({ riunioniTolte: [], esami: [esame('l', '2026-11-05', 'lezione', 'Lezione'), esame('r', '2026-11-05', 'riunione', 'Riunione'), esame('e', '2026-11-05', 'esame', 'Esame')] }, '2026-11-04', '2026-11-05')
+    expect(v.get('2026-11-04')?.map((x) => x.genere)).toEqual(['journal'])
+    expect(v.get('2026-11-05')?.map((x) => x.genere)).toEqual(['lezione', 'riunione', 'goi'])
+  })
+  test('salta ferie, smonto e monto notte, non il riposo', () => {
+    const notte = { ...base, inizio: istante(2026, 11, 12, 20), fine: istante(2026, 11, 13, 8), tipo: 'guardiaNotturna' } as Turno
+    const giornate = [{ ...base, giorno: '2026-11-04', tipo: 'ferie' }, { ...base, giorno: '2026-11-11', tipo: 'riposo' }] as GiornataSpeciale[]
+    const v = vociScuola({ riunioniTolte: [], turni: [notte], giornate }, '2026-11-04', '2026-11-12')
+    expect([...v.keys()]).toEqual(['2026-11-05', '2026-11-11'])
   })
 })

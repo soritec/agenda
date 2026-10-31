@@ -1298,3 +1298,16 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .stella { flex-shrink: 0; display: flex; padding: 4px; background: none; border: none; cursor: pointer; }
 .stella svg { fill: none; stroke: var(--testo-2); stroke-width: 1.6; stroke-linejoin: round; }
 .stella.attiva svg { fill: #E0A93B; stroke: #E0A93B; }
+
+.voce-scuola { display: flex; align-items: flex-start; gap: 3px; font-size: 11px; line-height: 1.25; font-weight: 500; min-width: 0; text-decoration: none; }
+.voce-scuola svg { flex-shrink: 0; margin-top: 2px; }
+.voce-scuola .lungo { min-width: 0; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.voce-scuola .corto { display: none; }
+@media (max-width: 700px) { .voce-scuola .lungo { display: none; } .voce-scuola .corto { display: inline; } }
+.s-journal { color: #0F6E56; } .s-goi { color: #854F0B; } .s-lezione { color: #993556; } .s-riunione { color: #534AB7; }
+@media (prefers-color-scheme: dark) { .s-journal { color: #5DCAA5; } .s-goi { color: #EFB45F; } .s-lezione { color: #ED93B1; } .s-riunione { color: #AFA9EC; } }
+@media print {
+  .voce-scuola { font-size: 7.5pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .voce-scuola .lungo { display: -webkit-box; } .voce-scuola .corto { display: none; }
+  .s-journal { color: #0F6E56; } .s-goi { color: #854F0B; } .s-lezione { color: #993556; } .s-riunione { color: #534AB7; }
+}

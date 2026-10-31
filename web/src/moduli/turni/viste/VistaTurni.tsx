@@ -14,6 +14,7 @@ import { FERIE_ANNUE, ferieUsate } from '../ferie'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import { Foglio, mostraAvviso } from '../../../interfaccia/componenti'
 import { GiornoRapido } from './GiornoRapido'
+import { useVociScuola, VoceScuola } from './VoceScuola'
 import { SceltaOspedale } from './SceltaOspedale'
 import { SvuotaMese } from './SvuotaMese'
 import { assegnazioneDelMese } from '../assegnazioni'
@@ -35,6 +36,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
   const assegnazioni = useCollezione('assegnazioni')
   const ferie = useCollezione('ferie')
   const impostazioni = useImpostazioni()
+  const scuola = useVociScuola(anno, mese)
   const [sceltaArea, setSceltaArea] = useState(false)
   const [sceltaOspedale, setSceltaOspedale] = useState(false)
   const [estrai, setEstrai] = useState(false)
@@ -207,6 +209,7 @@ export function VistaTurni({ anno, mese }: { anno: number; mese: number }) {
                           </span>
                         )
                       })}
+                      {(scuola.get(k) ?? []).map((v) => <VoceScuola key={v.chiave} voce={v} conLink />)}
                     </span>
                   </div>
                 )

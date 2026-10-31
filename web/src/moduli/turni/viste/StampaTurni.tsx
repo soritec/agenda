@@ -9,6 +9,8 @@ import { Avviso } from '../../../interfaccia/componenti'
 import { IconaAvanti, IconaIndietro } from '../../../interfaccia/icone'
 import { parametroMese } from '../../../interfaccia/navigazione'
 import { calcolaRiepilogo } from '../riepilogo'
+import type { GenereScuola } from '../scuola'
+import { useVociScuola, VoceScuola } from './VoceScuola'
 import { areaDelMese, MESI_PER_ROTAZIONE, TITOLI_AREA } from '../rotazione'
 import { ETICHETTE_GIORNATA, minuti, TIPI_GIORNATA, tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA, type TipoGiornata, type TipoTurno } from '../tipi'
 import { celleMese, chiaveGiorno, classeSigla, datiConSede, datiDa, giornoDaChiave, oggi, sedeEffettiva, orarioCompatto, perId, siglaTurno, titoloTurno, turniPerGiorno } from '../supporto'
@@ -38,11 +40,20 @@ const COLORI_GIORNATA: Record<TipoGiornata, Colore> = {
   smontoNotte: [230, 230, 241],
 }
 
+/** Impegni della scuola nel PDF: testo nel calendario, sfondo tenue nell'elenco. */
+const COLORI_SCUOLA: Record<GenereScuola, { testo: Colore; tenue: Colore }> = {
+  journal: { testo: [15, 110, 86], tenue: [221, 240, 233] },
+  goi: { testo: [133, 79, 11], tenue: [247, 236, 215] },
+  lezione: { testo: [153, 53, 86], tenue: [247, 228, 235] },
+  riunione: { testo: [83, 74, 183], tenue: [232, 230, 250] },
+}
+
 interface Riga extends RigaPdf {
   chiave: string
   ordine: number
   tipo?: TipoTurno
   giornata?: TipoGiornata
+  scuola?: GenereScuola
 }
 
 /** Turni del mese impaginati per il foglio A4, con stampa, PDF e condivisione. */
@@ -54,6 +65,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
   const assegnazioni = useCollezione('assegnazioni')
   const periodi = useCollezione('periodiRotazione')
   const impostazioni = useImpostazioni()
+  const scuola = useVociScuola(anno, mese)
   const [stato, setStato] = useState<string>()
   const [statoCalendario, setStatoCalendario] = useState<string>()
   const sabatoFestivo = impostazioni?.sabatoFestivo
@@ -103,8 +115,16 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       const i = istante(a!, m!, gg!, 12)
       elenco.push({ chiave: `giornata-${g}`, ordine: i - 1, colore: COLORI_GIORNATA[tipo], giornata: tipo, celle: [F.dataBreve(i), TITOLI_GIORNATA[tipo], '', '', '', ''] })
     }
+    for (const [g, voci] of scuola) {
+      const [a, m, gg] = g.split('-').map(Number)
+      const i = istante(a!, m!, gg!, 12)
+      voci.forEach((v, n) => elenco.push({
+        chiave: v.chiave, ordine: istante(a!, m!, gg!) + (v.minuto ?? 0) * 60_000 + n, scuola: v.genere, colore: COLORI_SCUOLA[v.genere].tenue,
+        celle: [F.dataBreve(i), `→ ${v.nome}`, v.ora ?? '', '', '', ''],
+      }))
+    }
     return elenco.sort((x, y) => x.ordine - y.ordine)
-  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo, assegnazioni])
+  }, [delMese, giornateMese, mappaModelli, mappaSedi, sabatoFestivo, assegnazioni, scuola])
 
   const caselle = [
     { etichetta: 'ore lavorate', valore: F.durata(riepilogo.minutiTotali) },
@@ -153,6 +173,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
       festivo: eFestivo(istante(g.anno, g.mese, g.giorno, 12), { sabatoFestivo }),
       giornata: giornata ? { testo: ETICHETTE_GIORNATA[giornata], colore: COLORI_GIORNATA[giornata] } : undefined,
       sigle: (perGiorno.get(k) ?? []).map((t) => ({ testo: siglaTurno(t, mappaModelli), colore: COLORI_PDF[tipoTurnoDa(t.tipo)] })),
+      voci: (scuola.get(k) ?? []).map((v) => ({ testo: `${v.nome}${v.ora ? ` ${v.ora}` : ''}`, colore: COLORI_SCUOLA[v.genere].testo })),
     }
   })
 
@@ -160,7 +181,9 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
     setStato('Preparo il PDF…')
     try {
       const blob = await creaPdf({
-        titolo, sottotitolo, riepilogo: caselle, intestazioni: INTESTAZIONI, righe, calendario: calendarioPdf,
+        titolo, sottotitolo, riepilogo: caselle, intestazioni: INTESTAZIONI, calendario: calendarioPdf,
+        // La freccia non esiste nel carattere del PDF.
+        righe: righe.map((r) => ({ ...r, celle: r.celle.map((c) => c.replace('→', '›')) })),
         colonneGrassetto: [0, 1], colonnaColore: 1, colonneDestra: [3], colonnaNote: 5,
         totaleTabella: ['Totale ore', '', '', F.durata(riepilogo.minutiTotali), '', ''],
         piede: `Agenda · creato ${F.dataEstesa(Date.now())}`,
@@ -224,6 +247,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
                       {orarioCompatto(t) && <span className="orario-mini">{orarioCompatto(t)}</span>}
                     </span>
                   ))}
+                  {(scuola.get(k) ?? []).map((v) => <VoceScuola key={v.chiave} voce={v} />)}
                 </span>
               </div>
             )
@@ -239,7 +263,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
           {righe.map((r) => (
             <tr key={r.chiave} className={r.giornata ? 'riga-giornata-stampa' : undefined}>
               <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }} className={r.evidenza === 'festivo' ? 'data-festiva' : undefined}>{r.celle[0]}</td>
-              <td style={{ fontWeight: 700 }}>
+              <td style={{ fontWeight: r.scuola ? 500 : 700 }} className={r.scuola ? `testo-scuola s-${r.scuola}` : undefined}>
                 {r.tipo && <span className={classeSigla(r.tipo)} style={{ minWidth: 10, width: 10, height: 10, padding: 0, marginRight: 6, verticalAlign: 'middle' }} />}
                 {r.giornata && <span className={`pallino-giornata g-${r.giornata}`} style={{ width: 10, height: 10, marginRight: 6, verticalAlign: 'middle' }} />}
                 {r.celle[1]}
