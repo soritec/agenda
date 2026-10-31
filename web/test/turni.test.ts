@@ -248,7 +248,7 @@ describe('turni senza orari predefiniti', () => {
   test('cambia solo i turni futuri con l orario predefinito', async () => {
     const { turniFuturiSenzaOrari } = await import('../src/moduli/turni/senzaOrari')
     const { intervallo } = await import('../src/moduli/turni/orari')
-    const base = { tipo: 'reparto', modelloId: 'm', ...intervallo(g, 480, 1080) }
+    const base: { tipo: string; modelloId: string; inizio: number; fine: number; tuttoIlGiorno?: boolean; minutiManuali?: number } = { tipo: 'reparto', modelloId: 'm', ...intervallo(g, 480, 1080) }
     const adesso = base.inizio - 1000
     const [cambiato] = turniFuturiSenzaOrari([base], [modello], adesso)
     expect(cambiato?.tuttoIlGiorno).toBe(true)
