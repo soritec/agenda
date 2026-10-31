@@ -22,7 +22,7 @@ import { useProfili } from '../../../interfaccia/profili'
 import type { Attivita } from '../../../dati/modello'
 import { celleMese, chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti, perId } from '../../turni/supporto'
 import {
-  blocchiPerGiorno, CATEGORIE_EVENTO, categoriaDa, FONTI, giorniTra, impegniTra, lunediDi, perGiorno, spostaGiorni, testoOrario,
+  blocchiPerGiorno, CATEGORIE_EVENTO, categoriaDa, conPosizioneIndicativa, FONTI, giorniTra, impegniTra, lunediDi, perGiorno, spostaGiorni, testoOrario,
   TITOLI_CATEGORIA, TITOLI_FONTE, TITOLO_VOCE, type CategoriaEvento, type Fonte, type Impegno,
 } from '../impegni'
 
@@ -143,11 +143,12 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   /** Sposta un elemento trascinato nel giorno (e all'ora) dove è stato lasciato; con "Annulla". */
   async function spostaImpegno(i: Impegno, dove: Rilascio) {
     const delta = differenzaGiorni(i.giorno, dove.giorno)
-    if (delta === 0 && (dove.minuto === undefined || dove.minuto === i.minutoInizio)) return
+    // Un turno senza orari cambia solo giorno: non prende l'ora dove viene lasciato.
+    if (delta === 0 && (dove.minuto === undefined || dove.minuto === i.minutoInizio || i.orientativo)) return
     let annulla: (() => Promise<unknown>) | undefined
     if (i.fonte === 'turno') {
       const t = turni?.find((x) => x.id === i.id)
-      if (t) annulla = await spostaTurno(t, turnoSpostato(t, dove))
+      if (t) annulla = await spostaTurno(t, turnoSpostato(t, i.orientativo ? { ...dove, minuto: undefined } : dove))
     } else if (i.fonte === 'evento') {
       const e = eventi?.find((x) => x.id === i.id)
       if (!e) return
@@ -470,8 +471,9 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
   // I task stanno in una tendina sopra le ore, non nella griglia.
   const visibili = tutte.filter((v) => v.fonte !== 'task')
   const taskPerGiorno = perGiorno(tutte.filter((v) => v.fonte === 'task'))
-  const blocchi = blocchiPerGiorno(visibili, giorni)
-  const tuttoIlGiorno = perGiorno(visibili.filter((i) => i.minutoInizio === undefined))
+  const conPosizioni = conPosizioneIndicativa(visibili)
+  const blocchi = blocchiPerGiorno(conPosizioni, giorni)
+  const tuttoIlGiorno = perGiorno(conPosizioni.filter((i) => i.minutoInizio === undefined))
   // Fascia oraria: almeno 7–22, allargata se serve (le notti che continuano dal giorno prima non la allargano).
   const propri = [...blocchi.values()].flat().filter((b) => !b.continuaPrima)
   const oraDa = Math.min(7, ...propri.map((b) => Math.floor(b.da / 60)))
@@ -549,10 +551,10 @@ function VistaSettimana({ visibili: tutte, oggiChiave, festivo, apri, aggiungi, 
               const v = b.impegno
               return (
                 <a key={`${v.chiave}-${b.da}`} href={v.link} onClick={(e) => apri(v, e)}
-                  {...rimovibile(v, rimozione)} className={`blocco rimovibile${alto < 34 ? ' corto' : ''} ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}`}
+                  {...rimovibile(v, rimozione)} className={`blocco rimovibile${alto < 34 ? ' corto' : ''} ${classeVoce(v)}${v.concluso ? ' conclusa' : ''}${v.orientativo ? ' orientativo' : ''}`}
                   style={{ top: y(b.da), height: alto - 2, left: `calc(${(b.corsia / b.corsie) * 100}% + 2px)`, width: `calc(${100 / b.corsie}% - 4px)` }}>
                   <span className="titolo">{v.titolo}</span>
-                  {alto > 30 && (
+                  {alto > 30 && !v.orientativo && (
                     <span className="ora numeri">
                       {b.continuaPrima ? `fino alle ${orarioDaMinuti(b.a)}` : b.continuaDopo ? `dalle ${orarioDaMinuti(b.da)}` : testoOrario(v)}
                     </span>

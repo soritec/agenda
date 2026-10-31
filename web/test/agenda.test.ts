@@ -115,3 +115,12 @@ describe('riunioni fisse', () => {
     expect(titoli({ riunioniTolte: ['jc:2026-11-04'] })).toEqual(['2026-11-05 GOI'])
   })
 })
+
+describe('turni senza orari nella griglia', () => {
+  const t = (giorno: string, colore: string, minutoInizio?: number) => ({ chiave: giorno + colore, fonte: 'turno' as const, id: 'x', giorno, titolo: 'T', colore, link: '', modificatoIl: 0, minutoInizio })
+  test('posizione indicativa, senza toccare gli orari veri', async () => {
+    const { conPosizioneIndicativa } = await import('../src/moduli/agenda/impegni')
+    const r = conPosizioneIndicativa([t('a', 't-reparto'), t('b', 't-ambulatorio'), t('b', 't-ambulatorio'), t('c', 't-ambulatorio', 600)])
+    expect(r.map((i) => [i.minutoInizio, i.minutoFine, i.orientativo])).toEqual([[420, 840, true], [480, 840, true], [840, 1080, true], [600, undefined, undefined]])
+  })
+})

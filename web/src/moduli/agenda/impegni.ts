@@ -40,6 +40,8 @@ export interface Impegno {
   colore: string
   /** Pagina dove si modifica. */
   link: string
+  /** Turno senza orari messo tra le ore solo per vederlo: posizione indicativa, senza orario scritto. */
+  orientativo?: boolean
   /** Completato, pagato o passato: mostrato in trasparenza. */
   concluso?: boolean
   /** Per l'esportazione nel Calendario. */
@@ -115,6 +117,21 @@ function riunioniFisse(d: DatiAgenda, da: string, a: string, oggi: string, adess
     })
   }
   return out
+}
+
+/**
+ * Griglia delle ore: i turni senza orari si posizionano indicativamente, senza cambiare nulla nel turno.
+ * Reparto e sala dalle 7, il resto dalle 8, fine verso le 14; una seconda attività va dalle 14 alle 18.
+ */
+export function conPosizioneIndicativa(impegni: Impegno[]): Impegno[] {
+  const visti = new Map<string, number>()
+  return impegni.map((i) => {
+    if (i.fonte !== 'turno' || i.minutoInizio !== undefined) return i
+    const n = visti.get(i.giorno) ?? 0
+    visti.set(i.giorno, n + 1)
+    const presto = i.colore === 't-reparto' || i.colore === 't-salaOperatoria'
+    return { ...i, orientativo: true, minutoInizio: n > 0 ? 14 * 60 : presto ? 7 * 60 : 8 * 60, minutoFine: n > 0 ? 18 * 60 : 14 * 60 }
+  })
 }
 
 /** Tutti gli impegni tra due giorni (compresi), ordinati: per giorno, prima quelli di tutto il giorno, poi per orario. */

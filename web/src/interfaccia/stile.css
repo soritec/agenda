@@ -1282,3 +1282,5 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
   .stampa > .solo-stampa { margin-top: 8pt; font-size: 8pt; }
 }
 .titolo-elenco { display: none; }
+/* Turno senza orari nella griglia dell'agenda: posizione solo indicativa */
+.blocco.orientativo { border: 1px dashed currentColor; }

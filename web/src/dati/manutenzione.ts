@@ -1,4 +1,6 @@
-import { GUARDIA_PRIMA, correzioniCatalogoV1, infoMancanti, infoSuperate, orariRepartiSuperati, testiAggiornati, vociMancanti } from '../moduli/turni/catalogoScuola'
+import { giornoDi } from '../nucleo/calendario'
+import { chiaveGiorno } from '../moduli/turni/supporto'
+import { CATALOGO_SCUOLA, GUARDIA_PRIMA, SIGLE_AGI, correzioniCatalogoV1, infoMancanti, infoSuperate, orariRepartiSuperati, testiAggiornati, vociMancanti } from '../moduli/turni/catalogoScuola'
 import { conOrariFissi, modelliSenzaOrari, turniFuturiSenzaOrari } from '../moduli/turni/senzaOrari'
 import { aggiungiSmonti } from '../moduli/turni/smonto'
 import { CHIRURGICHE_PREDEFINITE, TIPI_PROCEDURA_PREDEFINITI } from '../moduli/specializzazione/logica'
@@ -158,6 +160,25 @@ export async function eseguiManutenzione(): Promise<void> {
     if (senzaOrari.length) await salvaTanti('modelliTurno', senzaOrari)
     if (futuri.length) await salvaTanti('turni', futuri)
     nuove.push('turni-senza-orari-v1')
+  }
+
+  if (profiloAttivo() === PROFILO_PRINCIPALE && !fatte.has('agi-diviso-v1')) {
+    // "agi" diventa agiap e agispec: i turni di novembre 2026 passano ad agiap.
+    const modelli = await elenca('modelliTurno')
+    const voci = SIGLE_AGI.map((s) => CATALOGO_SCUOLA.find((v) => v.sigla === s)!)
+    const base = Math.max(0, ...modelli.map((m) => m.ordine)) + 1
+    const aggiornati = await salvaTanti('modelliTurno', voci.map((v, i) => {
+      const m = modelli.find((x) => x.sigla.toLowerCase() === v.sigla)
+      return m ? { ...m, nome: v.nome } : { id: `catalogo-${v.sigla}`, nome: v.nome, sigla: v.sigla, tipo: v.tipo, ordine: base + i, minutoInizio: v.orari[0], minutoFine: v.orari[1], tuttoIlGiorno: true, info: v.info }
+    }))
+    const agi = modelli.find((m) => m.sigla.toLowerCase() === 'agi')
+    if (agi) {
+      const turni = await elenca('turni')
+      const diNovembre = turni.filter((t) => t.modelloId === agi.id && chiaveGiorno(giornoDi(t.inizio)).startsWith('2026-11'))
+      if (diNovembre.length) await salvaTanti('turni', diNovembre.map((t) => ({ ...t, modelloId: aggiornati[0]!.id })))
+      if (turni.filter((t) => t.modelloId === agi.id).length === diNovembre.length) await elimina('modelliTurno', agi.id)
+    }
+    nuove.push('agi-diviso-v1')
   }
 
   if (!fatte.has('risparmi-col-mese-v1')) {

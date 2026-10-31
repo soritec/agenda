@@ -109,9 +109,8 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'Ex', nome: 'Amb. Gravidanza Extrauterina / I trim.', tipo: 'ambulatorio', orari: AMB, info: AMB_OST },
   { sigla: 'Rh', nome: 'Immunoprofilassi anti-D', tipo: 'ambulatorio', orari: AMB, info: `${AMB_OST} Precompilato sul drive: far firmare consenso e foglio informativo, riportare lotto e scadenza.` },
   { sigla: 'Cs', nome: 'Consultorio', tipo: 'ambulatorio', orari: AMB, info: "Orari e sedi nella tabella allegata alle istruzioni della scuola. Se si è segnati in due, ci si divide tra le sedi." },
-  { sigla: 'AGI', nome: 'Amb. Ginecologia I livello', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
-  { sigla: 'agiap', nome: 'Amb. Ginecologia (strutturati)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
-  { sigla: 'agispec', nome: 'Amb. Ginecologia (specializzandi)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'agiap', nome: 'Ambulatorio di ginecologia di primo livello (gestito da strutturati)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
+  { sigla: 'agispec', nome: 'Ambulatorio di ginecologia di primo livello (gestito dagli specializzandi)', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
   { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 4') },
   { sigla: 'Ben', nome: 'Amb. Benigna / endometriosi', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN(', amb 1 e 3') },
   { sigla: 'Aon', nome: 'Amb. Oncologico', tipo: 'ambulatorio', orari: AMB, info: AMB_GIN('') },
@@ -145,6 +144,9 @@ export const CATALOGO_SCUOLA: VoceCatalogo[] = [
   { sigla: 'STRUM', nome: 'Affiancamento strumentista', tipo: 'salaOperatoria', orari: SALA, info: SALA_GIN },
   { sigla: 'Tro', nome: 'Tronco', tipo: 'altro', orari: AMB, info: 'Tronco comune: 2 settimane di senologia e 2 di chirurgia generale. In questo mese niente ferie.' },
 ]
+
+/** "agi" è diviso in agiap e agispec. */
+export const SIGLE_AGI = ['agiap', 'agispec']
 
 /** Voci del catalogo non ancora presenti tra i turni tipo (confronto per sigla). */
 export function vociMancanti(esistenti: { sigla: string }[]): VoceCatalogo[] {

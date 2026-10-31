@@ -153,32 +153,32 @@ describe('Turni tutto il giorno', () => {
 
 describe('Sigle della scuola', () => {
   test('catalogo completo e senza doppioni', () => {
-    expect(CATALOGO_SCUOLA).toHaveLength(57)
-    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(57)
+    expect(CATALOGO_SCUOLA).toHaveLength(56)
+    expect(new Set(CATALOGO_SCUOLA.map((v) => v.sigla.toLowerCase())).size).toBe(56)
     expect(CATALOGO_SCUOLA.every((v) => TIPI_TURNO.includes(v.tipo))).toBe(true)
   })
   test('aggiunge solo le sigle mancanti', () => {
     expect(vociMancanti([{ sigla: 'N' }, { sigla: 'e pom' }]).map((v) => v.sigla)).not.toContain('E pom')
-    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(56)
+    expect(vociMancanti([{ sigla: 'N' }])).toHaveLength(55)
   })
 })
 
 describe('Orari predefiniti delle sigle', () => {
   test('ambulatori 8–18, sala operatoria 7–18, Tronco senza tipo', () => {
     const v = (s: string) => CATALOGO_SCUOLA.find((x) => x.sigla === s)!
-    expect(v('AGI').orari).toEqual([480, 1080])
+    expect(v('agiap').orari).toEqual([480, 1080])
     expect(v('Sop').orari).toEqual([420, 1080])
     expect(v('Tro').tipo).toBe('altro')
   })
   test('correzione dei turni tipo caricati con la prima versione, solo se non modificati', () => {
     const vecchi = [
-      { sigla: 'AGI', nome: 'Amb. Ginecologia generale', tipo: 'ambulatorio', tuttoIlGiorno: true },
+      { sigla: 'CDS', nome: 'Amb. Colposcopia', tipo: 'ambulatorio', tuttoIlGiorno: true },
       { sigla: 'Tro', nome: 'Tronco', tipo: 'salaOperatoria', tuttoIlGiorno: true },
       { sigla: 'E', nome: 'Ecografie (rinominato)', tipo: 'ecografia', tuttoIlGiorno: true },
       { sigla: 'N', nome: 'Guardia notte', tipo: 'guardiaNotturna' },
     ]
     const c = correzioniCatalogoV1(vecchi)
-    expect(c.map((x) => [x.sigla, x.tipo, x.minutoInizio, x.minutoFine])).toEqual([['AGI', 'ambulatorio', 480, 1080], ['Tro', 'altro', 480, 1080]])
+    expect(c.map((x) => [x.sigla, x.tipo, x.minutoInizio, x.minutoFine])).toEqual([['CDS', 'ambulatorio', 480, 1080], ['Tro', 'altro', 480, 1080]])
   })
 })
 
