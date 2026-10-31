@@ -1,3 +1,4 @@
+import { giornoDaTabella, leggiCalendarioJournal } from '../src/moduli/specializzazione/journalFoto'
 import { describe, expect, test } from 'vitest'
 import { annoDiCorso, conteggi, settimaneValide, TIPI_PROCEDURA_PREDEFINITI } from '../src/moduli/specializzazione/logica'
 
@@ -62,4 +63,17 @@ describe('Specializzazione: filtri, esami e tasse', () => {
     expect(statoTassa({ stato: 'daPagare', scadenza: '2026-12-20' }, oggi)).toBe('daPagare')
     expect(statoTassa({ stato: 'daPagare' }, oggi)).toBe('daPagare')
   })
+})
+
+describe('calendario del journal club da foto', () => {
+  test('anno dalla data più vicina, anche a cavallo di due anni', () => {
+    expect(giornoDaTabella('28/10', '2026-10-31')).toBe('2026-10-28')
+    expect(giornoDaTabella('13/01', '2026-12-20')).toBe('2027-01-13')
+    expect(giornoDaTabella('tra poco', '2026-10-31')).toBeUndefined()
+  })
+  test('riconosce i giorni senza journal club', () => {
+    const v = leggiCalendarioJournal('```json\n[{"data":"18/11","titolo":"RIUNIONE STRUTTURATI"},{"data":"11/11","titolo":"RECUPERO"},{"data":"23/12","titolo":"PAUSA NATALE"},{"data":"x","titolo":"y"}]\n```', '2026-10-31')
+    expect(v.map((x) => [x.giorno, x.senzaJournal])).toEqual([['2026-11-11', false], ['2026-11-18', true], ['2026-12-23', true]])
+  })
+  test('risposta non valida: nessuna voce', () => expect(leggiCalendarioJournal('non so', '2026-10-31')).toEqual([]))
 })

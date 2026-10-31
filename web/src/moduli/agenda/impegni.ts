@@ -191,7 +191,7 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
     if (!dentro(e.giorno)) continue
     const fonte: Fonte = e.tipo === 'lezione' ? 'lezione' : e.tipo === 'riunione' ? 'riunione' : 'esame'
     out.push({
-      chiave: `${fonte}:${e.id}`, fonte, id: e.id, giorno: e.giorno, titolo: e.titolo, minutoInizio: e.minuto,
+      chiave: `${fonte}:${e.id}`, fonte, id: e.id, giorno: e.giorno, titolo: fonte === 'riunione' && !/^riunione/i.test(e.titolo) ? `Riunione: ${e.titolo}` : e.titolo, minutoInizio: e.minuto,
       dettaglio: [e.materia, e.esito].filter(Boolean).join(' · ') || undefined,
       colore: fonte === 'riunione' ? 'colore-journal' : `colore-${fonte}`, link: d.linkEsami ?? `#/specializzazione/${{ esame: 'esami', lezione: 'lezioni', riunione: 'riunioni' }[fonte as 'esame']}`,
       concluso: Boolean(e.completato) || e.giorno < oggi, modificatoIl: e.modificatoIl,
@@ -252,8 +252,8 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
   for (const j of d.journal ?? []) {
     if (!dentro(j.giorno)) continue
     out.push({
-      chiave: `journal:${j.id}`, fonte: 'journal', id: j.id, giorno: j.giorno, titolo: `Journal club: ${j.titolo}`, dettaglio: j.rivista,
-      colore: 'colore-journal', link: '#/specializzazione/journal', concluso: Boolean(j.presentato) || j.giorno < oggi, modificatoIl: j.modificatoIl,
+      chiave: `journal:${j.id}`, fonte: 'journal', id: j.id, giorno: j.giorno, titolo: `Journal club: ${j.titolo}`, dettaglio: j.rivista ?? (j.daCalendario ? SEDE_RIUNIONI : undefined),
+      minutoInizio: j.minuto, minutoFine: j.minuto !== undefined ? j.minuto + 60 : undefined, colore: 'colore-journal', link: '#/specializzazione/journal', concluso: Boolean(j.presentato) || j.giorno < oggi, modificatoIl: j.modificatoIl,
     })
   }
   if (d.riunioniTolte) out.push(...riunioniFisse(d, da, a, oggi, adesso))

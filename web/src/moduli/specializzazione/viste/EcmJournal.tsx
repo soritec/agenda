@@ -9,6 +9,8 @@ import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
 import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import { creditiAnno } from '../../studio/logica'
+import { CalendarioJournal } from './CalendarioJournal'
+import { Indicazioni } from './Indicazioni'
 
 const dataEstesa = (g: string) => { const c = giornoDaChiave(g); return c ? F.dataEstesa(istante(c.anno, c.mese, c.giorno, 12)) : g }
 const numero = (t: string) => { const n = Number(t.replace(',', '.')); return t.trim() && Number.isFinite(n) && n >= 0 ? n : undefined }
@@ -104,13 +106,15 @@ function FormCorso({ c, tipoIniziale, onChiudi }: { c?: Corso; tipoIniziale?: 'c
 export function JournalClubPagina() {
   const elenco = useCollezione('journalClub')
   const [modifica, setModifica] = useState<{ j?: JournalClub }>()
+  const [foto, setFoto] = useState(false)
   const oggiChiave = chiaveGiorno(oggi())
-  const prossimi = (elenco ?? []).filter((j) => !j.presentato && j.giorno >= oggiChiave).sort((a, b) => a.giorno.localeCompare(b.giorno))
-  const passati = (elenco ?? []).filter((j) => j.presentato || j.giorno < oggiChiave).sort((a, b) => b.giorno.localeCompare(a.giorno))
+  const calendario = (elenco ?? []).filter((j) => j.daCalendario && j.giorno >= oggiChiave).sort((a, b) => a.giorno.localeCompare(b.giorno))
+  const prossimi = (elenco ?? []).filter((j) => !j.daCalendario && !j.presentato && j.giorno >= oggiChiave).sort((a, b) => a.giorno.localeCompare(b.giorno))
+  const passati = (elenco ?? []).filter((j) => !j.daCalendario).filter((j) => j.presentato || j.giorno < oggiChiave).sort((a, b) => b.giorno.localeCompare(a.giorno))
   const riga = (j: JournalClub, concluso: boolean) => (
     <div key={j.id} className={`riga${concluso ? ' conclusa' : ''}`} style={{ cursor: 'default' }}>
-      <input type="checkbox" checked={Boolean(j.presentato)} aria-label="Presentato" style={{ width: 20, height: 20, accentColor: 'var(--primario)', flexShrink: 0 }}
-        onChange={(e) => void salva('journalClub', { ...j, presentato: e.target.checked || undefined })} />
+      {!j.daCalendario && <input type="checkbox" checked={Boolean(j.presentato)} aria-label="Presentato" style={{ width: 20, height: 20, accentColor: 'var(--primario)', flexShrink: 0 }}
+        onChange={(e) => void salva('journalClub', { ...j, presentato: e.target.checked || undefined })} />}
       <button type="button" className="crescente" onClick={() => setModifica({ j })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
         <span style={{ fontWeight: 600 }}>{j.titolo}</span>
         <span className="secondario piccolo">{[dataEstesa(j.giorno), j.rivista].filter(Boolean).join(' · ')}</span>
@@ -128,8 +132,18 @@ export function JournalClubPagina() {
           <a href="#/specializzazione" className="piccolo">‹ Specializzazione</a>
           <h1 className="titolo-grande">Journal club</h1>
         </div>
-        <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ Articolo</button>
+        <div className="riga-azioni">
+          <button type="button" className="pulsante" onClick={() => setFoto(true)}>Calendario da foto</button>
+          <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ Articolo</button>
+        </div>
       </header>
+      <Indicazioni />
+      {calendario.length > 0 && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h2 className="titolo-sezione">Prossimi journal club</h2>
+          <div className="lista">{calendario.map((j) => riga(j, false))}</div>
+        </section>
+      )}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <h2 className="titolo-sezione">Da presentare</h2>
         <div className="lista">
@@ -144,6 +158,7 @@ export function JournalClubPagina() {
         </section>
       )}
       {modifica && <FormJournal j={modifica.j} onChiudi={() => setModifica(undefined)} />}
+      {foto && <CalendarioJournal onChiudi={() => setFoto(false)} />}
     </div>
   )
 }

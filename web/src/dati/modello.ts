@@ -149,6 +149,10 @@ export interface JournalClub extends Base {
   link?: string
   presentato?: boolean
   note?: string
+  /** Minuti dalla mezzanotte, se noti. */
+  minuto?: number
+  /** Data del calendario della scuola, non un articolo da presentare. */
+  daCalendario?: boolean
 }
 
 /* Studio e risorse */

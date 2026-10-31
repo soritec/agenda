@@ -1,3 +1,4 @@
+import { leggiCalendarioJournal } from '../specializzazione/journalFoto'
 import { profiloPrincipale } from '../../dati/profili'
 /**
  * Assistente Gemini (Google) per riassumere e rielaborare testi e per creare quiz e flashcard dalle fonti.
@@ -97,7 +98,7 @@ async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = f
   const chiave = leggiChiave()
   if (!chiave) throw new Error('Inserisci prima la tua chiave Gemini.')
   const parti: unknown[] = []
-  for (const p of m.pdf ?? []) parti.push({ inline_data: { mime_type: 'application/pdf', data: await base64(p.blob) } })
+  for (const p of m.pdf ?? []) parti.push({ inline_data: { mime_type: p.blob.type || 'application/pdf', data: await base64(p.blob) } })
   parti.push({ text: `${istruzione}\n\nRegola: non riportare mai dati che identificano persone o pazienti.${m.testo.trim() ? `\n\nMateriale:\n${m.testo}` : ''}` })
   const corpo = JSON.stringify({
     contents: [{ role: 'user', parts: parti }],
@@ -141,6 +142,15 @@ async function chiama(istruzione: string, m: Materiale, json: boolean, cerca = f
   if (ultimo === 429) throw new Error(testoLimite(limite ?? { giornaliero: false }))
   if (ultimo >= 500) throw new Error(`Gemini è sovraccarico in questo momento (succede con la versione gratuita): riprova tra qualche minuto.${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
   throw new Error(`Gemini non è disponibile (${ultimo}).${ultimoMessaggio ? ` Google dice: "${ultimoMessaggio}"` : ''}`)
+}
+
+/** Calendario del journal club da una foto o da un PDF. */
+export async function calendarioDaFoto(foto: Blob, oggi: string) {
+  const testo = await chiama(
+    'Nel calendario fornito ogni riga ha una data e un argomento, oppure una scritta che occupa tutta la riga (es. RECUPERO, PAUSA NATALE). '
+    + 'Trascrivi tutte le righe nell\'ordine, argomento in italiano come è scritto, senza i nomi delle persone. '
+    + 'Rispondi solo con un array JSON di oggetti {"data": "gg/mm", "titolo": string}.', { testo: '', pdf: [{ nome: 'calendario', blob: foto }] }, true)
+  return leggiCalendarioJournal(testo, oggi)
 }
 
 export const elabora = (azione: AzioneAI, m: Materiale) => chiama(AZIONI_AI[azione].istruzione, m, false, false, true)
