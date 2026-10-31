@@ -237,7 +237,7 @@ export function StampaTurni({ anno, mese }: { anno: number; mese: number }) {
         <tbody>
           {righe.length === 0 && <tr><td colSpan={6} className="secondario">Nessun turno in questo mese.</td></tr>}
           {righe.map((r) => (
-            <tr key={r.chiave} className={r.giornata ? `riga-giornata g-${r.giornata}` : undefined}>
+            <tr key={r.chiave} className={r.giornata ? 'riga-giornata-stampa' : undefined}>
               <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }} className={r.evidenza === 'festivo' ? 'data-festiva' : undefined}>{r.celle[0]}</td>
               <td style={{ fontWeight: 700 }}>
                 {r.tipo && <span className={classeSigla(r.tipo)} style={{ minWidth: 10, width: 10, height: 10, padding: 0, marginRight: 6, verticalAlign: 'middle' }} />}

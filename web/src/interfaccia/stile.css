@@ -309,7 +309,7 @@ dialog.foglio::backdrop { background: rgb(20 18 16 / 0.35); }
 .scelta-rapida:active { transform: scale(0.98); }
 .scelta-rapida .nome { flex: 1; min-width: 0; line-height: 1.2; }
 .scelta-rapida .orario { font-size: 11px; color: var(--testo-2); }
-.tabella-stampa .riga-giornata td { font-weight: 600; }
+.tabella-stampa .riga-giornata-stampa td { font-weight: 600; }
 
 /* iPhone: niente menu di anteprima o selezione del testo tenendo premuto su turni e giornate,
    altrimenti il sistema interrompe il gesto e la × non compare. */
