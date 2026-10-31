@@ -258,16 +258,20 @@ describe('turni senza orari predefiniti', () => {
   })
 })
 
-describe('banner degli orari', () => {
+describe('banner di fine turno', () => {
   const g = (giorno: number, altro: object = {}) => ({ inizio: istante(2026, 11, giorno, 0), tipo: 'ambulatorio', tuttoIlGiorno: true as boolean | undefined, ...altro })
-  const oggi = { anno: 2026, mese: 11, giorno: 5 }
+  const guardia = (giorno: number) => g(giorno, { tipo: 'guardiaDiurna', tuttoIlGiorno: undefined })
+  const oggi = { anno: 2026, mese: 11, giorno: 6 }
 
-  test('giorni passati senza orari, dal più recente, senza guardie né oggi', async () => {
+  test('giorni passati da compilare, dal più recente; le guardie solo per gli appunti', async () => {
     const { giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
-    const r = giorniDaCompilare([
-      g(2), g(3), g(3), g(5), g(4, { tipo: 'guardiaDiurna', tuttoIlGiorno: undefined }), g(4, { minutiManuali: 300 }), g(1, { tuttoIlGiorno: undefined }),
-    ], oggi)
-    expect(r.map((x) => [x.giorno, x.turni.length])).toEqual([['2026-11-03', 2], ['2026-11-02', 1]])
+    const r = giorniDaCompilare([g(2), g(3), g(3), g(6), guardia(4), g(5, { minutiManuali: 300 }), g(1, { tuttoIlGiorno: undefined })], oggi)
+    expect(r.map((x) => [x.giorno, x.turni.length, x.guardie.length])).toEqual([['2026-11-04', 0, 1], ['2026-11-03', 2, 0], ['2026-11-02', 1, 0]])
+  })
+
+  test('una guardia già salvata non torna; un turno senza orari sì', async () => {
+    const { giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
+    expect(giorniDaCompilare([guardia(4), g(3)], oggi, [], ['2026-11-04', '2026-11-03']).map((x) => x.giorno)).toEqual(['2026-11-03'])
   })
 
   test('con la × il giorno non viene più chiesto', async () => {

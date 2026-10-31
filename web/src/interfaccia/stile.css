@@ -1284,3 +1284,13 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .titolo-elenco { display: none; }
 /* Turno senza orari nella griglia dell'agenda: posizione solo indicativa */
 .blocco.orientativo { border: 1px dashed currentColor; }
+/* Appunti di fine turno: verde per ciò che si è imparato, ambra per ciò che resta da approfondire */
+.appunto { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 8px 10px; border-radius: 10px; white-space: pre-wrap; }
+.appunto > span { font-size: 12px; font-weight: 700; }
+.appunto textarea { width: 100%; box-sizing: border-box; background: var(--superficie); }
+.appunto.imparato { background: #E1EEDD; color: #2F4A2A; }
+.appunto.approfondire { background: #F7E8CC; color: #6E4B12; }
+@media (prefers-color-scheme: dark) {
+  .appunto.imparato { background: #2C3F2A; color: #CFE6C9; }
+  .appunto.approfondire { background: #453519; color: #F3DDA9; }
+}

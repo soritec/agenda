@@ -23,6 +23,7 @@ const dataBreve = (giorno: string) => {
 export function Specializzazione() {
   const fileTurni = (useCollezione('allegati') ?? []).filter((a) => a.collegatoA === 'file-turni').sort((a, b) => b.creatoIl - a.creatoIl)
   const giornate = useCollezione('ferie')
+  const diario = (useCollezione('diarioTurni') ?? []).filter((d) => d.imparato || d.approfondire)
   const numeroFileUtili = fileUtili(useCollezione('allegati') ?? []).length
   const impostazioni = useImpostazioni()
   const procedure = useCollezione('procedure')
@@ -125,6 +126,11 @@ export function Specializzazione() {
         <a className="riquadro-sezione" href="#/specializzazione/riunioni">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#8C4F7A', background: '#F3E3EE' }}><IconaLavagna dimensione={18} /></span>Riunioni</span>
           <span className="dettaglio">{prossimaRiunione ? <><strong style={{ color: 'var(--testo)' }}>{prossimaRiunione.titolo}</strong><br />{dataBreve(prossimaRiunione.giorno)}</> : 'Nessuna in programma'}</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/diario">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#2F4A2A', background: '#E1EEDD' }}><IconaLibro dimensione={18} /></span>Diario dei turni</span>
+          <span className="valore">{diario.length || '—'}</span>
+          <span className="dettaglio">Cosa ho imparato e cosa approfondire</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/ferie">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#5E5A54', background: '#ECE9E4' }}><IconaCalendario dimensione={18} /></span>Storico ferie</span>

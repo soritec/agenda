@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
-import { salvaImpostazioni, salvaTanti } from '../../../dati/archivio'
+import { elimina, salva, salvaImpostazioni, salvaTanti } from '../../../dati/archivio'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
-import type { Turno } from '../../../dati/modello'
-import { mostraAvviso } from '../../../interfaccia/componenti'
+import type { DiarioTurno, Turno } from '../../../dati/modello'
+import { mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { intervallo } from '../orari'
 import { giorniDaCompilare } from '../orariDaScrivere'
 import { chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, perId, titoloTurno } from '../supporto'
@@ -12,26 +12,32 @@ import { chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, perId, titoloTurno 
 /** "Più tardi" vale finché l'app resta aperta: alla prossima apertura il banner ricompare. */
 const rimandati = new Set<string>()
 
-/** In cima a Oggi: chiede a che ora si è lavorato nei giorni passati con turni senza orari. */
+/** In cima a Oggi: dopo il turno chiede gli orari e, se si vuole, cosa si è imparato e cosa approfondire. */
 export function BannerOrari() {
   const turni = useCollezione('turni')
   const modelli = useCollezione('modelliTurno')
+  const diario = useCollezione('diarioTurni')
   const impostazioni = useImpostazioni()
   const [, aggiorna] = useState(0)
   const mappa = useMemo(() => perId(modelli), [modelli])
   const g0 = oggi()
-  const giorni = useMemo(() => giorniDaCompilare(turni ?? [], g0, impostazioni?.orariNonChiesti), [turni, impostazioni?.orariNonChiesti, chiaveGiorno(g0)]) // eslint-disable-line react-hooks/exhaustive-deps
+  const giorni = useMemo(() => giorniDaCompilare(turni ?? [], g0, impostazioni?.orariNonChiesti, (diario ?? []).map((d) => d.giorno)),
+    [turni, diario, impostazioni?.orariNonChiesti, chiaveGiorno(g0)]) // eslint-disable-line react-hooks/exhaustive-deps
   const daFare = giorni.filter((d) => !rimandati.has(d.giorno))
   const primo = daFare[0]
-  if (!impostazioni || !primo) return null
-  return <RiquadroGiorno key={primo.giorno} giorno={primo.giorno} turni={primo.turni} altri={daFare.length - 1} nomi={(t) => titoloTurno(t, mappa)}
-    nonChiesti={impostazioni.orariNonChiesti ?? []} onRimanda={() => { for (const d of daFare) rimandati.add(d.giorno); aggiorna((n) => n + 1) }} />
+  if (!impostazioni || !diario || !primo) return null
+  return <RiquadroGiorno key={primo.giorno} giorno={primo.giorno} turni={primo.turni} guardie={primo.guardie} altri={daFare.length - 1} nomi={(t) => titoloTurno(t, mappa)}
+    voce={diario.find((d) => d.giorno === primo.giorno)} nonChiesti={impostazioni.orariNonChiesti ?? []}
+    onRimanda={() => { for (const d of daFare) rimandati.add(d.giorno); aggiorna((n) => n + 1) }} />
 }
 
-function RiquadroGiorno({ giorno, turni, altri, nomi, nonChiesti, onRimanda }: {
-  giorno: string; turni: Turno[]; altri: number; nomi: (t: Turno) => string; nonChiesti: string[]; onRimanda: () => void
+function RiquadroGiorno({ giorno, turni, guardie, altri, nomi, voce, nonChiesti, onRimanda }: {
+  giorno: string; turni: Turno[]; guardie: Turno[]; altri: number; nomi: (t: Turno) => string; voce?: DiarioTurno; nonChiesti: string[]; onRimanda: () => void
 }) {
   const [orari, setOrari] = useState<Record<string, { da: string; a: string }>>({})
+  const [imparato, setImparato] = useState(voce?.imparato ?? '')
+  const [approfondire, setApprofondire] = useState(voce?.approfondire ?? '')
+  const [comeTask, setComeTask] = useState(true)
   const [errore, setErrore] = useState<string>()
   const g = giornoDaChiave(giorno)!
   const valore = (id: string) => orari[id] ?? { da: '', a: '' }
@@ -41,12 +47,23 @@ function RiquadroGiorno({ giorno, turni, altri, nomi, nonChiesti, onRimanda }: {
     return da !== undefined && a !== undefined ? [{ t, ...intervallo(g, da, a) }] : []
   })
   const minutiTotali = completi.reduce((n, c) => n + Math.round((c.fine - c.inizio) / 60_000), 0)
+  const nomiGuardie = guardie.map(nomi).join(', ')
 
-  async function salvaOrari() {
+  async function salvaTutto() {
+    const testoImparato = imparato.trim(), testoApprofondire = approfondire.trim()
     if (turni.some((t) => Boolean(valore(t.id).da) !== Boolean(valore(t.id).a))) { setErrore('Scrivi sia l\'inizio sia la fine.'); return }
-    if (completi.length === 0) { setErrore('Scrivi almeno un turno, oppure tocca Più tardi.'); return }
-    await salvaTanti('turni', completi.map(({ t, inizio, fine }) => ({ ...t, inizio, fine, tuttoIlGiorno: undefined })))
-    mostraAvviso(`Salvate ${F.durata(minutiTotali)}`, () => void salvaTanti('turni', completi.map((c) => c.t)))
+    if (completi.length === 0 && !testoImparato && !testoApprofondire) { setErrore('Scrivi almeno una cosa, oppure tocca Più tardi.'); return }
+    if (completi.length) await salvaTanti('turni', completi.map(({ t, inizio, fine }) => ({ ...t, inizio, fine, tuttoIlGiorno: undefined })))
+    const nuovaVoce = await salva('diarioTurni', {
+      ...voce, id: giorno, giorno, turni: [...turni, ...guardie].map(nomi).join(', '), imparato: testoImparato || undefined, approfondire: testoApprofondire || undefined,
+    })
+    const task = testoApprofondire && comeTask && testoApprofondire !== voce?.approfondire
+      ? await salva('attivita', { titolo: `Approfondire: ${testoApprofondire}`, priorita: 'nessuna', area: 'specializzazione' }) : undefined
+    mostraAvviso('Salvato', () => void (async () => {
+      if (completi.length) await salvaTanti('turni', completi.map((c) => c.t))
+      if (voce) await salva('diarioTurni', voce); else await elimina('diarioTurni', nuovaVoce.id)
+      if (task) await elimina('attivita', task.id)
+    })())
   }
 
   async function nonChiedere() {
@@ -55,11 +72,14 @@ function RiquadroGiorno({ giorno, turni, altri, nomi, nonChiesti, onRimanda }: {
   }
 
   return (
-    <section className="banner-orari" aria-label="Orari dei turni passati">
+    <section className="banner-orari" aria-label="Com'è andato il turno">
       <div className="banner-orari-testa">
         <div>
-          <h2 className="titolo-sezione">A che ora hai lavorato?</h2>
-          <span className="secondario piccolo" style={{ textTransform: 'capitalize' }}>{F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}{altri > 0 ? ` · ${altri === 1 ? 'manca un altro giorno' : `mancano altri ${altri} giorni`}` : ''}</span>
+          <h2 className="titolo-sezione">Com'è andato il turno?</h2>
+          <span className="secondario piccolo">
+            <span style={{ textTransform: 'capitalize' }}>{F.dataEstesa(istante(g.anno, g.mese, g.giorno, 12))}</span>
+            {nomiGuardie ? ` · ${nomiGuardie}` : ''}{altri > 0 ? ` · ${altri === 1 ? 'manca un altro giorno' : `mancano altri ${altri} giorni`}` : ''}
+          </span>
         </div>
         <button type="button" className="elimina-riga" aria-label="Non chiedere per questo giorno" onClick={() => void nonChiedere()}>×</button>
       </div>
@@ -70,12 +90,26 @@ function RiquadroGiorno({ giorno, turni, altri, nomi, nonChiesti, onRimanda }: {
           <label>alle <input type="time" value={valore(t.id).a} onChange={(e) => cambia(t.id, { a: e.target.value })} /></label>
         </div>
       ))}
+      <label className="appunto imparato">
+        <span>Cosa ho imparato</span>
+        <textarea rows={2} value={imparato} onChange={(e) => { setImparato(e.target.value); setErrore(undefined) }} />
+      </label>
+      <label className="appunto approfondire">
+        <span>Cosa devo approfondire</span>
+        <textarea rows={2} value={approfondire} onChange={(e) => { setApprofondire(e.target.value); setErrore(undefined) }} />
+      </label>
+      {approfondire.trim() && (
+        <label className="secondario piccolo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={comeTask} onChange={(e) => setComeTask(e.target.checked)} /> Aggiungilo ai task
+        </label>
+      )}
+      <NotaPrivacy />
       {errore && <span className="errore-orari piccolo">{errore}</span>}
       <div className="banner-orari-piede">
         <span className="secondario piccolo numeri">{minutiTotali > 0 ? `Totale ${F.durata(minutiTotali)}` : ''}</span>
         <div className="riga-azioni">
           <button type="button" className="pulsante" onClick={onRimanda}>Più tardi</button>
-          <button type="button" className="pulsante primario" onClick={() => void salvaOrari()}>Salva</button>
+          <button type="button" className="pulsante primario" onClick={() => void salvaTutto()}>Salva</button>
         </div>
       </div>
     </section>

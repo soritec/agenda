@@ -253,6 +253,16 @@ export interface Taccuino extends Base {
 }
 
 /** Umore di un giorno segnato direttamente dal calendario (senza scrivere una pagina). Id = giorno. */
+/** Appunti di fine turno, uno per giorno (id = giorno). Vuoto = giorno già visto, senza appunti. */
+export interface DiarioTurno extends Base {
+  /** "2026-11-03" */
+  giorno: string
+  /** Nomi dei turni di quel giorno, copiati qui: restano anche se il turno viene eliminato. */
+  turni: string
+  imparato?: string
+  approfondire?: string
+}
+
 export interface UmoreGiorno extends Base {
   giorno: string
   /** 'bene' | 'neutro' | 'cosi' | 'pesante' */
@@ -667,6 +677,7 @@ export interface Collezioni {
   taccuini: Taccuino
   pagineDiario: PaginaDiario
   umoriGiorno: UmoreGiorno
+  diarioTurni: DiarioTurno
   abitudini: Abitudine
   segniAbitudine: SegnoAbitudine
   postit: PostIt
@@ -680,4 +691,4 @@ export interface Collezioni {
   notizie: Notizia
 }
 export type NomeCollezione = keyof Collezioni
-export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate', 'applications', 'notizie']
+export const NOMI_COLLEZIONI: NomeCollezione[] = ['sedi', 'modelliTurno', 'turni', 'periodiRotazione', 'ferie', 'assegnazioni', 'tipiProcedura', 'procedure', 'esami', 'collegamenti', 'tasse', 'allegati', 'eventi', 'attivita', 'categorieBudget', 'movimenti', 'ricorrenti', 'noteGiorno', 'obiettiviRisparmio', 'corsi', 'journalClub', 'argomentiStudio', 'risorse', 'appunti', 'flashcard', 'sessioniStudio', 'pianiStudio', 'sessioniPiano', 'taccuini', 'pagineDiario', 'umoriGiorno', 'abitudini', 'segniAbitudine', 'postit', 'casa', 'stanze', 'bollette', 'pagamentiCasa', 'coseCasa', 'candidate', 'applications', 'notizie', 'diarioTurni']

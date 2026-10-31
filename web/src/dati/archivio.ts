@@ -8,7 +8,7 @@ import type { Istantanea } from './fusione'
  * e la sincronizzazione con GitHub (passo successivo) fonderà questo archivio con quello remoto.
  */
 
-const VERSIONE_DB = 19
+const VERSIONE_DB = 21
 
 /** `sincronizzazione` = la modifica arriva da GitHub (non va rimandata indietro). */
 export type OrigineModifica = 'utente' | 'sincronizzazione'
@@ -97,6 +97,9 @@ function apriDatabase(nome: string): Promise<IDBPDatabase> {
       }
       if (vecchiaVersione < 19) {
         database.createObjectStore('notizie', { keyPath: 'id' })
+      }
+      if (vecchiaVersione < 21 && !database.objectStoreNames.contains('diarioTurni')) {
+        database.createObjectStore('diarioTurni', { keyPath: 'id' })
       }
     },
   })

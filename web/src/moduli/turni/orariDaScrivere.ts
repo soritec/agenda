@@ -8,20 +8,32 @@ const GIORNI_INDIETRO = 14
 /** La richiesta degli orari parte da qui: i turni più vecchi non vengono chiesti. */
 const INIZIO = '2026-11-01'
 
-export interface GiornoDaCompilare<T> { giorno: string; turni: T[] }
+export interface GiornoDaCompilare<T> {
+  giorno: string
+  /** Turni senza orari né ore. */
+  turni: T[]
+  /** Guardie del giorno: hanno già l'orario, si chiedono solo gli appunti. */
+  guardie: T[]
+}
 
-/** Giorni passati con turni senza orari né ore, dal più recente. Le guardie hanno già il loro orario. */
-export function giorniDaCompilare<T extends Pick<Turno, 'inizio' | 'tipo' | 'tuttoIlGiorno' | 'minutiManuali'>>(
-  turni: T[], oggi: GiornoCivile, nonChiesti: string[] = [],
-): GiornoDaCompilare<T>[] {
+type TurnoMinimo = Pick<Turno, 'inizio' | 'tipo' | 'tuttoIlGiorno' | 'minutiManuali'>
+
+/**
+ * Giorni passati da compilare, dal più recente: quelli con turni senza orari, e quelli con una guardia
+ * ancora senza appunti (`conDiario`: giorni già salvati, anche con gli appunti vuoti).
+ */
+export function giorniDaCompilare<T extends TurnoMinimo>(turni: T[], oggi: GiornoCivile, nonChiesti: string[] = [], conDiario: string[] = []): GiornoDaCompilare<T>[] {
   const limite = chiaveGiorno(aggiungiGiorni(oggi, -GIORNI_INDIETRO))
-  const perGiorno = new Map<string, T[]>()
-  for (const t of turni) {
+  const perGiorno = new Map<string, GiornoDaCompilare<T>>()
+  for (const t of [...turni].sort((a, b) => a.inizio - b.inizio)) {
     const g = giornoDi(t.inizio)
     const giorno = chiaveGiorno(g)
-    if (stessoGiorno(g, oggi) || giorno > chiaveGiorno(oggi) || giorno < limite || giorno < INIZIO) continue
-    if (!t.tuttoIlGiorno || t.minutiManuali !== undefined || conOrariFissi(t.tipo) || nonChiesti.includes(giorno)) continue
-    perGiorno.set(giorno, [...(perGiorno.get(giorno) ?? []), t])
+    if (stessoGiorno(g, oggi) || giorno > chiaveGiorno(oggi) || giorno < limite || giorno < INIZIO || nonChiesti.includes(giorno)) continue
+    const guardia = conOrariFissi(t.tipo)
+    if (guardia ? conDiario.includes(giorno) : !t.tuttoIlGiorno || t.minutiManuali !== undefined) continue
+    const voce = perGiorno.get(giorno) ?? { giorno, turni: [], guardie: [] }
+    ;(guardia ? voce.guardie : voce.turni).push(t)
+    perGiorno.set(giorno, voce)
   }
-  return [...perGiorno.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([giorno, lista]) => ({ giorno, turni: lista.sort((x, y) => x.inizio - y.inizio) }))
+  return [...perGiorno.values()].sort((a, b) => b.giorno.localeCompare(a.giorno))
 }

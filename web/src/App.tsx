@@ -32,6 +32,7 @@ import { Logbook } from './moduli/specializzazione/viste/Logbook'
 import { EsamiOLezioni } from './moduli/specializzazione/viste/Esami'
 import { Tasse } from './moduli/specializzazione/viste/Tasse'
 import { FileTurni } from './moduli/specializzazione/viste/FileTurni'
+import { DiarioTurni } from './moduli/specializzazione/viste/DiarioTurni'
 import { FileUtili } from './moduli/specializzazione/viste/FileUtili'
 import { StoricoFerie } from './moduli/specializzazione/viste/StoricoFerie'
 import { BannerConsultorio } from './moduli/turni/viste/BannerConsultorio'
@@ -69,6 +70,7 @@ export function App() {
     else if (sotto === 'fileturni') pagina = <FileTurni />
     else if (sotto === 'fileutili') pagina = <FileUtili />
     else if (sotto === 'ferie') pagina = <StoricoFerie />
+    else if (sotto === 'diario') pagina = <DiarioTurni />
     else if (sotto === 'ecm') pagina = <CorsiEcm />
     else if (sotto === 'journal') pagina = <JournalClubPagina />
     else if (sotto === 'procedura' && percorso[2]) pagina = <SchedaProcedura id={percorso[2]} />
