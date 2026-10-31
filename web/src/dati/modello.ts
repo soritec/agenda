@@ -298,7 +298,15 @@ export interface PostIt extends Base {
   /** Sezione dell'app dove sta (assente nei primi = oggi). */
   pagina?: string
   archiviato?: boolean
+  /** Testo semplice (per ricerche e vecchi post-it). */
   testo: string
+  /** Testo formattato (HTML ripulito: grassetto, corsivo, sottolineato). */
+  html?: string
+  /** Grandezza del testo in px; assente = 14. */
+  dimensioneTesto?: number
+  /** Misure in px, se ingrandito; assenti = misure normali. */
+  larghezza?: number
+  altezza?: number
   colore: string
   x: number
   y: number

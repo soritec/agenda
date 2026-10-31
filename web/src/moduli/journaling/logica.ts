@@ -80,3 +80,22 @@ export async function impronta(codice: string, sale: string): Promise<string> {
   return [...new Uint8Array(byte)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 export const nuovoSale = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('')
+
+/** Tiene solo la formattazione ammessa (niente script, stili o link). */
+export function ripulisci(html: string): string {
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
+  const ammessi = new Set(['P', 'DIV', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'H3', 'UL', 'OL', 'LI', 'BLOCKQUOTE'])
+  const visita = (n: Element) => {
+    for (const figlio of [...n.children]) {
+      if (!ammessi.has(figlio.tagName)) { figlio.replaceWith(...figlio.childNodes); visita(n); return }
+      for (const a of [...figlio.attributes]) {
+        const ok = a.name === 'class' && ((figlio.tagName === 'UL' && a.value === 'lista-spunta') || (figlio.tagName === 'LI' && a.value === 'fatto'))
+        if (!ok) figlio.removeAttribute(a.name)
+      }
+      visita(figlio)
+    }
+  }
+  const radice = doc.body.firstElementChild!
+  visita(radice)
+  return radice.innerHTML
+}

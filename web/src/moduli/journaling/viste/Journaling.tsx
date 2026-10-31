@@ -16,8 +16,7 @@ import { HabitTracker } from '../../abitudini/viste/HabitTracker'
 import { vai } from '../../../interfaccia/navigazione'
 import { celleMese, chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import {
-  cerca, COLORI_TACCUINO, COLORI_UMORE, impronta, MODELLI, nuovoSale, testoSemplice, testoSu, TITOLI_TRAMA, TITOLI_UMORE, TRAME, UMORI, umoreDa, umoriDelMese, unAnnoFa, type Trama,
-} from '../logica'
+  cerca, COLORI_TACCUINO, COLORI_UMORE, impronta, MODELLI, nuovoSale, testoSemplice, testoSu, TITOLI_TRAMA, TITOLI_UMORE, TRAME, UMORI, umoreDa, umoriDelMese, unAnnoFa, type Trama, ripulisci } from '../logica'
 
 type I = (p: { dimensione?: number }) => ReactNode
 const ICONE: Record<string, I> = {
@@ -463,25 +462,6 @@ function VistaTaccuino({ t, pagine, paginaId, foto, onModifica, modifica, chiudi
       {modifica && <FormTaccuino t={modifica.t} ordine={t.ordine} onChiudi={chiudiModifica} />}
     </div>
   )
-}
-
-/** Tiene solo la formattazione ammessa (niente script, stili o link). */
-function ripulisci(html: string): string {
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
-  const ammessi = new Set(['P', 'DIV', 'BR', 'B', 'STRONG', 'I', 'EM', 'H3', 'UL', 'OL', 'LI', 'BLOCKQUOTE'])
-  const visita = (n: Element) => {
-    for (const figlio of [...n.children]) {
-      if (!ammessi.has(figlio.tagName)) { figlio.replaceWith(...figlio.childNodes); continue }
-      for (const a of [...figlio.attributes]) {
-        const ok = a.name === 'class' && ((figlio.tagName === 'UL' && a.value === 'lista-spunta') || (figlio.tagName === 'LI' && a.value === 'fatto'))
-        if (!ok) figlio.removeAttribute(a.name)
-      }
-      visita(figlio)
-    }
-  }
-  const radice = doc.body.firstElementChild!
-  visita(radice)
-  return radice.innerHTML
 }
 
 function EditorPagina({ p, t }: { p: PaginaDiario; t: Taccuino }) {

@@ -5,9 +5,35 @@ import type { PostIt } from '../../dati/modello'
 import { mostraAvviso } from '../../interfaccia/componenti'
 import { IconaArchivia, IconaPostIt } from '../../interfaccia/icone'
 import { SEZIONI } from '../../interfaccia/Guscio'
+import { ripulisci, testoSemplice } from '../journaling/logica'
 
 /** Colori dei post-it, tenui come il resto dell'app. */
 export const COLORI_POSTIT = ['#F4E6B4', '#F2D6C8', '#DAE7D3', '#D7E3EF', '#E5DDEF', '#ECE5DA']
+
+const LARGHEZZA_NORMALE = 180
+const scappa = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+
+/** Testo con grassetto, corsivo e sottolineato; la barra compare mentre si scrive. */
+function EditorPostIt({ p, dimensione, onScrivi, onDimensione }: { p: PostIt; dimensione: number; onScrivi: (v: { html: string; testo: string }) => void; onDimensione: (n: number) => void }) {
+  const area = useRef<HTMLDivElement>(null)
+  // Il contenuto si imposta una volta sola: dopo è il browser a gestirlo mentre si scrive.
+  useEffect(() => { if (area.current) area.current.innerHTML = ripulisci(p.html ?? scappa(p.testo)) }, [p.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const aggiorna = () => { const html = ripulisci(area.current?.innerHTML ?? ''); onScrivi({ html, testo: testoSemplice(html) }) }
+  const comando = (c: string) => { area.current?.focus(); document.execCommand(c); aggiorna() }
+  return (
+    <>
+      <div className="barra-postit" role="toolbar" aria-label="Formattazione" onMouseDown={(e) => e.preventDefault()} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation() }}>
+        <button type="button" aria-label="Grassetto" onClick={() => comando('bold')}><b>G</b></button>
+        <button type="button" aria-label="Corsivo" onClick={() => comando('italic')}><i>C</i></button>
+        <button type="button" aria-label="Sottolineato" onClick={() => comando('underline')}><u>S</u></button>
+        <button type="button" aria-label="Testo più piccolo" disabled={dimensione <= 12} onClick={() => onDimensione(dimensione - 2)}>A−</button>
+        <button type="button" aria-label="Testo più grande" disabled={dimensione >= 24} onClick={() => onDimensione(dimensione + 2)}>A+</button>
+      </div>
+      <div ref={area} className="testo-postit" style={{ fontSize: dimensione }} contentEditable suppressContentEditableWarning onInput={aggiorna}
+        data-vuoto="Scrivi qui…" role="textbox" aria-multiline="true" aria-label="Testo del post-it" />
+    </>
+  )
+}
 
 /**
  * Bacheca dei post-it sopra la pagina Oggi: si spostano trascinandoli dalla striscia in alto,
@@ -39,14 +65,18 @@ export function BachecaPostIt({ pagina, children }: { pagina: string; children: 
 
 function Foglietto({ p, contenitore, zMax }: { p: PostIt; contenitore: React.RefObject<HTMLDivElement | null>; zMax: number }) {
   const [pos, setPos] = useState({ x: p.x, y: p.y })
-  const [testo, setTesto] = useState(p.testo)
+  const [testo, setTesto] = useState({ html: p.html, testo: p.testo })
+  const [misure, setMisure] = useState({ larghezza: p.larghezza, altezza: p.altezza, dimensioneTesto: p.dimensioneTesto })
   const [colori, setColori] = useState(false)
+  const dimensiona = useRef<{ x: number; y: number; l: number; a: number } | undefined>(undefined)
   const trascina = useRef<{ dx: number; dy: number } | undefined>(undefined)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   // Ultimi valori: ogni salvataggio scrive insieme posizione e testo, così uno non annulla l'altro.
   const ultimo = useRef({ pos, testo })
   ultimo.current = { pos, testo }
-  const salvaTutto = (extra: Partial<PostIt> = {}) => salva('postit', { ...p, x: Math.round(ultimo.current.pos.x * 10) / 10, y: Math.round(ultimo.current.pos.y), testo: ultimo.current.testo, ...extra })
+  const misureCorrenti = useRef(misure)
+  misureCorrenti.current = misure
+  const salvaTutto = (extra: Partial<PostIt> = {}) => salva('postit', { ...p, x: Math.round(ultimo.current.pos.x * 10) / 10, y: Math.round(ultimo.current.pos.y), ...ultimo.current.testo, ...misureCorrenti.current, ...extra })
   useEffect(() => { if (!trascina.current) setPos({ x: p.x, y: p.y }) }, [p.x, p.y])
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -60,7 +90,7 @@ function Foglietto({ p, contenitore, zMax }: { p: PostIt; contenitore: React.Ref
   function muovi(e: PE) {
     const box = contenitore.current?.getBoundingClientRect()
     if (!trascina.current || !box) return
-    const larghezza = 180
+    const larghezza = misure.larghezza ?? LARGHEZZA_NORMALE
     const x = Math.min(Math.max(0, ((e.clientX - trascina.current.dx - box.left) / box.width) * 100), Math.max(0, 100 - (larghezza / box.width) * 100))
     const y = Math.max(0, e.clientY - trascina.current.dy - box.top)
     setPos({ x, y })
@@ -72,7 +102,23 @@ function Foglietto({ p, contenitore, zMax }: { p: PostIt; contenitore: React.Ref
     clearTimeout(timer.current)
     void salvaTutto({ z: Math.max(p.z, zMax) })
   }
-  function scrivi(v: string) {
+  function iniziaDimensione(e: PE) {
+    const r = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect()
+    e.stopPropagation()
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* si ridimensiona lo stesso */ }
+    dimensiona.current = { x: e.clientX, y: e.clientY, l: r.width, a: r.height }
+  }
+  function muoviDimensione(e: PE) {
+    const d = dimensiona.current
+    if (!d) return
+    setMisure({ ...misure, larghezza: Math.round(Math.min(460, Math.max(140, d.l + e.clientX - d.x))), altezza: Math.round(Math.min(560, Math.max(120, d.a + e.clientY - d.y))) })
+  }
+  function fineDimensione() {
+    if (!dimensiona.current) return
+    dimensiona.current = undefined
+    void salvaTutto()
+  }
+  function scrivi(v: { html: string; testo: string }) {
     setTesto(v)
     ultimo.current = { ...ultimo.current, testo: v }
     clearTimeout(timer.current)
@@ -80,7 +126,7 @@ function Foglietto({ p, contenitore, zMax }: { p: PostIt; contenitore: React.Ref
   }
 
   return (
-    <div className="postit" style={{ left: `${pos.x}%`, top: pos.y, zIndex: 5 + p.z, background: p.colore }}>
+    <div className="postit" style={{ left: `${pos.x}%`, top: pos.y, zIndex: 5 + p.z, background: p.colore, width: misure.larghezza, height: misure.altezza }}>
       <div className="maniglia-postit" onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su} title="Trascina per spostare">
         <button type="button" className="colori-postit" aria-label="Cambia colore" onPointerDown={(e) => e.stopPropagation()} onClick={() => setColori(!colori)}>●</button>
         <span className="presa" aria-hidden="true">⋮⋮</span>
@@ -97,7 +143,12 @@ function Foglietto({ p, contenitore, zMax }: { p: PostIt; contenitore: React.Ref
           ))}
         </div>
       )}
-      <textarea value={testo} onChange={(e) => scrivi(e.target.value)} placeholder="Scrivi qui…" aria-label="Testo del post-it" />
+      <EditorPostIt p={p} dimensione={misure.dimensioneTesto ?? 14} onScrivi={scrivi} onDimensione={(n) => {
+        misureCorrenti.current = { ...misure, dimensioneTesto: n }
+        setMisure(misureCorrenti.current)
+        void salvaTutto()
+      }} />
+      <span className="ridimensiona-postit" role="presentation" title="Trascina per ingrandire" onPointerDown={iniziaDimensione} onPointerMove={muoviDimensione} onPointerUp={fineDimensione} onPointerCancel={fineDimensione} />
     </div>
   )
 }
@@ -136,18 +187,18 @@ export function RaccoltaPostIt() {
 }
 
 function CartaPostIt({ p }: { p: PostIt }) {
-  const [testo, setTesto] = useState(p.testo)
+  const [testo, setTesto] = useState({ html: p.html, testo: p.testo, dimensioneTesto: p.dimensioneTesto })
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(timer.current), [])
   return (
     <div className="carta-postit" style={{ background: p.colore }}>
-      <textarea value={testo} aria-label="Testo del post-it" placeholder="Vuoto"
-        onChange={(e) => { const v = e.target.value; setTesto(v); clearTimeout(timer.current); timer.current = setTimeout(() => void salva('postit', { ...p, testo: v }), 600) }} />
+      <EditorPostIt p={p} dimensione={testo.dimensioneTesto ?? 14} onDimensione={(n) => { const t = { ...testo, dimensioneTesto: n }; setTesto(t); clearTimeout(timer.current); void salva('postit', { ...p, ...t }) }}
+        onScrivi={(v) => { const t = { ...testo, ...v }; setTesto(t); clearTimeout(timer.current); timer.current = setTimeout(() => void salva('postit', { ...p, ...t }), 600) }} />
       <div className="azioni-carta-postit">
         <span className="piccolo">{new Date(p.modificatoIl).toLocaleDateString('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'short' })}</span>
         <span className="riga-azioni" style={{ gap: 2 }}>
           {!p.archiviato && <a className="pillola piccola" href={`#/${p.pagina ?? 'oggi'}`}>Vai</a>}
-          <button type="button" className="pillola piccola" onClick={() => void salva('postit', { ...p, testo, archiviato: p.archiviato ? undefined : true })}>
+          <button type="button" className="pillola piccola" onClick={() => void salva('postit', { ...p, ...testo, archiviato: p.archiviato ? undefined : true })}>
             {p.archiviato ? 'Rimetti' : 'Archivia'}
           </button>
           <button type="button" className="elimina-task" aria-label="Elimina il post-it"
