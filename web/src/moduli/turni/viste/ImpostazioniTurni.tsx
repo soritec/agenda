@@ -32,6 +32,7 @@ export function ImpostazioniTurni() {
   const [casa, setCasa] = useState<string>()
   const mappaSedi = perId(sedi)
   const elencoModelli = [...(modelli ?? [])].sort((a, b) => a.ordine - b.ordine || a.nome.localeCompare(b.nome))
+  const [consultorio, setConsultorio] = useState<string>()
   const mancanti = modelli ? vociMancanti(modelli) : []
   const daCompletare = modelli ? infoMancanti(modelli) : []
   const senzaInfo = elencoModelli.filter((m) => !m.info && !daCompletare.some((x) => x.id === m.id))
@@ -95,6 +96,16 @@ export function ImpostazioniTurni() {
         {senzaInfo.length > 0 && (
           <span className="secondario piccolo">Senza "dove e quando": {senzaInfo.map((m) => m.sigla).join(', ')}. Il vademecum non ne parla: puoi scriverlo tu aprendo il turno tipo.</span>
         )}
+      </Sezione>
+
+      <Sezione titolo="Consultorio">
+        <div className="scheda modulo">
+          <Campo etichetta="Sedi e orari, una riga per voce (giorno; sede; inizio; fine; nota)">
+            <textarea rows={8} value={consultorio ?? impostazioni?.sediConsultorio ?? ''} placeholder="lunedì; Nome della sede; 8:30; 16:00; nota" onChange={(e) => setConsultorio(e.target.value)}
+              onBlur={() => consultorio !== undefined && void salvaImpostazioni({ sediConsultorio: consultorio.trim() || undefined })} />
+          </Campo>
+          <span className="secondario piccolo">Il giorno prima di un consultorio, in Oggi ti chiedo quale sede scegliere tra quelle di quel giorno.</span>
+        </div>
       </Sezione>
 
       <Sezione titolo="Casa">

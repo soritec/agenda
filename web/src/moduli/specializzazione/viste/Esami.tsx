@@ -6,14 +6,15 @@ import { elimina, ripristina, salva } from '../../../dati/archivio'
 import { useCollezione } from '../../../dati/hooks'
 import type { EsameOLezione } from '../../../dati/modello'
 import { Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
-import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
+import { chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, orarioDaMinuti } from '../../turni/supporto'
 import { eConcluso } from '../logica'
 import { FileLezioni } from './FileLezioni'
 
-export type TipoAttivita = 'esame' | 'lezione'
+export type TipoAttivita = 'esame' | 'lezione' | 'riunione'
 const TITOLI = {
   esame: { uno: 'Esame', tanti: 'Esami', nuovo: 'Nuovo esame', conclusi: 'Conclusi' },
   lezione: { uno: 'Lezione', tanti: 'Lezioni', nuovo: 'Nuova lezione', conclusi: 'Concluse' },
+  riunione: { uno: 'Riunione', tanti: 'Riunioni', nuovo: 'Nuova riunione', conclusi: 'Concluse' },
 }
 
 const dataEstesa = (giorno: string) => {
@@ -38,10 +39,10 @@ export function EsamiOLezioni({ tipo }: { tipo: TipoAttivita }) {
         style={{ width: 20, height: 20, accentColor: 'var(--primario)', flexShrink: 0 }} />
       <button type="button" onClick={() => setModifica({ record: e })}
         style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
-        <span className={`etichetta-tipo colore-${tipo}`}>{t.uno}</span>
+        <span className={`etichetta-tipo colore-${tipo === 'riunione' ? 'journal' : tipo}`}>{t.uno}</span>
         <span className="crescente">
           <span style={{ fontWeight: 600, textDecoration: e.completato ? 'line-through' : undefined }}>{e.titolo}</span>
-          <span className="secondario piccolo">{[dataEstesa(e.giorno), e.materia].filter(Boolean).join(' · ')}</span>
+          <span className="secondario piccolo">{[dataEstesa(e.giorno), e.minuto !== undefined ? orarioDaMinuti(e.minuto) : undefined, e.materia].filter(Boolean).join(' · ')}</span>
         </span>
         {e.esito && <span className="numeri" style={{ fontWeight: 700 }}>{e.esito}</span>}
       </button>
@@ -56,11 +57,13 @@ export function EsamiOLezioni({ tipo }: { tipo: TipoAttivita }) {
           <h1 className="titolo-grande">{t.tanti}</h1>
         </div>
         <div className="riga-azioni">
-          <a className="pulsante" href={`#/specializzazione/${tipo === 'esame' ? 'lezioni' : 'esami'}`}>{TITOLI[tipo === 'esame' ? 'lezione' : 'esame'].tanti}</a>
+          {(['esame', 'lezione', 'riunione'] as const).filter((x) => x !== tipo && (x !== 'riunione' || profiloPrincipale())).map((x) => (
+            <a key={x} className="pulsante" href={`#/specializzazione/${{ esame: 'esami', lezione: 'lezioni', riunione: 'riunioni' }[x]}`}>{TITOLI[x].tanti}</a>
+          ))}
           <button type="button" className="pulsante primario" onClick={() => setModifica({})}>+ {t.uno}</button>
         </div>
       </header>
-      {tipo === 'lezione' && profiloPrincipale() && <FileLezioni />}
+      {tipo !== 'esame' && profiloPrincipale() && <FileLezioni tipo={tipo} />}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <h2 className="titolo-sezione">In programma</h2>
         <div className="lista">
@@ -82,7 +85,7 @@ export function EsamiOLezioni({ tipo }: { tipo: TipoAttivita }) {
 export function FormAttivita({ tipo, record, giorno, onChiudi }: { tipo: TipoAttivita; record?: EsameOLezione; giorno?: string; onChiudi: () => void }) {
   const [b, setB] = useState({
     giorno: record?.giorno ?? giorno ?? chiaveGiorno(oggi()), titolo: record?.titolo ?? '',
-    materia: record?.materia ?? '', esito: record?.esito ?? '', note: record?.note ?? '', completato: Boolean(record?.completato),
+    ora: record?.minuto !== undefined ? orarioDaMinuti(record.minuto) : '', materia: record?.materia ?? '', esito: record?.esito ?? '', note: record?.note ?? '', completato: Boolean(record?.completato),
   })
   const t = TITOLI[tipo]
   const valido = b.titolo.trim() !== '' && !!giornoDaChiave(b.giorno)
@@ -90,7 +93,7 @@ export function FormAttivita({ tipo, record, giorno, onChiudi }: { tipo: TipoAtt
     if (!valido) return
     await salva('esami', {
       ...record, tipo, giorno: b.giorno, titolo: b.titolo.trim(), completato: b.completato || undefined,
-      materia: b.materia.trim() || undefined, esito: b.esito.trim() || undefined, note: b.note.trim() || undefined,
+      minuto: minutiDaOrario(b.ora), materia: b.materia.trim() || undefined, esito: b.esito.trim() || undefined, note: b.note.trim() || undefined,
     })
     onChiudi()
   }
@@ -101,7 +104,8 @@ export function FormAttivita({ tipo, record, giorno, onChiudi }: { tipo: TipoAtt
         <Campo etichetta="Titolo"><input value={b.titolo} placeholder={profiloPrincipale() ? (tipo === 'esame' ? 'es. Esame di fine anno' : 'es. Diagnosi prenatale') : (tipo === 'esame' ? 'es. Contract Law, esame finale' : 'es. Seminario di Tort Law')} onChange={(e) => setB({ ...b, titolo: e.target.value })} /></Campo>
         <div className="campi-affiancati">
           <Campo etichetta="Data"><input type="date" value={b.giorno} onChange={(e) => setB({ ...b, giorno: e.target.value })} /></Campo>
-          <Campo etichetta="Materia (facoltativa)"><input value={b.materia} onChange={(e) => setB({ ...b, materia: e.target.value })} /></Campo>
+          <Campo etichetta="Ora (facoltativa)"><input type="time" value={b.ora} onChange={(e) => setB({ ...b, ora: e.target.value })} /></Campo>
+          <Campo etichetta={tipo === 'riunione' ? 'Sede (facoltativa)' : 'Materia (facoltativa)'}><input value={b.materia} onChange={(e) => setB({ ...b, materia: e.target.value })} /></Campo>
         </div>
         <Campo etichetta={tipo === 'esame' ? 'Esito o voto' : 'Esito (facoltativo)'}><input value={b.esito} placeholder={tipo === 'esame' ? (profiloPrincipale() ? 'es. 30/30' : 'es. 68 (Merit)') : ''} onChange={(e) => setB({ ...b, esito: e.target.value })} /></Campo>
         <label className="interruttore" style={{ borderBottom: 'none' }}>

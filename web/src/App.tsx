@@ -34,6 +34,7 @@ import { Tasse } from './moduli/specializzazione/viste/Tasse'
 import { FileTurni } from './moduli/specializzazione/viste/FileTurni'
 import { FileUtili } from './moduli/specializzazione/viste/FileUtili'
 import { StoricoFerie } from './moduli/specializzazione/viste/StoricoFerie'
+import { BannerConsultorio } from './moduli/turni/viste/BannerConsultorio'
 import { BannerOrari } from './moduli/turni/viste/BannerOrari'
 import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
@@ -63,6 +64,7 @@ export function App() {
     if (sotto === 'logbook') pagina = <Logbook key={parametri.get('nuova') ?? ''} apriNuova={parametri.get('nuova') === '1'} />
     else if (sotto === 'esami') pagina = <EsamiOLezioni key="esame" tipo="esame" />
     else if (sotto === 'lezioni') pagina = <EsamiOLezioni key="lezione" tipo="lezione" />
+    else if (sotto === 'riunioni') pagina = <EsamiOLezioni key="riunione" tipo="riunione" />
     else if (sotto === 'tasse') pagina = <Tasse />
     else if (sotto === 'fileturni') pagina = <FileTurni />
     else if (sotto === 'fileutili') pagina = <FileUtili />
@@ -137,6 +139,7 @@ function Oggi() {
         <a className="pulsante tondo" href="#/impostazioni" aria-label="Impostazioni, sincronizzazione e backup"><IconaImpostazioni dimensione={18} /></a></span>
       </header>
 
+      <BannerConsultorio />
       <BannerOrari />
       {noteOggi.map((n) => (
         <a key={n.chiave} className="nota-oggi" href={n.link}>

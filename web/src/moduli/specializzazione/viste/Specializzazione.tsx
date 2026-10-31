@@ -47,7 +47,7 @@ export function Specializzazione() {
   const c = useMemo(() => conteggi(procedure ?? []), [procedure])
   const prossimo = (tipo: string): EsameOLezione | undefined =>
     [...(esami ?? [])].filter((e) => e.tipo === tipo && !eConcluso(e, oggiChiave)).sort((a, b) => a.giorno.localeCompare(b.giorno))[0]
-  const prossimoEsame = prossimo('esame'), prossimaLezione = prossimo('lezione')
+  const prossimoEsame = prossimo('esame'), prossimaLezione = prossimo('lezione'), prossimaRiunione = prossimo('riunione')
   const daPagare = (tasse ?? []).filter((t) => t.stato !== 'pagato')
   const totaleDaPagare = daPagare.reduce((s, t) => s + t.importoCent, 0)
   const statoPeggiore = daPagare.map((t) => statoTassa(t, oggiChiave)).sort((a, b) => ['scaduta', 'inScadenza', 'daPagare'].indexOf(a) - ['scaduta', 'inScadenza', 'daPagare'].indexOf(b))[0]
@@ -121,6 +121,10 @@ export function Specializzazione() {
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#3E6E78', background: '#E1EEF0' }}><IconaCalendario dimensione={18} /></span>File dei turni</span>
           <span className="valore">{fileTurni.length || '—'}</span>
           <span className="dettaglio">{fileTurni[0] ? `ultimo: ${fileTurni[0].nome}` : 'Excel e PDF dei turni e delle guardie'}</span>
+        </a>
+        <a className="riquadro-sezione" href="#/specializzazione/riunioni">
+          <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#8C4F7A', background: '#F3E3EE' }}><IconaLavagna dimensione={18} /></span>Riunioni</span>
+          <span className="dettaglio">{prossimaRiunione ? <><strong style={{ color: 'var(--testo)' }}>{prossimaRiunione.titolo}</strong><br />{dataBreve(prossimaRiunione.giorno)}</> : 'Nessuna in programma'}</span>
         </a>
         <a className="riquadro-sezione" href="#/specializzazione/ferie">
           <span className="titolo"><span className="icona-sezione quadratino" style={{ color: '#5E5A54', background: '#ECE9E4' }}><IconaCalendario dimensione={18} /></span>Storico ferie</span>

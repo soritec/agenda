@@ -66,6 +66,10 @@ function righe(pezzi: PezzoTesto[]): Casella[][] {
   })
 }
 
+/** Righe di testo di tutte le pagine di un PDF, una casella per ogni blocco separato. */
+export const righeDelPdf = (pezzi: PezzoTesto[]): string[][] =>
+  [...new Set(pezzi.map((p) => p.pagina))].flatMap((n) => righe(pezzi.filter((p) => p.pagina === n)).map((r) => r.map((c) => c.testo)))
+
 /** Colonne dei giorni della griglia del mese: `inizio` è il bordo sinistro del giorno 1 (la sua intestazione può mancare). */
 function colonneGriglia(pezzi: PezzoTesto[]): { y: number; inizio: number; passo: number; ultimo: number } | undefined {
   const letti = pezzi.flatMap((p) => {

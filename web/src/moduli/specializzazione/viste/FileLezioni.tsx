@@ -7,17 +7,19 @@ import type { Allegato } from '../../../dati/modello'
 import { Avviso, mostraAvviso } from '../../../interfaccia/componenti'
 import { mostraAllegato } from '../../../interfaccia/Visualizzatore'
 import { filePerMese } from '../../turni/fileTurni'
+import { eProgrammaLeggibile } from '../leggiProgramma'
+import { ConfermaProgramma } from './ConfermaProgramma'
 import { titoloMese } from './FileTurni'
 
-const FILE_LEZIONI = 'file-lezioni'
-
 /** Programmi di lezioni e riunioni che arrivano ogni mese, divisi per mese come i file dei turni. */
-export function FileLezioni() {
+export function FileLezioni({ tipo }: { tipo: 'lezione' | 'riunione' }) {
+  const collegamento = tipo === 'lezione' ? 'file-lezioni' : 'file-riunioni'
+  const [daLeggere, setDaLeggere] = useState<Allegato>()
   const allegati = useCollezione('allegati')
   const [errore, setErrore] = useState<string>()
   const [inCorso, setInCorso] = useState(0)
   const [rinomina, setRinomina] = useState<{ id: string; nome: string }>()
-  const gruppi = filePerMese(allegati ?? [], FILE_LEZIONI)
+  const gruppi = filePerMese(allegati ?? [], collegamento)
 
   async function aggiungi(files: FileList) {
     setErrore(undefined)
@@ -25,7 +27,10 @@ export function FileLezioni() {
     setInCorso(elenco.length)
     const problemi: string[] = []
     for (const f of elenco) {
-      try { await aggiungiAllegato(f, FILE_LEZIONI) } catch (e) { problemi.push(`${f.name}: ${e instanceof Error ? e.message : 'errore sconosciuto'}`) }
+      try {
+        const a = await aggiungiAllegato(f, collegamento)
+        if (elenco.length === 1 && eProgrammaLeggibile(a)) setDaLeggere(a)
+      } catch (e) { problemi.push(`${f.name}: ${e instanceof Error ? e.message : 'errore sconosciuto'}`) }
       setInCorso((n) => n - 1)
     }
     if (problemi.length) setErrore(problemi.join('\n'))
@@ -40,7 +45,7 @@ export function FileLezioni() {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div className="intestazione" style={{ alignItems: 'center' }}>
-        <h2 className="titolo-sezione">File di lezioni e riunioni</h2>
+        <h2 className="titolo-sezione">File delle {tipo === 'lezione' ? 'lezioni' : 'riunioni'}</h2>
         <label className="pulsante" style={{ cursor: 'pointer', position: 'relative' }}>
           + Carica file
           <input type="file" multiple className="file-nascosto"
@@ -70,6 +75,7 @@ export function FileLezioni() {
                       <span className="secondario piccolo">caricato il {F.dataBreve(a.creatoIl)}</span>
                     </button>
                     <button type="button" className="link piccolo" onClick={() => setRinomina({ id: a.id, nome: a.nome })}>Rinomina</button>
+                    {eProgrammaLeggibile(a) && <button type="button" className="pulsante" onClick={() => setDaLeggere(a)}>Inserisci le date</button>}
                   </>
                 )}
                 <button type="button" className="elimina-riga" aria-label={`Elimina ${a.nome}`}
@@ -79,6 +85,7 @@ export function FileLezioni() {
           </div>
         </div>
       ))}
+      <ConfermaProgramma allegato={daLeggere} tipo={tipo} onChiudi={() => setDaLeggere(undefined)} />
     </section>
   )
 }

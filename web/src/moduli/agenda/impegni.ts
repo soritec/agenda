@@ -11,7 +11,7 @@ import { tipoGiornataDa, tipoTurnoDa, TITOLI_GIORNATA } from '../turni/tipi'
 export const FONTI = ['nota', 'turno', 'giornata', 'evento', 'task', 'studio', 'esame', 'lezione', 'journal', 'riunione', 'promemoria', 'tassa', 'casa', 'application'] as const
 export type Fonte = (typeof FONTI)[number]
 export const TITOLI_FONTE: Record<Fonte, string> = {
-  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', riunione: 'Riunioni fisse', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa', application: 'Applications',
+  nota: 'Note del giorno', turno: 'Turni', giornata: 'Ferie e riposi', evento: 'Impegni', task: 'Task', studio: 'Piani di studio', esame: 'Esami', lezione: 'Lezioni', journal: 'Journal club', riunione: 'Riunioni', promemoria: 'Promemoria', tassa: 'Scadenze', casa: 'Casa', application: 'Applications',
 }
 
 /** Nome di una singola voce, mostrato sotto il titolo. */
@@ -171,11 +171,11 @@ export function impegniTra(d: DatiAgenda, da: string, a: string, adesso = Date.n
   }
   for (const e of d.esami ?? []) {
     if (!dentro(e.giorno)) continue
-    const fonte: Fonte = e.tipo === 'lezione' ? 'lezione' : 'esame'
+    const fonte: Fonte = e.tipo === 'lezione' ? 'lezione' : e.tipo === 'riunione' ? 'riunione' : 'esame'
     out.push({
-      chiave: `${fonte}:${e.id}`, fonte, id: e.id, giorno: e.giorno, titolo: e.titolo,
+      chiave: `${fonte}:${e.id}`, fonte, id: e.id, giorno: e.giorno, titolo: e.titolo, minutoInizio: e.minuto,
       dettaglio: [e.materia, e.esito].filter(Boolean).join(' · ') || undefined,
-      colore: `colore-${fonte}`, link: d.linkEsami ?? `#/specializzazione/${fonte === 'esame' ? 'esami' : 'lezioni'}`,
+      colore: fonte === 'riunione' ? 'colore-journal' : `colore-${fonte}`, link: d.linkEsami ?? `#/specializzazione/${{ esame: 'esami', lezione: 'lezioni', riunione: 'riunioni' }[fonte as 'esame']}`,
       concluso: Boolean(e.completato) || e.giorno < oggi, modificatoIl: e.modificatoIl,
     })
   }

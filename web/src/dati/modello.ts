@@ -113,10 +113,13 @@ export interface Procedura extends Base {
 
 export interface EsameOLezione extends Base {
   giorno: string
-  /** 'esame' | 'lezione' */
+  /** 'esame' | 'lezione' | 'riunione' */
   tipo: string
   titolo: string
+  /** Materia, oppure sede per le riunioni. */
   materia?: string
+  /** Ora, in minuti dalla mezzanotte (facoltativa). */
+  minuto?: number
   /** Esito o voto. */
   esito?: string
   note?: string
@@ -471,6 +474,10 @@ export interface Impostazioni {
   /** Valuta degli importi di questo profilo (predefinita: euro). */
   valuta?: 'EUR' | 'GBP'
   /** Matricole da avere sempre sotto mano (sezione Servizi di ateneo). */
+  /** Sedi e orari del consultorio, una riga per voce: "lunedì; Sede; 8:30; 16:00; nota". */
+  sediConsultorio?: string
+  /** Turni di consultorio per cui non chiedere più la sede (× sul banner di Oggi). */
+  consultoriNonChiesti?: string[]
   /** Giorni per cui non chiedere più gli orari dei turni (× sul banner di Oggi). */
   orariNonChiesti?: string[]
   /** Riunioni fisse (es. "jc:2026-11-04") tolte dall'agenda con la ×. */

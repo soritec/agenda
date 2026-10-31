@@ -168,7 +168,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
       if (!t) return
       await salva('attivita', { ...t, scadenza: dove.giorno, minuto: dove.minuto ?? t.minuto })
       annulla = () => salva('attivita', t)
-    } else if (i.fonte === 'esame' || i.fonte === 'lezione') {
+    } else if (i.fonte === 'esame' || i.fonte === 'lezione' || i.fonte === 'riunione') {
       const x = esami?.find((y) => y.id === i.id)
       if (!x) return
       await salva('esami', { ...x, giorno: dove.giorno })
@@ -194,7 +194,7 @@ export function Agenda({ vistaParam, giornoParam, eventoAperto, notaAperta }: { 
   async function eliminaImpegno(i: Impegno) {
     pressione.setAttivo(undefined)
     let annulla: () => Promise<void>
-    if (i.fonte === 'riunione') {
+    if (i.fonte === 'riunione' && !esami?.some((e) => e.id === i.id)) {
       const prima = impostazioni?.riunioniTolte ?? []
       await salvaImpostazioni({ riunioniTolte: [...prima, i.id] })
       annulla = async () => { await salvaImpostazioni({ riunioniTolte: prima }) }
