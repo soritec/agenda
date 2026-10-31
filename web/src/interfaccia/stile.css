@@ -1329,3 +1329,5 @@ body.trascinando, body.trascinando * { cursor: grabbing !important; -webkit-user
 .barra-postit button:hover { background: rgba(0,0,0,0.07); } .barra-postit button:disabled { opacity: 0.35; cursor: default; }
 .ridimensiona-postit { position: absolute; right: 0; bottom: 0; width: 22px; height: 22px; cursor: nwse-resize; touch-action: none; }
 .ridimensiona-postit::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 9px; height: 9px; border-right: 2px solid rgba(0,0,0,0.3); border-bottom: 2px solid rgba(0,0,0,0.3); }
+
+.tabella-stampa tr.senza-linea td { border-bottom: none !important; }

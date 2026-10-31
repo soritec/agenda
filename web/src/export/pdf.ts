@@ -10,6 +10,8 @@ export interface RigaPdf {
   /** Colore tenue della colonna evidenziata (es. tipo di turno). */
   colore?: Colore
   evidenza?: 'ferie' | 'festivo'
+  /** Riga dello stesso gruppo della successiva: niente linea sotto. */
+  senzaLinea?: boolean
 }
 
 /** Casella del calendario del mese nel PDF; null = casella vuota prima o dopo il mese. */
@@ -159,6 +161,7 @@ export async function creaPdf(d: DocumentoPdf): Promise<Blob> {
       }
       const riga = d.righe[c.row.index]
       if (!riga) return
+      if (riga.senzaLinea) c.cell.styles.lineWidth = 0
       if (grassetto.has(c.column.index)) c.cell.styles.fontStyle = 'bold'
       if (destra.has(c.column.index)) c.cell.styles.halign = 'right'
       if (c.column.index === d.colonnaNote) {
