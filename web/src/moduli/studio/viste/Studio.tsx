@@ -28,10 +28,11 @@ const COLORI_TIPO: Record<TipoRisorsa, [string, string]> = {
   appunti: ['#FAEEDA', '#854F0B'], lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
 }
 const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { appunti: IconaAppunti, lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
+const MEDICO = profiloPrincipale()
+const TITOLI_GRUPPO_RISORSA: Record<TipoRisorsa, string> = { appunti: 'Appunti', lineaGuida: MEDICO ? 'Linee guida' : 'Normativa', articolo: 'Articoli', libro: 'Libri', video: 'Video', sito: 'Siti' }
 const durataTesto = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`)
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 
-const MEDICO = profiloPrincipale()
 
 export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string | null; risorseQuiz?: string | null }) {
   const argomenti = useCollezione('argomentiStudio')
@@ -111,7 +112,7 @@ export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string |
 
             {scheda === 'libreria' && (
               <Libreria risorse={(risorse ?? []).filter((r) => filtro(r) && (tipo === 'tutti' || tipoRisorsaDa(r.tipo) === tipo))}
-                argomenti={elencoArgomenti} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
+                argomenti={elencoArgomenti} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} tendineAperte={filtriAttivi} />
             )}
             {scheda === 'quiz' && (
               <Quiz key={risorseQuiz ?? ''} preselezionate={risorseQuiz ? risorseQuiz.split(',') : undefined} risorse={risorse ?? []} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
@@ -591,7 +592,7 @@ function NuovoArgomento({ ordine }: { ordine: number }) {
 
 /* Libreria */
 
-function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { risorse: Risorsa[]; argomenti: ArgomentoStudio[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string }) {
+function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto, tendineAperte }: { risorse: Risorsa[]; argomenti: ArgomentoStudio[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string; tendineAperte: boolean }) {
   const [modifica, setModifica] = useState<{ r?: Risorsa; iniziale?: Partial<Risorsa> }>()
   const allegati = useCollezione('allegati')
   /** Ogni PDF scelto diventa un appunto, con il nome del file come titolo. */
@@ -608,9 +609,16 @@ function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { riso
   const ordinate = [...risorse].sort((a, b) => Number(Boolean(b.preferito)) - Number(Boolean(a.preferito)) || STATI_LETTURA.indexOf(statoLetturaDa(a.stato)) - STATI_LETTURA.indexOf(statoLetturaDa(b.stato)) || b.creatoIl - a.creatoIl)
   return (
     <>
-      <div className="lista">
-        {ordinate.length === 0 && <div className="vuoto piccolo">Niente qui. Aggiungi una linea guida, un articolo o un video.</div>}
-        {ordinate.map((r) => {
+      {ordinate.length === 0 && <div className="vuoto piccolo">Niente qui. Aggiungi una linea guida, un articolo o un video.</div>}
+      {TIPI_RISORSA.map((t) => {
+        const delTipo = ordinate.filter((r) => tipoRisorsaDa(r.tipo) === t)
+        if (!delTipo.length) return null
+        return (
+          // Chiuse finché non si tocca il nome; con una ricerca o un filtro si aprono, per mostrare i risultati.
+          <details key={t} className="scheda tendina-budget" open={tendineAperte || undefined}>
+            <summary className="titolo-sezione">{TITOLI_GRUPPO_RISORSA[t]} <span className="secondario piccolo" style={{ fontWeight: 400 }}>{delTipo.length}</span></summary>
+            <div className="lista corpo-tendina-budget">
+        {delTipo.map((r) => {
           const tipo = tipoRisorsaDa(r.tipo), stato = statoLetturaDa(r.stato)
           const appunti = tipo === 'appunti'
           const file = (allegati ?? []).filter((a) => a.collegatoA === `risorsa:${r.id}`)
@@ -637,7 +645,10 @@ function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { riso
             </div>
           )
         })}
-      </div>
+            </div>
+          </details>
+        )
+      })}
       <div className="riga-azioni">
         <button type="button" className="pulsante primario" onClick={() => setModifica({ iniziale: { argomentoId: argomentoScelto } })}>+ Risorsa</button>
         <label className="pulsante" style={{ cursor: 'pointer', position: 'relative' }}>
