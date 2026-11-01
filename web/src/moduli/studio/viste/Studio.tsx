@@ -2,15 +2,15 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { istante } from '../../../nucleo/calendario'
 import * as F from '../../../nucleo/formati'
 import { elimina, nuovoId, ripristina, salva, salvaImpostazioni } from '../../../dati/archivio'
-import { contenutoAllegato } from '../../../dati/allegati'
+import { aggiungiAllegato, contenutoAllegato, DIMENSIONE_MASSIMA } from '../../../dati/allegati'
 import { useCollezione, useImpostazioni } from '../../../dati/hooks'
 import type { Allegato, ArgomentoStudio, EsameOLezione, Flashcard, Risorsa } from '../../../dati/modello'
 import { profiloPrincipale } from '../../../dati/profili'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
 import { condividiOScarica, creaPdfTesto } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
-import { IconaArticolo, IconaClip, IconaLibro, IconaLink, IconaLogbook, IconaMusica, IconaPlay } from '../../../interfaccia/icone'
-import { EtichetteAllegati } from '../../../interfaccia/Visualizzatore'
+import { IconaAppunti, IconaArticolo, IconaCerca, IconaClip, IconaLibro, IconaLink, IconaLogbook, IconaMusica, IconaPlay } from '../../../interfaccia/icone'
+import { EtichetteAllegati, mostraAllegato } from '../../../interfaccia/Visualizzatore'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
 import { AZIONI_AI, elabora, generaFlashcard, generaQuiz, leggiChiave, salvaChiave, type AzioneAI, type DomandaQuiz, type Materiale } from '../ai'
@@ -25,9 +25,9 @@ const SCHEDE = ['libreria', 'quiz', 'flashcard'] as const
 type Scheda = (typeof SCHEDE)[number]
 const TITOLI_SCHEDA: Record<Scheda, string> = { libreria: 'Libreria', quiz: 'Quiz', flashcard: 'Flashcard' }
 const COLORI_TIPO: Record<TipoRisorsa, [string, string]> = {
-  lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
+  appunti: ['#FAEEDA', '#854F0B'], lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
 }
-const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
+const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { appunti: IconaAppunti, lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
 const durataTesto = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`)
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 
@@ -43,6 +43,9 @@ export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string |
   const scheda: Scheda = (SCHEDE as readonly string[]).includes(schedaParam ?? '') ? (schedaParam as Scheda) : 'libreria'
   const [argomento, setArgomento] = useState<string>('tutti')
   const [cerca, setCerca] = useState('')
+  const [tipo, setTipo] = useState<TipoRisorsa | 'tutti'>('tutti')
+  const [filtriAperti, setFiltriAperti] = useState(false)
+  const filtriAttivi = argomento !== 'tutti' || (scheda === 'libreria' && (tipo !== 'tutti' || cerca.trim() !== ''))
   const elencoArgomenti = useMemo(() => [...(argomenti ?? [])].sort((a, b) => a.ordine - b.ordine), [argomenti])
   const nomeArgomento = (id?: string) => elencoArgomenti.find((a) => a.id === id)?.nome
   const minuti = minutiSettimana(sessioni ?? [], oggiChiave)
@@ -78,17 +81,36 @@ export function Studio({ scheda: schedaParam, risorseQuiz }: { scheda?: string |
               })}
             </div>
             <div className="riga-azioni" style={{ gap: 6 }}>
-              <input className="cerca-studio" value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca nella libreria…" aria-label="Cerca" />
+              <button type="button" className={`pillola${filtriAttivi ? ' filtro-attivo' : ''}`} aria-expanded={filtriAperti} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setFiltriAperti(!filtriAperti)}>
+                <IconaCerca dimensione={15} />{scheda === 'libreria' ? 'Cerca' : 'Argomenti'}{filtriAttivi ? ' · filtri attivi' : ''}
+              </button>
+              {filtriAttivi && <button type="button" className="link piccolo" onClick={() => { setArgomento('tutti'); setTipo('tutti'); setCerca('') }}>Togli i filtri</button>}
             </div>
-            <div className="filtri-agenda">
-              {[{ id: 'tutti', nome: 'Tutti' }, ...elencoArgomenti].map((a) => (
-                <button key={a.id} type="button" className={`pillola${argomento === a.id ? ' filtro-attivo' : ''}`} onClick={() => setArgomento(a.id)}>{a.nome}</button>
-              ))}
-              <NuovoArgomento ordine={(elencoArgomenti.at(-1)?.ordine ?? 0) + 1} />
-            </div>
+            {filtriAperti && (
+              <>
+                {scheda === 'libreria' && (
+                  <>
+                    <div className="riga-azioni" style={{ gap: 6 }}>
+                      <input autoFocus className="cerca-studio" value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca nella libreria…" aria-label="Cerca" />
+                    </div>
+                    <div className="filtri-agenda" role="group" aria-label="Tipo">
+                      {(['tutti', ...TIPI_RISORSA] as const).map((t) => (
+                        <button key={t} type="button" className={`pillola${tipo === t ? ' filtro-attivo' : ''}`} onClick={() => setTipo(t)}>{t === 'tutti' ? 'Tutti i tipi' : TITOLI_TIPO_RISORSA[t]}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <div className="filtri-agenda" role="group" aria-label="Argomento">
+                  {[{ id: 'tutti', nome: 'Tutti gli argomenti' }, ...elencoArgomenti].map((a) => (
+                    <button key={a.id} type="button" className={`pillola${argomento === a.id ? ' filtro-attivo' : ''}`} onClick={() => setArgomento(a.id)}>{a.nome}</button>
+                  ))}
+                  <NuovoArgomento ordine={(elencoArgomenti.at(-1)?.ordine ?? 0) + 1} />
+                </div>
+              </>
+            )}
 
             {scheda === 'libreria' && (
-              <Libreria risorse={(risorse ?? []).filter((r) => filtro(r))}
+              <Libreria risorse={(risorse ?? []).filter((r) => filtro(r) && (tipo === 'tutti' || tipoRisorsaDa(r.tipo) === tipo))}
                 argomenti={elencoArgomenti} nomeArgomento={nomeArgomento} argomentoScelto={argomento === 'tutti' ? undefined : argomento} />
             )}
             {scheda === 'quiz' && (
@@ -571,6 +593,18 @@ function NuovoArgomento({ ordine }: { ordine: number }) {
 
 function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { risorse: Risorsa[]; argomenti: ArgomentoStudio[]; nomeArgomento: (id?: string) => string | undefined; argomentoScelto?: string }) {
   const [modifica, setModifica] = useState<{ r?: Risorsa; iniziale?: Partial<Risorsa> }>()
+  const allegati = useCollezione('allegati')
+  /** Ogni PDF scelto diventa un appunto, con il nome del file come titolo. */
+  async function caricaAppunti(scelti: File[]) {
+    const validi = scelti.filter((f) => f.size <= DIMENSIONE_MASSIMA)
+    for (const f of validi) {
+      const risorsa = nuovoId()
+      await aggiungiAllegato(f, `risorsa:${risorsa}`)
+      await salva('risorse', { id: risorsa, titolo: f.name.replace(/\.[^.]+$/, ''), tipo: 'appunti', stato: 'letto', argomentoId: argomentoScelto })
+    }
+    const scartati = scelti.length - validi.length
+    mostraAvviso([validi.length ? (validi.length === 1 ? 'Appunto aggiunto' : `${validi.length} appunti aggiunti`) : '', scartati ? `${scartati} più grandi di 20 MB non aggiunti` : ''].filter(Boolean).join(' · '))
+  }
   const ordinate = [...risorse].sort((a, b) => Number(Boolean(b.preferito)) - Number(Boolean(a.preferito)) || STATI_LETTURA.indexOf(statoLetturaDa(a.stato)) - STATI_LETTURA.indexOf(statoLetturaDa(b.stato)) || b.creatoIl - a.creatoIl)
   return (
     <>
@@ -578,20 +612,26 @@ function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { riso
         {ordinate.length === 0 && <div className="vuoto piccolo">Niente qui. Aggiungi una linea guida, un articolo o un video.</div>}
         {ordinate.map((r) => {
           const tipo = tipoRisorsaDa(r.tipo), stato = statoLetturaDa(r.stato)
+          const appunti = tipo === 'appunti'
+          const file = (allegati ?? []).filter((a) => a.collegatoA === `risorsa:${r.id}`)
+          // Un appunto con un solo file si apre direttamente; "Modifica" resta a parte.
+          const unico = appunti && file.length === 1 ? file[0] : undefined
           return (
             <div key={r.id} className="riga riga-risorsa" style={{ cursor: 'default' }}>
               <span className="icona-sezione quadratino" style={{ background: COLORI_TIPO[tipo][0], color: COLORI_TIPO[tipo][1], fontWeight: 800 }}>{(() => { const I = ICONE_TIPO[tipo]; return <I dimensione={16} /> })()}</span>
-              <button type="button" className="crescente" onClick={() => setModifica({ r })} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
+              <button type="button" className="crescente" onClick={() => (unico ? mostraAllegato(unico) : setModifica({ r }))} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
                 <span style={{ fontWeight: 600 }}>{r.preferito && <span style={{ color: '#E0A030' }}>★ </span>}{r.titolo}</span>
                 <span className="secondario piccolo">{[TITOLI_TIPO_RISORSA[tipo], nomeArgomento(r.argomentoId)].filter(Boolean).join(' · ')}</span>
                 {stato === 'inLettura' && r.progresso !== undefined && <span className="barra-mini" style={{ width: '100%' }}><i style={{ width: `${r.progresso}%`, background: '#7F77DD' }} /></span>}
-                <EtichetteAllegati collegatoA={`risorsa:${r.id}`} />
+                {!unico && <EtichetteAllegati collegatoA={`risorsa:${r.id}`} />}
               </button>
               {r.url && <a className="pillola piccola" href={r.url} target="_blank" rel="noreferrer">Apri</a>}
-              <button type="button" className={`pillola piccola stato-${stato}`} title="Cambia stato"
-                onClick={() => void salva('risorse', { ...r, stato: STATI_LETTURA[(STATI_LETTURA.indexOf(stato) + 1) % 3]! })}>
-                {stato === 'letto' ? 'Letto ✓' : TITOLI_STATO_LETTURA[stato]}
-              </button>
+              {appunti ? <button type="button" className="pillola piccola" onClick={() => setModifica({ r })}>Modifica</button> : (
+                <button type="button" className={`pillola piccola stato-${stato}`} title="Cambia stato"
+                  onClick={() => void salva('risorse', { ...r, stato: STATI_LETTURA[(STATI_LETTURA.indexOf(stato) + 1) % 3]! })}>
+                  {stato === 'letto' ? 'Letto ✓' : TITOLI_STATO_LETTURA[stato]}
+                </button>
+              )}
               <button type="button" className="elimina-task" aria-label={`Elimina ${r.titolo}`}
                 onClick={() => void elimina('risorse', r.id).then(() => mostraAvviso(`Eliminato: ${r.titolo}`, () => void ripristina('risorse', r.id)))}>×</button>
             </div>
@@ -600,6 +640,10 @@ function Libreria({ risorse, argomenti, nomeArgomento, argomentoScelto }: { riso
       </div>
       <div className="riga-azioni">
         <button type="button" className="pulsante primario" onClick={() => setModifica({ iniziale: { argomentoId: argomentoScelto } })}>+ Risorsa</button>
+        <label className="pulsante" style={{ cursor: 'pointer', position: 'relative' }}>
+          + Appunti
+          <input type="file" multiple accept="application/pdf,.pdf" className="file-nascosto" onChange={(e) => { const c = e.currentTarget; const scelti = Array.from(c.files ?? []); c.value = ''; if (scelti.length) void caricaAppunti(scelti) }} />
+        </label>
         <span className="secondario piccolo">Siti utili:</span>
         {SITI_STUDIO.map((s) => (
           <button key={s.url} type="button" className="pillola piccola" onClick={() => setModifica({ iniziale: { titolo: s.titolo, url: s.url, tipo: 'sito', stato: 'letto', argomentoId: argomentoScelto } })}>+ {s.titolo}</button>
@@ -619,12 +663,13 @@ function FormRisorsa({ r, iniziale, argomenti, onChiudi }: { r?: Risorsa; inizia
   })
   const url = b.url.trim() && !/^https?:\/\//.test(b.url.trim()) ? `https://${b.url.trim()}` : b.url.trim()
   const valido = b.titolo.trim() !== ''
+  const appunti = b.tipo === 'appunti'
   async function conferma() {
     if (!valido) return
     const p = Number(b.progresso)
     await salva('risorse', {
-      ...r, id, titolo: b.titolo.trim(), tipo: b.tipo, url: url || undefined, argomentoId: b.argomentoId || undefined, stato: b.stato,
-      progresso: b.stato === 'inLettura' && p >= 0 && p <= 100 && b.progresso !== '' ? p : undefined, preferito: b.preferito || undefined, note: b.note.trim() || undefined,
+      ...r, id, titolo: b.titolo.trim(), tipo: b.tipo, url: url || undefined, argomentoId: b.argomentoId || undefined, stato: appunti ? 'letto' : b.stato,
+      progresso: !appunti && b.stato === 'inLettura' && p >= 0 && p <= 100 && b.progresso !== '' ? p : undefined, preferito: b.preferito || undefined, note: b.note.trim() || undefined,
     })
     onChiudi()
   }
@@ -646,12 +691,14 @@ function FormRisorsa({ r, iniziale, argomenti, onChiudi }: { r?: Risorsa; inizia
               {argomenti.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
             </select>
           </Campo>
-          <Campo etichetta="Stato">
-            <select value={b.stato} onChange={(e) => setB({ ...b, stato: statoLetturaDa(e.target.value) })}>
-              {STATI_LETTURA.map((s) => <option key={s} value={s}>{TITOLI_STATO_LETTURA[s]}</option>)}
-            </select>
-          </Campo>
-          {b.stato === 'inLettura' && <Campo etichetta="A che punto (%)"><input inputMode="numeric" value={b.progresso} onChange={(e) => setB({ ...b, progresso: e.target.value })} /></Campo>}
+          {!appunti && (
+            <Campo etichetta="Stato">
+              <select value={b.stato} onChange={(e) => setB({ ...b, stato: statoLetturaDa(e.target.value) })}>
+                {STATI_LETTURA.map((s) => <option key={s} value={s}>{TITOLI_STATO_LETTURA[s]}</option>)}
+              </select>
+            </Campo>
+          )}
+          {!appunti && b.stato === 'inLettura' && <Campo etichetta="A che punto (%)"><input inputMode="numeric" value={b.progresso} onChange={(e) => setB({ ...b, progresso: e.target.value })} /></Campo>}
         </div>
         <label className="interruttore"><span>★ Preferito</span><input type="checkbox" checked={b.preferito} onChange={(e) => setB({ ...b, preferito: e.target.checked })} /></label>
         <Campo etichetta="Note"><textarea value={b.note} onChange={(e) => setB({ ...b, note: e.target.value })} /></Campo>

@@ -83,6 +83,9 @@ export const IconaAttestato = (p: P) => (
 export const IconaArticolo = (p: P) => (
   <Icona {...p}><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4" /><path d="M9 11h7M9 14h7M9 17h4" /></Icona>
 )
+export const IconaAppunti = (p: P) => (
+  <Icona {...p}><rect x="6" y="3.5" width="13" height="17" rx="2" /><path d="M4 8h3M4 12h3M4 16h3M10.5 8.5h5M10.5 12h5" /></Icona>
+)
 export const IconaClip = (p: P) => (
   <Icona {...p}><path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-2.9-2.9l7.8-7.8" /></Icona>
 )

@@ -162,10 +162,10 @@ export interface ArgomentoStudio extends Base {
   ordine: number
 }
 
-/** Linea guida, articolo, libro, video, corso o sito (allegati "risorsa:<id>"). */
+/** Appunti, linea guida, articolo, libro, video, corso o sito (allegati "risorsa:<id>"). */
 export interface Risorsa extends Base {
   titolo: string
-  /** 'lineaGuida' | 'articolo' | 'libro' | 'video' | 'sito' */
+  /** 'appunti' | 'lineaGuida' | 'articolo' | 'libro' | 'video' | 'sito' */
   tipo: string
   url?: string
   argomentoId?: string
