@@ -7,7 +7,8 @@ import type { DiarioTurno, Turno } from '../../../dati/modello'
 import { mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { CampoFileDiario, salvaFileDiario } from '../../specializzazione/viste/CampoFileDiario'
 import { intervallo } from '../orari'
-import { giorniDaCompilare } from '../orariDaScrivere'
+import { IconaAvanti, IconaSpunta } from '../../../interfaccia/icone'
+import { giornoDaChiudere, giorniDaCompilare, nascondiNotteDiIeri } from '../orariDaScrivere'
 import { chiaveGiorno, giornoDaChiave, minutiDaOrario, oggi, perId, titoloTurno } from '../supporto'
 
 /** "Più tardi" vale finché l'app resta aperta: alla prossima apertura il banner ricompare. */
@@ -24,12 +25,34 @@ export function BannerOrari() {
   const g0 = oggi()
   const giorni = useMemo(() => giorniDaCompilare(turni ?? [], g0, impostazioni?.orariNonChiesti, (diario ?? []).map((d) => d.giorno)),
     [turni, diario, impostazioni?.orariNonChiesti, chiaveGiorno(g0)]) // eslint-disable-line react-hooks/exhaustive-deps
-  const daFare = giorni.filter((d) => !rimandati.has(d.giorno))
+  const daFare = giorni.filter((d) => !rimandati.has(d.giorno) && !nascondiNotteDiIeri(d, Date.now()))
   const primo = daFare[0]
   if (!impostazioni || !diario || !primo) return null
   return <RiquadroGiorno key={primo.giorno} giorno={primo.giorno} turni={primo.turni} guardie={primo.guardie} altri={daFare.length - 1} nomi={(t) => titoloTurno(t, mappa)}
     voce={diario.find((d) => d.giorno === primo.giorno)} nonChiesti={impostazioni.orariNonChiesti ?? []}
     onRimanda={() => { for (const d of daFare) rimandati.add(d.giorno); aggiorna((n) => n + 1) }} />
+}
+
+/** Sotto i turni di oggi: apre subito il banner, senza aspettare domani. */
+export function FineTurnoOggi() {
+  const turni = useCollezione('turni')
+  const modelli = useCollezione('modelliTurno')
+  const diario = useCollezione('diarioTurni')
+  const impostazioni = useImpostazioni()
+  const [aperto, setAperto] = useState(false)
+  const mappa = useMemo(() => perId(modelli), [modelli])
+  if (!impostazioni || !diario) return null
+  const oggiDaChiudere = giornoDaChiudere(turni ?? [], Date.now(), impostazioni.orariNonChiesti, diario.map((d) => d.giorno))
+  if (!oggiDaChiudere) return null
+  if (!aperto) {
+    return (
+      <button type="button" className="fine-turno" onClick={() => setAperto(true)}>
+        <IconaSpunta dimensione={18} /><span className="crescente">Hai finito il turno? Scrivi com'è andato</span><IconaAvanti dimensione={16} />
+      </button>
+    )
+  }
+  return <RiquadroGiorno key={oggiDaChiudere.giorno} giorno={oggiDaChiudere.giorno} turni={oggiDaChiudere.turni} guardie={oggiDaChiudere.guardie} altri={0} nomi={(t) => titoloTurno(t, mappa)}
+    voce={diario.find((d) => d.giorno === oggiDaChiudere.giorno)} nonChiesti={impostazioni.orariNonChiesti ?? []} onRimanda={() => setAperto(false)} />
 }
 
 function RiquadroGiorno({ giorno, turni, guardie, altri, nomi, voce, nonChiesti, onRimanda }: {

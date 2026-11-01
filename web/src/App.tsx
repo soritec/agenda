@@ -36,7 +36,7 @@ import { DiarioTurni } from './moduli/specializzazione/viste/DiarioTurni'
 import { FileUtili } from './moduli/specializzazione/viste/FileUtili'
 import { StoricoFerie } from './moduli/specializzazione/viste/StoricoFerie'
 import { BannerConsultorio } from './moduli/turni/viste/BannerConsultorio'
-import { BannerOrari } from './moduli/turni/viste/BannerOrari'
+import { BannerOrari, FineTurnoOggi } from './moduli/turni/viste/BannerOrari'
 import { SchedaProcedura } from './moduli/specializzazione/viste/SchedaProcedura'
 import { ImpostazioniSpecializzazione } from './moduli/specializzazione/viste/ImpostazioniSpecializzazione'
 import { IconaImpostazioni, IconaPin } from './interfaccia/icone'
@@ -176,6 +176,8 @@ function Oggi() {
           </div>
         )
       })}
+
+      {profiloPrincipale() && <FineTurnoOggi />}
 
       <PromemoriaDiOggi />
       <TaskDiOggi />

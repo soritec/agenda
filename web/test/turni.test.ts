@@ -266,6 +266,19 @@ describe('banner di fine turno', () => {
   const guardia = (giorno: number) => g(giorno, { tipo: 'guardiaDiurna', tuttoIlGiorno: undefined })
   const oggi = { anno: 2026, mese: 11, giorno: 6 }
 
+  test('i turni di oggi si chiudono subito, la guardia di giorno dalle 20, la notte mai', async () => {
+    const { giornoDaChiudere, nascondiNotteDiIeri, giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
+    const mattina = istante(2026, 11, 6, 9), sera = istante(2026, 11, 6, 21)
+    expect(giornoDaChiudere([g(6)], mattina)?.giorno).toBe('2026-11-06')
+    expect(giornoDaChiudere([guardia(6)], mattina)).toBeUndefined()
+    expect(giornoDaChiudere([guardia(6)], sera)?.guardie).toHaveLength(1)
+    expect(giornoDaChiudere([g(6, { tipo: 'guardiaNotturna', tuttoIlGiorno: undefined })], sera)).toBeUndefined()
+    expect(giornoDaChiudere([g(6)], mattina, ['2026-11-06'])).toBeUndefined()
+    const notte = giorniDaCompilare([g(5, { tipo: 'guardiaNotturna', tuttoIlGiorno: undefined })], oggi)[0]!
+    expect(nascondiNotteDiIeri(notte, istante(2026, 11, 6, 7))).toBe(true)
+    expect(nascondiNotteDiIeri(notte, istante(2026, 11, 6, 8))).toBe(false)
+  })
+
   test('giorni passati da compilare, dal più recente; le guardie solo per gli appunti', async () => {
     const { giorniDaCompilare } = await import('../src/moduli/turni/orariDaScrivere')
     const r = giorniDaCompilare([g(2), g(3), g(3), g(6), guardia(4), g(5, { minutiManuali: 300 }), g(1, { tuttoIlGiorno: undefined })], oggi)
