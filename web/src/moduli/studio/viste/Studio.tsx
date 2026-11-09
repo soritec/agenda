@@ -9,7 +9,7 @@ import { profiloPrincipale } from '../../../dati/profili'
 import { FormAttivita } from '../../specializzazione/viste/Esami'
 import { condividiOScarica, creaPdfTesto } from '../../../export/pdf'
 import { Allegati } from '../../../interfaccia/Allegati'
-import { IconaAppunti, IconaArticolo, IconaCerca, IconaClip, IconaLibro, IconaLink, IconaLogbook, IconaMusica, IconaPlay } from '../../../interfaccia/icone'
+import { IconaAppunti, IconaArticolo, IconaCerca, IconaClip, IconaLibro, IconaLink, IconaLogbook, IconaMusica, IconaPlay, IconaSlide } from '../../../interfaccia/icone'
 import { EtichetteAllegati, mostraAllegato } from '../../../interfaccia/Visualizzatore'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi } from '../../turni/supporto'
@@ -25,11 +25,11 @@ const SCHEDE = ['libreria', 'quiz', 'flashcard'] as const
 type Scheda = (typeof SCHEDE)[number]
 const TITOLI_SCHEDA: Record<Scheda, string> = { libreria: 'Libreria', quiz: 'Quiz', flashcard: 'Flashcard' }
 const COLORI_TIPO: Record<TipoRisorsa, [string, string]> = {
-  appunti: ['#FAEEDA', '#854F0B'], lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
+  appunti: ['#FAEEDA', '#854F0B'], slide: ['#FBEAF0', '#993556'], lineaGuida: ['#E1F2EA', '#1C7A5C'], articolo: ['#F8E6DF', '#A4472A'], libro: ['#ECEAFB', '#534AB7'], video: ['#E3EEF9', '#2D6AA6'], sito: ['#EEECE8', '#6B6862'],
 }
-const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { appunti: IconaAppunti, lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
+const ICONE_TIPO: Record<TipoRisorsa, (p: { dimensione?: number }) => React.ReactNode> = { appunti: IconaAppunti, slide: IconaSlide, lineaGuida: IconaLogbook, articolo: IconaArticolo, libro: IconaLibro, video: IconaPlay, sito: IconaLink }
 const MEDICO = profiloPrincipale()
-const TITOLI_GRUPPO_RISORSA: Record<TipoRisorsa, string> = { appunti: 'Appunti', lineaGuida: MEDICO ? 'Linee guida' : 'Normativa', articolo: 'Articoli', libro: 'Libri', video: 'Video', sito: 'Siti' }
+const TITOLI_GRUPPO_RISORSA: Record<TipoRisorsa, string> = { appunti: 'Appunti', slide: 'Slide', lineaGuida: MEDICO ? 'Linee guida' : 'Normativa', articolo: 'Articoli', libro: 'Libri', video: 'Video', sito: 'Siti' }
 const durataTesto = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`)
 const msGiorno = (g: string) => { const c = giornoDaChiave(g)!; return istante(c.anno, c.mese, c.giorno, 12) }
 

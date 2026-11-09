@@ -39,7 +39,7 @@ describe('Specializzazione', () => {
   })
 })
 
-import { CHIRURGICHE_PREDEFINITE, eConcluso, nelFiltro, statoTassa } from '../src/moduli/specializzazione/logica'
+import { CHIRURGICHE_PREDEFINITE, eConcluso, haTag, nelFiltro, statoTassa, tagDisponibili, tipoConNome } from '../src/moduli/specializzazione/logica'
 
 describe('Specializzazione: filtri, esami e tasse', () => {
   test('chirurgiche e non chirurgiche', () => {
@@ -76,4 +76,20 @@ describe('calendario del journal club da foto', () => {
     expect(v.map((x) => [x.giorno, x.senzaJournal])).toEqual([['2026-11-11', false], ['2026-11-18', true], ['2026-12-23', true]])
   })
   test('risposta non valida: nessuna voce', () => expect(leggiCalendarioJournal('non so', '2026-10-31')).toEqual([]))
+})
+
+describe('logbook: nomi e tag', () => {
+  test('riconosce una procedura già in elenco senza badare a maiuscole e spazi', () => {
+    const tipi = [{ id: 'a', nome: 'Taglio cesareo' }]
+    expect(tipoConNome('  taglio   CESAREO ', tipi)?.id).toBe('a')
+    expect(tipoConNome('Isterectomia', tipi)).toBeUndefined()
+    expect(tipoConNome('   ', tipi)).toBeUndefined()
+  })
+  test('propone i tag predefiniti e quelli già usati, senza doppioni', () => {
+    const tag = tagDisponibili([{ tag: ['laparoscopica', 'Single port'] }, {}])
+    expect(tag.slice(0, 3)).toEqual(['Laparoscopica', 'Laparotomica', 'Robotica'])
+    expect(tag).toContain('Single port')
+    expect(tag.filter((t) => t.toLowerCase() === 'laparoscopica')).toHaveLength(1)
+    expect(haTag({ tag: ['Robotica'] }, 'robotica')).toBe(true)
+  })
 })

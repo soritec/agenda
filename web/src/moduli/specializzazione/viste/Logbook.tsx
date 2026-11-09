@@ -12,7 +12,7 @@ import { usePressioneLunga } from '../../../interfaccia/pressione'
 import { Avviso, Campo, Foglio, mostraAvviso, NotaPrivacy } from '../../../interfaccia/componenti'
 import { chiaveGiorno, giornoDaChiave, oggi, perId } from '../../turni/supporto'
 import {
-  ANNI_PREDEFINITI, annoDiCorso, conteggi, nelFiltro, RUOLI, ruoloDa, settimaneValide, TITOLI_RUOLO, TITOLI_RUOLO_BREVI, type FiltroCategoria, type Ruolo,
+  ANNI_PREDEFINITI, annoDiCorso, conteggi, haTag, nelFiltro, RUOLI, ruoloDa, settimaneValide, tagDisponibili, tipoConNome, TITOLI_RUOLO, TITOLI_RUOLO_BREVI, type FiltroCategoria, type Ruolo,
 } from '../logica'
 
 export const AVVISO_REFERTO = 'Allega solo documenti senza dati che identificano la paziente (nome, codice fiscale, data di nascita, indirizzo): oscurali prima.'
@@ -33,6 +33,7 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   const impostazioni = useImpostazioni()
   const [anno, setAnno] = useState<number>()
   const [categoria, setCategoria] = useState<FiltroCategoria>('tutte')
+  const [tag, setTag] = useState<string>()
   const [modifica, setModifica] = useState<{ record?: Procedura } | undefined>(apriNuova ? {} : undefined)
   const [esporta, setEsporta] = useState(false)
   const [mostrate, setMostrate] = useState(30)
@@ -53,7 +54,8 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
 
   const anni = impostazioni?.anniSpecializzazione ?? ANNI_PREDEFINITI
   const mappaTipi = useMemo(() => perId(tipi), [tipi])
-  const nellaCategoria = useMemo(() => (procedure ?? []).filter((p) => nelFiltro(mappaTipi.get(p.tipoId), categoria)), [procedure, mappaTipi, categoria])
+  const tagUsati = useMemo(() => tagDisponibili(procedure ?? []).filter((t) => (procedure ?? []).some((p) => haTag(p, t))), [procedure])
+  const nellaCategoria = useMemo(() => (procedure ?? []).filter((p) => nelFiltro(mappaTipi.get(p.tipoId), categoria) && (!tag || haTag(p, tag))), [procedure, mappaTipi, categoria, tag])
   const c = useMemo(() => conteggi(nellaCategoria, anno), [nellaCategoria, anno])
   const righe: RigaTabella[] = useMemo(() => [...c.perTipo.entries()]
     .map(([id, r]) => ({ id, nome: mappaTipi.get(id)?.nome ?? '—', ...r, totale: RUOLI.reduce((n, x) => n + r[x], 0), chirurgica: Boolean(mappaTipi.get(id)?.chirurgica) }))
@@ -65,7 +67,7 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
     .filter((p) => anno === undefined || p.annoCorso === anno)
     .sort((a, b) => b.giorno.localeCompare(a.giorno) || b.creatoIl - a.creatoIl), [nellaCategoria, anno])
 
-  const descrizioneFiltro = [anno ? `${anno}° anno` : 'Tutti gli anni', categoria === 'tutte' ? '' : CATEGORIE.find((x) => x.id === categoria)!.titolo.toLowerCase()].filter(Boolean).join(' · ')
+  const descrizioneFiltro = [anno ? `${anno}° anno` : 'Tutti gli anni', categoria === 'tutte' ? '' : CATEGORIE.find((x) => x.id === categoria)!.titolo.toLowerCase(), tag ? tag.toLowerCase() : ''].filter(Boolean).join(' · ')
 
   async function esportaPdf(azione: 'scarica' | 'condividi') {
     const somma = (rr: RigaTabella[], k: Ruolo | 'totale') => rr.reduce((s, r) => s + r[k], 0)
@@ -94,11 +96,12 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   function esportaCsv() {
     const tabella: TabellaExport = {
       titolo: 'Logbook',
-      intestazioni: ['Data', 'Procedura', 'Categoria', 'Ruolo', 'Anno di corso', 'Età', 'Settimane', 'Esito', 'Note'],
+      intestazioni: ['Data', 'Procedura', 'Categoria', 'Tag', 'Ruolo', 'Anno di corso', 'Età', 'Settimane', 'Esito', 'Note'],
       righe: elenco.map((p) => [
         { tipo: 'testo', valore: p.giorno.split('-').reverse().join('/') },
         { tipo: 'testo', valore: mappaTipi.get(p.tipoId)?.nome ?? '' },
         { tipo: 'testo', valore: mappaTipi.get(p.tipoId)?.chirurgica ? 'Chirurgica' : 'Non chirurgica' },
+        { tipo: 'testo', valore: (p.tag ?? []).join(', ') },
         { tipo: 'testo', valore: TITOLI_RUOLO[ruoloDa(p.ruolo)] },
         { tipo: 'intero', valore: p.annoCorso },
         p.eta !== undefined ? { tipo: 'intero', valore: p.eta } : { tipo: 'vuota' },
@@ -138,6 +141,13 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
             </button>
           ))}
         </div>
+        {tagUsati.length > 0 && (
+          <div role="group" aria-label="Tag" className="riga-azioni">
+            {[undefined, ...tagUsati].map((t) => (
+              <button key={t ?? 'tutti'} type="button" className="pillola" aria-pressed={tag === t} onClick={() => setTag(t)} style={pillola(tag === t)}>{t ?? 'Tutti i tag'}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="tessere">
@@ -192,7 +202,7 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
                   style={{ display: 'flex', flexDirection: 'column', gap: 2, background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}>
                   <span style={{ fontWeight: 500 }}>{mappaTipi.get(p.tipoId)?.nome ?? '—'}</span>
                   <span className="secondario piccolo">
-                    {[TITOLI_RUOLO[ruoloDa(p.ruolo)], `${p.annoCorso}° anno`, p.eta !== undefined ? `${p.eta} anni` : '', p.settimane ? `${p.settimane} sett.` : '', p.esito ?? ''].filter(Boolean).join(' · ')}
+                    {[TITOLI_RUOLO[ruoloDa(p.ruolo)], ...(p.tag ?? []), `${p.annoCorso}° anno`, p.eta !== undefined ? `${p.eta} anni` : '', p.settimane ? `${p.settimane} sett.` : '', p.esito ?? ''].filter(Boolean).join(' · ')}
                   </span>
                 </button>
                 <EtichetteAllegati collegatoA={`procedura:${p.id}`} />
@@ -227,8 +237,11 @@ export function Logbook({ apriNuova }: { apriNuova: boolean }) {
   )
 }
 
+const NUOVA = '__nuova'
+
 function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura; inizio?: string; anni: number; onChiudi: () => void }) {
   const tipi = useCollezione('tipiProcedura')
+  const procedure = useCollezione('procedure')
   // L'id esiste già prima del salvataggio, così si possono allegare file anche a una procedura nuova.
   const id = useRef(record?.id ?? nuovoId()).current
   const [giorno, setGiorno] = useState(record?.giorno ?? chiaveGiorno(oggi()))
@@ -241,6 +254,20 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
   const [esito, setEsito] = useState(record?.esito ?? '')
   const [note, setNote] = useState(record?.note ?? '')
   const [filtro, setFiltro] = useState('')
+  const [nuovaChirurgica, setNuovaChirurgica] = useState(true)
+  const [tag, setTag] = useState<string[]>(record?.tag ?? [])
+  const [nuovoTag, setNuovoTag] = useState('')
+  const nomeNuovo = filtro.trim().replace(/\s+/g, ' ')
+  // Un nome scritto che non è nell'elenco si può scegliere subito: entra nell'elenco al salvataggio.
+  const puoAggiungere = nomeNuovo !== '' && !tipoConNome(nomeNuovo, tipi ?? [])
+  useEffect(() => { if (tipoId === NUOVA && !puoAggiungere) setTipoId('') }, [tipoId, puoAggiungere])
+  const tuttiTag = [...tagDisponibili(procedure ?? []), ...tag.filter((t) => !tagDisponibili(procedure ?? []).some((x) => x.toLowerCase() === t.toLowerCase()))]
+  const cambiaTag = (t: string) => setTag(haTag({ tag }, t) ? tag.filter((x) => x.toLowerCase() !== t.toLowerCase()) : [...tag, t])
+  function aggiungiTag() {
+    const t = nuovoTag.trim().replace(/\s+/g, ' ')
+    if (t && !haTag({ tag }, t)) setTag([...tag, t.charAt(0).toUpperCase() + t.slice(1)])
+    setNuovoTag('')
+  }
 
   useEffect(() => { if (!record) setAnnoScelto(undefined) }, [giorno, record])
   const annoCorso = annoScelto ?? annoAutomatico ?? 1
@@ -258,8 +285,13 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
 
   async function conferma() {
     if (!valido) return
+    let tipoScelto = tipoId
+    if (tipoId === NUOVA) {
+      tipoScelto = nuovoId()
+      await salva('tipiProcedura', { id: tipoScelto, nome: nomeNuovo, chirurgica: nuovaChirurgica || undefined, ordine: Math.max(0, ...(tipi ?? []).map((t) => t.ordine)) + 1 })
+    }
     await salva('procedure', {
-      ...record, id, giorno, tipoId, ruolo, annoCorso,
+      ...record, id, giorno, tipoId: tipoScelto, ruolo, annoCorso, tag: tag.length ? tag : undefined,
       eta: etaNumero, settimane: settimane.trim().replace(/\s+/g, '') || undefined, esito: esito.trim() || undefined, note: note.trim() || undefined,
     })
     onChiudi()
@@ -287,9 +319,23 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
 
         <div className="campo">
           <span>Procedura</span>
-          {(tipi ?? []).length > 10 && (
-            <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Cerca…"
-              style={{ minHeight: 38, padding: '6px 12px', borderRadius: 10, border: '1px solid var(--linea-forte)', background: 'var(--superficie)' }} />
+          <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Cerca o scrivi una procedura nuova"
+            style={{ minHeight: 38, padding: '6px 12px', borderRadius: 10, border: '1px solid var(--linea-forte)', background: 'var(--superficie)' }} />
+          {puoAggiungere && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="scelte-rapide">
+                <button type="button" className="scelta-rapida" aria-pressed={tipoId === NUOVA} onClick={() => setTipoId(NUOVA)}
+                  style={tipoId === NUOVA ? { borderColor: 'var(--primario)', borderWidth: 2, background: 'var(--accento-tenue)', fontWeight: 600 } : undefined}>
+                  <span className="nome">+ {nomeNuovo}<br /><span className="orario">nuova: entra nell'elenco quando salvi</span></span>
+                </button>
+              </div>
+              <div role="group" aria-label="Categoria della procedura nuova" className="riga-azioni">
+                {[true, false].map((ch) => (
+                  <button key={String(ch)} type="button" className="pillola" aria-pressed={nuovaChirurgica === ch} onClick={() => { setNuovaChirurgica(ch); setTipoId(NUOVA) }}
+                    style={nuovaChirurgica === ch ? { background: 'var(--primario)', color: 'var(--primario-testo)', borderColor: 'transparent' } : undefined}>{ch ? 'Chirurgica' : 'Non chirurgica'}</button>
+                ))}
+              </div>
+            </div>
           )}
           {gruppiTipi.map((g) => (
             <div key={g.titolo} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -316,6 +362,18 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
                 {TITOLI_RUOLO[r]}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="campo">
+          <span>Tag (facoltativi)</span>
+          <div role="group" aria-label="Tag" className="riga-azioni">
+            {tuttiTag.map((t) => (
+              <button key={t} type="button" className="pillola" aria-pressed={haTag({ tag }, t)} onClick={() => cambiaTag(t)}
+                style={haTag({ tag }, t) ? { background: 'var(--primario)', color: 'var(--primario-testo)', borderColor: 'transparent', height: 36 } : { height: 36 }}>{t}</button>
+            ))}
+            <input value={nuovoTag} onChange={(e) => setNuovoTag(e.target.value)} placeholder="+ altro tag" className="data-piccola" aria-label="Nuovo tag"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); aggiungiTag() } }} onBlur={aggiungiTag} style={{ width: 130 }} />
           </div>
         </div>
 

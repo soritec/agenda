@@ -86,6 +86,9 @@ export const IconaArticolo = (p: P) => (
 export const IconaAppunti = (p: P) => (
   <Icona {...p}><rect x="6" y="3.5" width="13" height="17" rx="2" /><path d="M4 8h3M4 12h3M4 16h3M10.5 8.5h5M10.5 12h5" /></Icona>
 )
+export const IconaSlide = (p: P) => (
+  <Icona {...p}><rect x="3.5" y="4.5" width="17" height="11.5" rx="1.5" /><path d="M12 16v3.5M8.5 20h7M7.5 12.5l3-3 2 2 3.5-3.5" /></Icona>
+)
 export const IconaClip = (p: P) => (
   <Icona {...p}><path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-2.9-2.9l7.8-7.8" /></Icona>
 )

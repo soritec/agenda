@@ -74,6 +74,26 @@ export const CHIRURGICHE_PREDEFINITE = new Set([
   'Isteroscopia', 'Laparoscopia', 'Isterectomia',
 ])
 
+/** Tag proposti nel modulo della procedura; se ne possono aggiungere altri. */
+export const TAG_PROCEDURA_PREDEFINITI = ['Laparoscopica', 'Laparotomica', 'Robotica', 'Isteroscopica', 'Vaginale']
+
+const chiaveNome = (t: string) => t.trim().replace(/\s+/g, ' ').toLowerCase()
+
+/** Procedura dell'elenco con lo stesso nome (senza badare a maiuscole e spazi). */
+export function tipoConNome<T extends { nome: string }>(nome: string, tipi: T[]): T | undefined {
+  const k = chiaveNome(nome)
+  return k ? tipi.find((t) => chiaveNome(t.nome) === k) : undefined
+}
+
+/** Tag da proporre: i predefiniti, poi quelli già usati, senza doppioni. */
+export function tagDisponibili(procedure: { tag?: string[] }[]): string[] {
+  const visti = new Map<string, string>()
+  for (const t of [...TAG_PROCEDURA_PREDEFINITI, ...procedure.flatMap((p) => p.tag ?? [])]) if (!visti.has(chiaveNome(t))) visti.set(chiaveNome(t), t.trim())
+  return [...visti.values()]
+}
+
+export const haTag = (p: { tag?: string[] }, tag: string) => (p.tag ?? []).some((t) => chiaveNome(t) === chiaveNome(tag))
+
 export type FiltroCategoria = 'tutte' | 'chirurgiche' | 'nonChirurgiche'
 
 export function nelFiltro(tipo: { chirurgica?: boolean } | undefined, filtro: FiltroCategoria): boolean {

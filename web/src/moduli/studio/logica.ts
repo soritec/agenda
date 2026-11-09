@@ -5,9 +5,9 @@ import { giornoDaChiave, chiaveGiorno } from '../turni/supporto'
 export const ARGOMENTI_PREDEFINITI = ['Ostetricia', 'Ginecologia', 'Ecografia', 'Oncologia ginecologica', 'PMA e infertilità', 'Uroginecologia', 'Endocrinologia ginecologica', 'Altro']
 export const idArgomento = (nome: string) => `argomento-${nome.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')}`
 
-export const TIPI_RISORSA = ['appunti', 'lineaGuida', 'articolo', 'libro', 'video', 'sito'] as const
+export const TIPI_RISORSA = ['appunti', 'slide', 'lineaGuida', 'articolo', 'libro', 'video', 'sito'] as const
 export type TipoRisorsa = (typeof TIPI_RISORSA)[number]
-export const TITOLI_TIPO_RISORSA: Record<TipoRisorsa, string> = { appunti: 'Appunti', lineaGuida: profiloPrincipale() ? 'Linea guida' : 'Normativa', articolo: 'Articolo', libro: 'Libro', video: 'Video', sito: 'Sito' }
+export const TITOLI_TIPO_RISORSA: Record<TipoRisorsa, string> = { appunti: 'Appunti', slide: 'Slide', lineaGuida: profiloPrincipale() ? 'Linea guida' : 'Normativa', articolo: 'Articolo', libro: 'Libro', video: 'Video', sito: 'Sito' }
 export const tipoRisorsaDa = (t: string): TipoRisorsa => ((TIPI_RISORSA as readonly string[]).includes(t) ? (t as TipoRisorsa) : 'articolo')
 
 export const STATI_LETTURA = ['daLeggere', 'inLettura', 'letto'] as const

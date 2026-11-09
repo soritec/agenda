@@ -109,6 +109,8 @@ export interface Procedura extends Base {
   settimane?: string
   esito?: string
   note?: string
+  /** Etichette libere, es. "Laparoscopica", "Robotica". */
+  tag?: string[]
 }
 
 export interface EsameOLezione extends Base {
@@ -162,10 +164,10 @@ export interface ArgomentoStudio extends Base {
   ordine: number
 }
 
-/** Appunti, linea guida, articolo, libro, video, corso o sito (allegati "risorsa:<id>"). */
+/** Appunti, slide, linea guida, articolo, libro, video, corso o sito (allegati "risorsa:<id>"). */
 export interface Risorsa extends Base {
   titolo: string
-  /** 'appunti' | 'lineaGuida' | 'articolo' | 'libro' | 'video' | 'sito' */
+  /** 'appunti' | 'slide' | 'lineaGuida' | 'articolo' | 'libro' | 'video' | 'sito' */
   tipo: string
   url?: string
   argomentoId?: string
