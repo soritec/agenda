@@ -4,6 +4,7 @@ import * as F from './nucleo/formati'
 import { linkGoogleMaps } from './nucleo/viaggio'
 import { useCollezione, useImpostazioni } from './dati/hooks'
 import { profiloPrincipale } from './dati/profili'
+import { ErrorePagina } from './interfaccia/ErrorePagina'
 import { Guscio, InArrivo, SEZIONI, type Sezione } from './interfaccia/Guscio'
 import { meseDaParametro, useRotta } from './interfaccia/navigazione'
 import { DettaglioTurno } from './moduli/turni/viste/DettaglioTurno'
@@ -94,7 +95,7 @@ export function App() {
   else pagina = <Oggi />
 
   const attiva = (sezione === 'habit' ? 'journaling' : sezione === 'impostazioni' || SEZIONI.some((x) => x.id === sezione) ? sezione : 'oggi') as Sezione | 'impostazioni'
-  return <Guscio attiva={attiva}>{pagina}</Guscio>
+  return <Guscio attiva={attiva}><ErrorePagina chiave={location.hash}>{pagina}</ErrorePagina></Guscio>
 }
 
 /** "Oggi": le attività di oggi in evidenza, quelle di domani più piccole e richiudibili. */

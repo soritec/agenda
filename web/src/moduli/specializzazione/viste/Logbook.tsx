@@ -255,12 +255,16 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
   const [note, setNote] = useState(record?.note ?? '')
   const [filtro, setFiltro] = useState('')
   const [nuovaChirurgica, setNuovaChirurgica] = useState(true)
+  const [errore, setErrore] = useState<string>()
   const [tag, setTag] = useState<string[]>(record?.tag ?? [])
   const [nuovoTag, setNuovoTag] = useState('')
   const nomeNuovo = filtro.trim().replace(/\s+/g, ' ')
   // Un nome scritto che non è nell'elenco si può scegliere subito: entra nell'elenco al salvataggio.
   const puoAggiungere = nomeNuovo !== '' && !tipoConNome(nomeNuovo, tipi ?? [])
   useEffect(() => { if (tipoId === NUOVA && !puoAggiungere) setTipoId('') }, [tipoId, puoAggiungere])
+  // Scrivendo per intero il nome di una procedura già in elenco, quella viene scelta da sola.
+  const giaInElenco = tipoConNome(nomeNuovo, tipi ?? [])?.id
+  useEffect(() => { if (giaInElenco) setTipoId(giaInElenco) }, [giaInElenco])
   const tuttiTag = [...tagDisponibili(procedure ?? []), ...tag.filter((t) => !tagDisponibili(procedure ?? []).some((x) => x.toLowerCase() === t.toLowerCase()))]
   const cambiaTag = (t: string) => setTag(haTag({ tag }, t) ? tag.filter((x) => x.toLowerCase() !== t.toLowerCase()) : [...tag, t])
   function aggiungiTag() {
@@ -277,7 +281,7 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
   const valido = !!giornoDaChiave(giorno) && tipoId !== '' && etaValida && settimaneOk
 
   const ordinati = [...(tipi ?? [])].sort((a, b) => a.ordine - b.ordine)
-    .filter((t) => !filtro.trim() || t.nome.toLowerCase().includes(filtro.trim().toLowerCase()))
+    .filter((t) => !filtro.trim() || String(t.nome ?? '').toLowerCase().includes(filtro.trim().toLowerCase()))
   const gruppiTipi: { titolo: string; tipi: TipoProcedura[] }[] = [
     { titolo: 'Chirurgiche', tipi: ordinati.filter((t) => t.chirurgica) },
     { titolo: 'Non chirurgiche', tipi: ordinati.filter((t) => !t.chirurgica) },
@@ -285,6 +289,16 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
 
   async function conferma() {
     if (!valido) return
+    setErrore(undefined)
+    try {
+      await salvaProcedura()
+    } catch (e) {
+      // Senza questo il modulo resterebbe aperto senza spiegare perché.
+      setErrore(`Non sono riuscita a salvare: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  async function salvaProcedura() {
     let tipoScelto = tipoId
     if (tipoId === NUOVA) {
       tipoScelto = nuovoId()
@@ -308,6 +322,8 @@ function FormProcedura({ record, inizio, anni, onChiudi }: { record?: Procedura;
     <Foglio aperto titolo={record ? 'Procedura' : 'Nuova procedura'} onChiudi={() => void annulla()}
       azione={<button type="button" className="link" style={{ fontSize: 17, fontWeight: 600 }} disabled={!valido} onClick={() => void conferma()}>Salva</button>}>
       <div className="modulo">
+        {errore && <Avviso>{errore}</Avviso>}
+        {!valido && tipoId === '' && <span className="secondario piccolo">Scegli una procedura dall'elenco (o scrivine una nuova) per poter salvare.</span>}
         <div className="campi-affiancati">
           <Campo etichetta="Data"><input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} /></Campo>
           <Campo etichetta={annoAutomatico ? 'Anno di corso (automatico)' : 'Anno di corso'}>

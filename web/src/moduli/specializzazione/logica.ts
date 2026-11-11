@@ -77,7 +77,7 @@ export const CHIRURGICHE_PREDEFINITE = new Set([
 /** Tag proposti nel modulo della procedura; se ne possono aggiungere altri. */
 export const TAG_PROCEDURA_PREDEFINITI = ['Laparoscopica', 'Laparotomica', 'Robotica', 'Isteroscopica', 'Vaginale']
 
-const chiaveNome = (t: string) => t.trim().replace(/\s+/g, ' ').toLowerCase()
+const chiaveNome = (t: unknown) => String(t ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 
 /** Procedura dell'elenco con lo stesso nome (senza badare a maiuscole e spazi). */
 export function tipoConNome<T extends { nome: string }>(nome: string, tipi: T[]): T | undefined {
@@ -88,11 +88,11 @@ export function tipoConNome<T extends { nome: string }>(nome: string, tipi: T[])
 /** Tag da proporre: i predefiniti, poi quelli già usati, senza doppioni. */
 export function tagDisponibili(procedure: { tag?: string[] }[]): string[] {
   const visti = new Map<string, string>()
-  for (const t of [...TAG_PROCEDURA_PREDEFINITI, ...procedure.flatMap((p) => p.tag ?? [])]) if (!visti.has(chiaveNome(t))) visti.set(chiaveNome(t), t.trim())
+  for (const t of [...TAG_PROCEDURA_PREDEFINITI, ...procedure.flatMap((p) => (Array.isArray(p.tag) ? p.tag : []))]) if (chiaveNome(t) && !visti.has(chiaveNome(t))) visti.set(chiaveNome(t), String(t).trim())
   return [...visti.values()]
 }
 
-export const haTag = (p: { tag?: string[] }, tag: string) => (p.tag ?? []).some((t) => chiaveNome(t) === chiaveNome(tag))
+export const haTag = (p: { tag?: string[] }, tag: string) => (Array.isArray(p.tag) ? p.tag : []).some((t) => chiaveNome(t) === chiaveNome(tag))
 
 export type FiltroCategoria = 'tutte' | 'chirurgiche' | 'nonChirurgiche'
 
